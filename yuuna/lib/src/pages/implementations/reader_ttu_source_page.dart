@@ -54,6 +54,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   bool _ready = false;
   String? _readerScript;
   String? _settingsScript;
+  String? _fitScript;
 
   /// Loading screen shown over the WebView until the book is on screen.
   final ValueNotifier<bool> _maskVisible = ValueNotifier(false);
@@ -95,6 +96,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
 
   Future<void> _prepare() async {
     _readerScript = await TtuLibrary.readerScript;
+    _fitScript = await TtuLibrary.fitScript;
     _settingsScript = mediaSource.settingsScriptFor(
       _language,
       darkMode: appModelNoUpdate.isDarkMode,
@@ -163,6 +165,13 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// shelf, without asking.
   @override
   Future<bool> onWillPop() async {
+    /// A formula opened at full size closes first.
+    Object? viewerClosed = await _controller?.evaluateJavascript(
+      source: 'window.__jdjFit ? window.__jdjFit.close() : false',
+    );
+    if (viewerClosed == true) {
+      return false;
+    }
     if (isDictionaryShown) {
       clearDictionaryResult();
       mediaSource.clearCurrentSentence();
@@ -649,6 +658,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
           source: _settingsScript ?? '',
           injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         ),
+        UserScript(
+          source: _fitScript ?? '',
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        ),
       ]),
       onPermissionRequest: (controller, origin) async {
         return PermissionResponse(
@@ -849,22 +862,17 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   }
 
   /// Highlights [length] characters from [start] of the tapped paragraph.
-  /// The empty context menu stops Android's selection toolbar from appearing.
+  /// The highlight is drawn by the page, not a text selection, so Android's
+  /// selection toolbar never appears for it.
   Future<void> _highlight({
     required int start,
     required int length,
     required bool wordMode,
   }) async {
-    InAppWebViewController? controller = _controller;
-    if (controller == null) {
-      return;
-    }
-    await controller.setContextMenu(emptyContextMenu);
-    await controller.evaluateJavascript(
+    await _controller?.evaluateJavascript(
       source:
           'window.__jdj && window.__jdj.highlight($start, $length, $wordMode);',
     );
-    await controller.setContextMenu(contextMenu);
   }
 
   /// Handles a tap in the book. An index of -1 means the tap was not on a

@@ -140,6 +140,17 @@
     if (!target || !target.closest) {
       return;
     }
+    /* The full-size viewer handles its own taps. */
+    if (target.closest('#jdj-viewer')) {
+      return;
+    }
+    /* A formula or table shrunk to fit opens at full size. */
+    var fitted = target.closest('[data-jdj-fit]');
+    if (fitted && window.__jdjFit) {
+      dismiss(e);
+      window.__jdjFit.open(fitted);
+      return;
+    }
     if (!target.closest('.book-content')) {
       /* Margins close the popup; ッツ's own buttons are left alone. */
       if (!target.closest(CONTROLS)) {
@@ -155,16 +166,16 @@
     }
 
     /* Tapping the word that is already highlighted closes the popup. */
-    var selection = window.getSelection();
-    if (selection && selection.rangeCount && !selection.isCollapsed) {
-      var current = selection.getRangeAt(0);
-      try {
-        if (current.isPointInRange(hit.node, hit.offset)) {
-          dismiss(e);
-          return;
+    if (word) {
+      for (var w = 0; w < word.ranges.length; w++) {
+        try {
+          if (word.ranges[w].isPointInRange(hit.node, hit.offset)) {
+            dismiss(e);
+            return;
+          }
+        } catch (_) {
+          /* A range in another document fragment is never the same word. */
         }
-      } catch (_) {
-        /* A range in another document fragment is never the same word. */
       }
     }
 
@@ -188,6 +199,160 @@
   }
 
   document.addEventListener('click', onTap, true);
+
+  /* ---------- lookup highlight ---------- */
+
+  /*
+   * The looked-up word gets a box with slightly rounded corners drawn behind
+   * the text. Boxes live in a fixed layer under the book, outside ッツ's
+   * content, so ッツ's character counts never see them. Where something in
+   * the page paints its own background over that layer, the CSS highlight
+   * API is used instead, which has square corners.
+   */
+  var HIGHLIGHT_FILL = 'rgba(255,0,0,0.6)';
+  var RADIUS = 4;
+  var PAD = 2;
+  var hasHighlightApi = !!(window.CSS && CSS.highlights && typeof Highlight !== 'undefined');
+
+  var word = null;
+
+  /* Splits [startNode:startOffset, endNode:endOffset) into one range per
+   * text node, leaving out furigana. */
+  function piecesBetween(nodes, startNode, startOffset, endNode, endOffset) {
+    var pieces = [];
+    var on = false;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n === startNode) {
+        on = true;
+      }
+      if (!on) {
+        continue;
+      }
+      var r = document.createRange();
+      r.setStart(n, n === startNode ? startOffset : 0);
+      r.setEnd(n, n === endNode ? endOffset : n.textContent.length);
+      if (!r.collapsed) {
+        pieces.push(r);
+      }
+      if (n === endNode) {
+        break;
+      }
+    }
+    return pieces;
+  }
+
+  /* Joins boxes that sit side by side on one line. */
+  function mergeRects(rects, vertical) {
+    var out = [];
+    for (var i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      if (!r.width || !r.height) {
+        continue;
+      }
+      var box = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+      var prev = out[out.length - 1];
+      if (prev) {
+        var sameLine = vertical
+          ? Math.abs(prev.left - box.left) < 2 && Math.abs(prev.right - box.right) < 2 &&
+            box.top - prev.bottom < 2 && box.bottom > prev.top
+          : Math.abs(prev.top - box.top) < 2 && Math.abs(prev.bottom - box.bottom) < 2 &&
+            box.left - prev.right < 2 && box.right > prev.left;
+        if (sameLine) {
+          prev.left = Math.min(prev.left, box.left);
+          prev.top = Math.min(prev.top, box.top);
+          prev.right = Math.max(prev.right, box.right);
+          prev.bottom = Math.max(prev.bottom, box.bottom);
+          continue;
+        }
+      }
+      out.push(box);
+    }
+    return out;
+  }
+
+  function bookIsVertical() {
+    var root = document.querySelector('.book-content');
+    return !!root && /vertical/.test(getComputedStyle(root).writingMode);
+  }
+
+  /* Boxes behind the text only show if nothing between the book and the
+   * page root paints a background. */
+  function canDrawBehind() {
+    var root = document.querySelector('.book-content');
+    for (var el = root; el && el !== document.body; el = el.parentElement) {
+      var cs = getComputedStyle(el);
+      var bg = cs.backgroundColor;
+      if (cs.backgroundImage !== 'none' || !(bg === 'transparent' || /rgba\(.*,\s*0\)$/.test(bg))) {
+        return false;
+      }
+    }
+    return !!root;
+  }
+
+  function layer(id, z) {
+    var el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.setAttribute('aria-hidden', 'true');
+      el.style.cssText =
+        'position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:' + z;
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function drawBoxes(target, ranges, fill, vertical) {
+    var rects = [];
+    for (var i = 0; i < ranges.length; i++) {
+      var list = ranges[i].getClientRects();
+      for (var j = 0; j < list.length; j++) {
+        rects.push(list[j]);
+      }
+    }
+    var boxes = mergeRects(rects, vertical);
+    var html = '';
+    for (var k = 0; k < boxes.length; k++) {
+      var b = boxes[k];
+      var padX = vertical ? 0 : PAD;
+      var padY = vertical ? PAD : 0;
+      html +=
+        '<div style="position:absolute;left:' + (b.left - padX) + 'px;top:' + (b.top - padY) +
+        'px;width:' + (b.right - b.left + padX * 2) + 'px;height:' + (b.bottom - b.top + padY * 2) +
+        'px;border-radius:' + RADIUS + 'px;background:' + fill + '"></div>';
+    }
+    target.innerHTML = html;
+  }
+
+  var redrawQueued = false;
+  function redraw() {
+    if (redrawQueued) {
+      return;
+    }
+    redrawQueued = true;
+    requestAnimationFrame(function () {
+      redrawQueued = false;
+      if (word && word.layer) {
+        drawBoxes(word.layer, word.ranges, HIGHLIGHT_FILL, word.vertical);
+      }
+      if (flashState) {
+        drawBoxes(flashState.layer, flashState.ranges, flashState.fill, flashState.vertical);
+      }
+    });
+  }
+
+  /* Page turns scroll ッツ's container, so boxes follow the text. */
+  window.addEventListener('scroll', function () {
+    if (word || flashState) {
+      redraw();
+    }
+  }, { capture: true, passive: true });
+  window.addEventListener('resize', function () {
+    if (word || flashState) {
+      redraw();
+    }
+  }, { passive: true });
 
   /* Highlights [start, start + length) of the last tapped paragraph. */
   jdj.highlight = function (start, length, wordMode) {
@@ -221,20 +386,79 @@
       endNode = nodes[nodes.length - 1];
       endOffset = endNode.textContent.length;
     }
-    var range = document.createRange();
-    range.setStart(startNode, startOffset);
-    if (wordMode && typeof range.expand === 'function') {
-      range.setEnd(startNode, Math.min(startOffset + 1, startNode.textContent.length));
-      range.expand('word');
-    } else {
-      range.setEnd(endNode, endOffset);
+    if (wordMode) {
+      var probe = document.createRange();
+      probe.setStart(startNode, startOffset);
+      probe.setEnd(startNode, Math.min(startOffset + 1, startNode.textContent.length));
+      if (typeof probe.expand === 'function') {
+        probe.expand('word');
+        if (nodes.indexOf(probe.startContainer) >= 0 && nodes.indexOf(probe.endContainer) >= 0) {
+          startNode = probe.startContainer;
+          startOffset = probe.startOffset;
+          endNode = probe.endContainer;
+          endOffset = probe.endOffset;
+        }
+      }
     }
-    var selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
+
+    jdj.clearSelection();
+    var ranges = piecesBetween(nodes, startNode, startOffset, endNode, endOffset);
+    if (!ranges.length) {
+      return;
+    }
+    word = { ranges: ranges, layer: null, vertical: bookIsVertical() };
+    if (hasHighlightApi) {
+      var behind = canDrawBehind();
+      highlightStyle(behind);
+      var highlight = new Highlight();
+      ranges.forEach(function (r) {
+        highlight.add(r);
+      });
+      CSS.highlights.set('jdj-word', highlight);
+      if (behind) {
+        word.layer = layer('jdj-word-layer', -1);
+        drawBoxes(word.layer, ranges, HIGHLIGHT_FILL, word.vertical);
+      }
+    } else {
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(ranges[0]);
+    }
+  };
+
+  var HIGHLIGHT_STYLE_ID = 'jdj-word-style';
+  function highlightStyle(behind) {
+    var style = document.getElementById(HIGHLIGHT_STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = HIGHLIGHT_STYLE_ID;
+      document.head.appendChild(style);
+    }
+    style.textContent = behind
+      ? '::highlight(jdj-word){color:#fff}'
+      : '::highlight(jdj-word){color:#fff;background-color:' + HIGHLIGHT_FILL + '}';
+  }
+
+  /* The highlighted text, for checks. */
+  jdj.highlightedText = function () {
+    if (!word) {
+      return '';
+    }
+    return word.ranges.map(function (r) {
+      return r.toString();
+    }).join('');
   };
 
   jdj.clearSelection = function () {
+    if (word) {
+      if (word.layer) {
+        word.layer.innerHTML = '';
+      }
+      if (hasHighlightApi) {
+        CSS.highlights.delete('jdj-word');
+      }
+      word = null;
+    }
     var selection = window.getSelection();
     if (selection && !selection.isCollapsed) {
       selection.removeAllRanges();
@@ -351,6 +575,7 @@
   /* ---------- landing highlight after a jump ---------- */
 
   var FLASH_STYLE_ID = 'jdj-flash-style';
+  var flashState = null;
 
   function flashStyle(alpha) {
     var style = document.getElementById(FLASH_STYLE_ID);
@@ -427,6 +652,23 @@
           return Promise.resolve(false);
         }
         return sleep(250).then(run);
+      }
+      /* Rounded boxes that fade out in one CSS transition. */
+      if (canDrawBehind()) {
+        var target = layer('jdj-flash-layer', -1);
+        target.style.transition = 'none';
+        target.style.opacity = '1';
+        flashState = { layer: target, ranges: [range], fill: 'rgba(244,67,54,0.34)', vertical: bookIsVertical() };
+        drawBoxes(target, flashState.ranges, flashState.fill, flashState.vertical);
+        return sleep(900).then(function () {
+          target.style.transition = 'opacity 700ms ease-out';
+          target.style.opacity = '0';
+          return sleep(720);
+        }).then(function () {
+          target.innerHTML = '';
+          flashState = null;
+          return true;
+        });
       }
       CSS.highlights.set('jdj-flash', new Highlight(range));
       var steps = [0.34, 0.34, 0.34, 0.3, 0.24, 0.18, 0.12, 0.06, 0];

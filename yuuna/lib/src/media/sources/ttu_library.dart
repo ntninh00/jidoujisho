@@ -230,6 +230,13 @@ class TtuLibrary {
 
   static String? _libraryScript;
   static String? _readerScript;
+  static String? _fitScript;
+
+  /// Keeps wide formulas, tables and code inside the page. Runs before ッツ.
+  static Future<String> get fitScript async {
+    return _fitScript ??= await rootBundle
+        .loadString('assets/ttu-ebook-reader/jidoujisho/fit.js');
+  }
 
   /// The library bridge script.
   static Future<String> get libraryScript async {

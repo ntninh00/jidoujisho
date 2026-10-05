@@ -9,7 +9,7 @@ class DictionaryMediaType extends MediaType {
   DictionaryMediaType._privateConstructor()
       : super(
           uniqueKey: 'dictionary_media_type',
-          icon: Ui.auto_stories_rounded,
+          icon: Ui.dictionarySolid,
           outlinedIcon: Ui.auto_stories_outlined,
         );
 
