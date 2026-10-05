@@ -3,31 +3,94 @@ import 'dart:convert';
 import 'package:isar/isar.dart';
 import 'package:yuuna/dictionary.dart';
 
-/// A word the user defined, as listed in My words.
+/// Where a term was saved from: the book, the place in it, and the text
+/// that was selected, so the term can lead back there.
+class TermOrigin {
+  /// Describe where a term was saved from.
+  const TermOrigin({
+    required this.bookKey,
+    required this.bookTitle,
+    this.characters = 0,
+    this.progress = 0,
+    this.excerpt = '',
+  });
+
+  /// The book's key, see `TtuBook.key`.
+  final String bookKey;
+
+  /// The book's title when the term was saved.
+  final String bookTitle;
+
+  /// ッツ's character position of the place.
+  final int characters;
+
+  /// The place as a fraction of the book.
+  final double progress;
+
+  /// The text selected or looked up there.
+  final String excerpt;
+
+  /// Whether the place in the book is known.
+  bool get hasPlace => characters > 0 || progress > 0;
+
+  /// Stored in the entry's spare field.
+  String toJson() => jsonEncode({
+        'book': bookKey,
+        'title': bookTitle,
+        'c': characters,
+        'p': progress,
+        'x': excerpt,
+      });
+
+  /// Reads an origin stored by [toJson], or null.
+  static TermOrigin? fromJson(String? text) {
+    if (text == null || text.isEmpty) {
+      return null;
+    }
+    try {
+      Map<String, dynamic> map = jsonDecode(text) as Map<String, dynamic>;
+      return TermOrigin(
+        bookKey: map['book'] as String,
+        bookTitle: (map['title'] as String?) ?? '',
+        characters: (map['c'] as num?)?.toInt() ?? 0,
+        progress: (map['p'] as num?)?.toDouble() ?? 0,
+        excerpt: (map['x'] as String?) ?? '',
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+/// A term the user defined, as listed in My terms.
 class MyWord {
-  /// Describe a word the user defined.
+  /// Describe a term the user defined.
   const MyWord({
     required this.entryId,
     required this.term,
     required this.reading,
     required this.meaning,
+    this.origin,
   });
 
   /// The dictionary entry holding the meaning.
   final int entryId;
 
-  /// The word or phrase, such as `RAG`.
+  /// The term, such as `SaaS`.
   final String term;
 
   /// An optional reading, used for Japanese.
   final String reading;
 
-  /// What the user wrote, one line per definition.
+  /// What the user wrote, one line per definition. May be empty.
   final String meaning;
+
+  /// The book it was saved from, if any.
+  final TermOrigin? origin;
 }
 
-/// The user's own dictionary. Words added here are ordinary dictionary
-/// entries, so every search finds them, and they are listed first.
+/// The user's own dictionary, My terms. Terms added here are ordinary
+/// dictionary entries, so every search finds them, and they are listed first.
 class MyWords {
   MyWords._();
 
@@ -35,35 +98,92 @@ class MyWords {
   static const int dictionaryId = 4000000000001;
 
   /// Shown as the dictionary name above each meaning.
-  static const String dictionaryName = 'My words';
+  static const String dictionaryName = 'My terms';
+
+  /// The name used before terms were called terms.
+  static const String _oldDictionaryName = 'My words';
 
   /// Meanings are stored as plain structured content strings.
   static const String formatKey = 'yomichan';
 
-  /// One definition per non-empty line. Each line is stored as a JSON string
-  /// so it is shown as text, never read as HTML.
-  static List<String> definitionsOf(String meaning) => meaning
-      .split('\n')
-      .map((line) => line.trim())
-      .where((line) => line.isNotEmpty)
-      .map(jsonEncode)
-      .toList();
-
-  /// The meaning as the user wrote it.
-  static String meaningOf(DictionaryEntry entry) {
-    return entry.definitions.map((definition) {
-      try {
-        Object? value = jsonDecode(definition);
-        return value is String ? value : definition;
-      } catch (_) {
-        return definition;
-      }
-    }).join('\n');
+  /// Splits a selection written as "software as a service (SaaS)" or
+  /// "RAG (retrieval-augmented generation)" into the term and its meaning.
+  /// The shorter side is the term. Null when the text has no such form.
+  static ({String term, String meaning})? split(String selection) {
+    String text = selection.replaceAll(RegExp(r'\s+'), ' ').trim();
+    RegExpMatch? match =
+        RegExp(r'^(.+?)\s*[(（]([^()（）]+)[)）]\s*[.,;:、。]?$').firstMatch(text);
+    if (match == null) {
+      return null;
+    }
+    String outside = match.group(1)!.trim();
+    String inside = match.group(2)!.trim();
+    if (outside.isEmpty || inside.isEmpty) {
+      return null;
+    }
+    return inside.length <= outside.length
+        ? (term: inside, meaning: outside)
+        : (term: outside, meaning: inside);
   }
 
-  /// The dictionary, if any word was ever added.
+  /// One definition per non-empty line. Each line is stored as a JSON string
+  /// so it is shown as text, never read as HTML. A line naming the book the
+  /// term came from follows, in small italics.
+  static List<String> definitionsOf(String meaning, {String? fromLabel}) => [
+        ...meaning
+            .split('\n')
+            .map((line) => line.trim())
+            .where((line) => line.isNotEmpty)
+            .map(jsonEncode),
+        if (fromLabel != null)
+          jsonEncode({
+            'tag': 'span',
+            'style': {'fontStyle': 'italic', 'fontSize': 'small'},
+            'content': fromLabel,
+          }),
+      ];
+
+  /// The meaning as the user wrote it, without the line naming the book.
+  static String meaningOf(DictionaryEntry entry) {
+    List<String> lines = [];
+    for (String definition in entry.definitions) {
+      try {
+        Object? value = jsonDecode(definition);
+        if (value is String) {
+          lines.add(value);
+        }
+      } catch (_) {
+        lines.add(definition);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  /// The dictionary, if any term was ever added.
   static Dictionary? dictionaryIn(Isar database) =>
       database.dictionarys.getSync(dictionaryId);
+
+  /// Renames the dictionary from My words to My terms, once.
+  static void rename(Isar database) {
+    Dictionary? mine = dictionaryIn(database);
+    if (mine == null || mine.name != _oldDictionaryName) {
+      return;
+    }
+    bool taken = database.dictionarys
+        .where()
+        .findAllSync()
+        .any((dictionary) => dictionary.name == dictionaryName);
+    database.writeTxnSync(() {
+      database.dictionarys.putSync(Dictionary(
+        id: mine.id,
+        name: taken ? '$dictionaryName (jidoujisho)' : dictionaryName,
+        formatKey: mine.formatKey,
+        order: mine.order,
+        hiddenLanguages: mine.hiddenLanguages,
+        collapsedLanguages: mine.collapsedLanguages,
+      ));
+    });
+  }
 
   /// Creates the dictionary as the first one. Call inside a write transaction.
   static Dictionary _ensure(Isar database) {
@@ -91,7 +211,17 @@ class MyWords {
     return mine;
   }
 
-  /// Every word, newest first.
+  static MyWord _wordOf(DictionaryEntry entry, DictionaryHeading? heading) {
+    return MyWord(
+      entryId: entry.id!,
+      term: heading?.term ?? '',
+      reading: heading?.reading ?? '',
+      meaning: meaningOf(entry),
+      origin: TermOrigin.fromJson(entry.extra),
+    );
+  }
+
+  /// Every term, newest first.
   static List<MyWord> all(Isar database) {
     Dictionary? dictionary = dictionaryIn(database);
     if (dictionary == null) {
@@ -102,17 +232,19 @@ class MyWords {
 
     return entries.map((entry) {
       entry.heading.loadSync();
-      DictionaryHeading? heading = entry.heading.value;
-      return MyWord(
-        entryId: entry.id!,
-        term: heading?.term ?? '',
-        reading: heading?.reading ?? '',
-        meaning: meaningOf(entry),
-      );
+      return _wordOf(entry, entry.heading.value);
     }).toList();
   }
 
-  /// The word the user defined for [heading], if any.
+  /// Terms saved from the book with [bookKey], in reading order.
+  static List<MyWord> fromBook(Isar database, String bookKey) {
+    return all(database)
+        .where((word) => word.origin?.bookKey == bookKey)
+        .toList()
+      ..sort((a, b) => a.origin!.characters.compareTo(b.origin!.characters));
+  }
+
+  /// The term the user defined for [heading], if any.
   static MyWord? forHeading(Isar database, DictionaryHeading heading) {
     if (dictionaryIn(database) == null) {
       return null;
@@ -124,22 +256,20 @@ class MyWords {
     if (entry == null) {
       return null;
     }
-    return MyWord(
-      entryId: entry.id!,
-      term: heading.term,
-      reading: heading.reading,
-      meaning: meaningOf(entry),
-    );
+    return _wordOf(entry, heading);
   }
 
-  /// Adds a word, or replaces the entry [replaceEntryId]. An edit is stored
+  /// Adds a term, or replaces the entry [replaceEntryId]. An edit is stored
   /// as a new entry so no cached rendering of the old meaning is shown.
+  /// [fromLabel] is shown under the meaning, such as "From Some Book".
   static int save(
     Isar database, {
     required String term,
-    required String meaning,
+    String meaning = '',
     String reading = '',
     int? replaceEntryId,
+    TermOrigin? origin,
+    String? fromLabel,
   }) {
     return database.writeTxnSync(() {
       Dictionary mine = _ensure(database);
@@ -156,8 +286,9 @@ class MyWords {
       }
 
       DictionaryEntry entry = DictionaryEntry(
-        definitions: definitionsOf(meaning),
+        definitions: definitionsOf(meaning, fromLabel: fromLabel),
         popularity: 0,
+        extra: origin?.toJson(),
       );
       entry.heading.value = heading;
       entry.dictionary.value = mine;
@@ -165,7 +296,7 @@ class MyWords {
     });
   }
 
-  /// Removes a word.
+  /// Removes a term.
   static void delete(Isar database, int entryId) {
     database.writeTxnSync(() => _delete(database, entryId));
   }
@@ -179,7 +310,7 @@ class MyWords {
     DictionaryHeading? heading = entry.heading.value;
     database.dictionaryEntrys.deleteSync(entryId);
 
-    /// A heading made only for this word goes with it.
+    /// A heading made only for this term goes with it.
     if (heading != null &&
         heading.entries.countSync() == 0 &&
         heading.pitches.countSync() == 0 &&
@@ -188,7 +319,7 @@ class MyWords {
     }
   }
 
-  /// Moves headings the user defined in My words to the front, keeping the
+  /// Moves headings the user defined in My terms to the front, keeping the
   /// order of the rest.
   static List<int> putFirst(Isar database, List<int> headingIds) {
     if (headingIds.length < 2 || dictionaryIn(database) == null) {

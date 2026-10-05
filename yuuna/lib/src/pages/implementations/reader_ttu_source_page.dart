@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:ui' show FontFeature;
 
+import 'package:collection/collection.dart';
 import 'package:document_file_save_plus/document_file_save_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +12,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_assets_server/local_assets_server.dart';
 import 'package:spaces/spaces.dart';
 import 'package:wakelock/wakelock.dart';
+import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
@@ -70,6 +71,12 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   bool _leaving = false;
   int _lookupSerial = 0;
 
+  /// The reader went back from a memo or term to its own place.
+  bool _wentBack = false;
+
+  /// This visit is to a memo or term: ッツ's saved place stays as it was.
+  bool get _keepPlace => (_launch?.keepPlace ?? false) && !_wentBack;
+
   @override
   void initState() {
     super.initState();
@@ -99,7 +106,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _settingsScript = mediaSource.settingsScriptFor(
       _language,
       darkMode: appModelNoUpdate.isDarkMode,
+      keepPlace: _launch?.keepPlace ?? false,
     );
+    mediaSource.termOrigin = _termOrigin;
     await appModelNoUpdate.setSessionLanguage(_language);
     if (!mediaSource.keepScreenOn) {
       await Wakelock.disable();
@@ -111,6 +120,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
 
   @override
   void dispose() {
+    if (mediaSource.termOrigin == _termOrigin) {
+      mediaSource.termOrigin = null;
+    }
     WidgetsBinding.instance.removeObserver(this);
     _backChipTimer?.cancel();
     _maskVisible.dispose();
@@ -185,7 +197,11 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _leaving = true;
 
     TtuPosition? saved;
-    if (mediaSource.autoSavePosition) {
+    bool keptPlace = _keepPlace;
+    if (keptPlace) {
+      await _restorePlace()
+          .timeout(const Duration(milliseconds: 1500), onTimeout: () {});
+    } else if (mediaSource.autoSavePosition) {
       saved = await _savePosition()
           .timeout(const Duration(milliseconds: 1500), onTimeout: () => null);
     }
@@ -200,12 +216,62 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       item: widget.item,
     );
 
-    if (saved != null) {
+    TtuLaunch? launch = _launch;
+    if (keptPlace && launch != null) {
+      Fluttertoast.showToast(
+        msg: t.ttu_place_kept(position: ttuPercent(launch.book.progress)),
+      );
+    } else if (saved != null) {
       Fluttertoast.showToast(
         msg: t.ttu_saved_place(position: ttuPercent(saved.progress)),
       );
     }
     return true;
+  }
+
+  /// Puts ッツ's saved place back to where the reader was before this visit
+  /// to a memo or term.
+  Future<void> _restorePlace() async {
+    TtuLaunch? launch = _launch;
+    if (launch == null) {
+      return;
+    }
+    try {
+      await _controller?.callAsyncJavaScript(
+        functionBody: 'return window.__jdj ? await window.__jdj.writePosition('
+            '${launch.book.exploredCharCount}, ${launch.book.progress}) : null;',
+      );
+    } catch (error) {
+      debugPrint('Could not keep place: $error');
+    }
+  }
+
+  /// The position on screen. On a visit to a memo or term, ッツ's saved
+  /// place is put back afterwards.
+  Future<TtuPosition?> _capturePosition() async {
+    TtuPosition? position = await _savePosition();
+    if (_keepPlace) {
+      await _restorePlace();
+    }
+    return position;
+  }
+
+  /// Where a term saved now comes from: this book, this place, and
+  /// [excerpt], the text it was taken from.
+  Future<TermOrigin?> _termOrigin(String excerpt) async {
+    TtuBook? book = await _currentBook();
+    if (book == null) {
+      return null;
+    }
+    TtuPosition? position = await _capturePosition();
+    String sentence = mediaSource.currentSentence.text.trim();
+    return TermOrigin(
+      bookKey: book.key,
+      bookTitle: book.title,
+      characters: position?.characters ?? 0,
+      progress: position?.progress ?? 0,
+      excerpt: excerpt.isNotEmpty ? excerpt : sentence,
+    );
   }
 
   /// Presses ッツ's own bookmark key and reads back the saved position.
@@ -590,6 +656,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     }
     _backChipTimer?.cancel();
     _backChip.value = null;
+    _wentBack = true;
     mediaSource.returnPositions.remove(launch.book.key);
     setState(() {
       _maskKind = _MaskKind.returning;
@@ -852,6 +919,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _maskVisible.value = false;
 
     TtuLaunch? launch = _launch;
+    if (_keepPlace) {
+      await _restorePlace();
+    }
     String? excerpt = launch?.excerpt;
     if (_flashPending && excerpt != null) {
       _flashPending = false;
@@ -1111,25 +1181,71 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     );
   }
 
-  /// Opens My words with the selected text as the word.
+  /// Adds the selected text to My terms. Text written like "software as a
+  /// service (SaaS)" is saved at once, as SaaS with that meaning; anything
+  /// else opens the editor with the term filled in.
   void addWordMenuAction() async {
-    String term = await getSelectedText();
-    await unselectWebViewTextSelection();
-    if (term.isEmpty) {
+    String selected = (await getSelectedText()).replaceAll(RegExp(r'\s+'), ' ');
+    if (selected.isEmpty) {
       return;
     }
+    TermOrigin? origin = await _termOrigin(selected);
+    await unselectWebViewTextSelection();
     if (!mounted) {
       return;
     }
+
+    ({String term, String meaning})? split = MyWords.split(selected);
+    if (split != null) {
+      int entryId = appModel.saveMyWord(
+        term: split.term,
+        meaning: split.meaning,
+        origin: origin,
+      );
+      _showSavedTerm(split.term, entryId);
+      return;
+    }
+
     _isRecursiveSearching = true;
     await showMyWordEditor(
       context: context,
       appModel: appModel,
-      term: term,
+      term: selected,
+      origin: origin,
     );
     _isRecursiveSearching = false;
     await appModel.applyMediaSystemUi();
     _focusNode.requestFocus();
+  }
+
+  /// Confirms a term saved in one tap, with a way to edit it.
+  void _showSavedTerm(String term, int entryId) {
+    ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(t.my_terms_saved_term(term: term)),
+        action: SnackBarAction(
+          label: t.my_terms_edit,
+          onPressed: () async {
+            MyWord? saved = appModel.myWords
+                .firstWhereOrNull((word) => word.entryId == entryId);
+            if (saved == null || !mounted) {
+              return;
+            }
+            _isRecursiveSearching = true;
+            await showMyWordEditor(
+              context: context,
+              appModel: appModel,
+              existing: saved,
+            );
+            _isRecursiveSearching = false;
+            await appModel.applyMediaSystemUi();
+            _focusNode.requestFocus();
+          },
+        ),
+      ),
+    );
   }
 
   /// The book on screen, as far as the page knows it.
@@ -1165,7 +1281,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       return;
     }
 
-    TtuPosition? position = await _savePosition();
+    TtuPosition? position = await _capturePosition();
     await unselectWebViewTextSelection();
     if (!mounted) {
       return;

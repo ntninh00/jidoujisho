@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
@@ -42,13 +43,29 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
     super.dispose();
   }
 
-  void _open(TtuBook book, {ReaderMemo? memo, TtuPosition? returnTo}) {
+  void _open(
+    TtuBook book, {
+    ReaderMemo? memo,
+    MyWord? term,
+    TtuPosition? returnTo,
+  }) {
     mediaSource.openBook(
       appModel: appModelNoUpdate,
       ref: ref,
       book: book,
       memo: memo,
+      term: term,
       returnTo: returnTo,
+    );
+  }
+
+  void _showTerms(TtuBook book) {
+    showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuBookTermsSheet(
+        book: book,
+        onOpen: (term) => _open(book, term: term),
+      ),
     );
   }
 
@@ -77,6 +94,11 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
         onMemos: () {
           Navigator.pop(sheetContext);
           _showMemos(book);
+        },
+        termCount: appModelNoUpdate.myTermsFromBook(book.key).length,
+        onTerms: () {
+          Navigator.pop(sheetContext);
+          _showTerms(book);
         },
         onEdit: () async {
           Navigator.pop(sheetContext);
@@ -214,7 +236,6 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                     key: ValueKey(books[index].key),
                     book: books[index],
                     memos: memosByBook[books[index].key] ?? const [],
-
                     onOpen: () => _open(books[index]),
                     onDetails: () => _showDetails(
                       books[index],
@@ -489,7 +510,6 @@ class _BookTileState extends BasePageState<_BookTile> {
                 ),
               ),
             ),
-
             Material(
               type: MaterialType.transparency,
               child: InkWell(

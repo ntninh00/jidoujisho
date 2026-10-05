@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_assets_server/local_assets_server.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
+import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
@@ -151,6 +152,11 @@ class ReaderTtuSource extends ReaderMediaSource {
 
   TtuLaunch? _pendingLaunch;
 
+  /// Set while a book is open: where a term saved now comes from, so the
+  /// popup's My terms button can record the book and place. The argument is
+  /// the text it was taken from, or empty for the sentence looked up.
+  Future<TermOrigin?> Function(String excerpt)? termOrigin;
+
   /// Takes what the reader should do when it opens, if anything.
   TtuLaunch? takePendingLaunch() {
     TtuLaunch? launch = _pendingLaunch;
@@ -233,34 +239,53 @@ class ReaderTtuSource extends ReaderMediaSource {
     required WidgetRef ref,
     required TtuBook book,
     ReaderMemo? memo,
+    MyWord? term,
     TtuPosition? returnTo,
   }) async {
     TtuPosition? target;
     TtuPosition? back;
+    String? excerpt;
+    String? note;
+    TermOrigin? origin = term?.origin;
 
     if (memo != null) {
       target = TtuPosition(
         characters: memo.exploredCharCount,
         progress: memo.progress,
       );
-      if ((book.exploredCharCount - memo.exploredCharCount).abs() > 200) {
-        back = TtuPosition(
-          characters: book.exploredCharCount,
-          progress: book.progress,
-        );
-        returnPositions[book.key] = back;
-      }
+      excerpt = memo.excerpt;
+      note = memo.memo;
+    } else if (term != null && origin != null && origin.hasPlace) {
+      target = TtuPosition(
+        characters: origin.characters,
+        progress: origin.progress,
+      );
+      excerpt = origin.excerpt;
+      note =
+          term.meaning.isEmpty ? term.term : '${term.term} · ${term.meaning}';
     } else if (returnTo != null) {
       target = returnTo;
       returnPositions.remove(book.key);
     }
 
+    bool visit = target != null && returnTo == null;
+    if (target != null &&
+        visit &&
+        (book.exploredCharCount - target.characters).abs() > 200) {
+      back = TtuPosition(
+        characters: book.exploredCharCount,
+        progress: book.progress,
+      );
+      returnPositions[book.key] = back;
+    }
+
     _pendingLaunch = TtuLaunch(
       book: book,
       target: target,
-      excerpt: memo?.excerpt,
-      memo: memo?.memo,
+      excerpt: excerpt,
+      memo: note,
       returnTo: back,
+      keepPlace: visit,
     );
 
     await appModel.openMedia(
@@ -543,11 +568,16 @@ class ReaderTtuSource extends ReaderMediaSource {
   }
 
   /// Script that applies the page settings for [language] before ッツ loads.
-  /// Without a chosen theme, the page follows the app: dark or light.
-  String settingsScriptFor(Language language, {required bool darkMode}) {
+  /// Without a chosen theme, the page follows the app: dark or light. With
+  /// [keepPlace], ッツ does not save the position by itself.
+  String settingsScriptFor(
+    Language language, {
+    required bool darkMode,
+    bool keepPlace = false,
+  }) {
     TtuPagePreset preset = presetFor(language);
     preset.theme ??= darkMode ? 'dark' : 'light';
-    return preset.toScript(autoBookmark: autoSavePosition);
+    return preset.toScript(autoBookmark: autoSavePosition && !keepPlace);
   }
 
   /// The ッツ theme books in [language] open with.

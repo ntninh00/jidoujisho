@@ -372,35 +372,46 @@ class AppModel with ChangeNotifier {
     });
   }
 
-  /// Changes whenever a word is added to, edited in or removed from My words,
-  /// so open lookups can show it.
+  /// Changes whenever a term is added to, edited in or removed from My
+  /// terms, so open lookups can show it.
   final ValueNotifier<int> myWordsVersion = ValueNotifier(0);
 
-  /// Every word in My words, newest first.
+  /// Every term in My terms, newest first.
   List<MyWord> get myWords => MyWords.all(_database);
 
-  /// The word the user defined for [heading], if any.
+  /// Terms saved from the book with [bookKey], in reading order.
+  List<MyWord> myTermsFromBook(String bookKey) =>
+      MyWords.fromBook(_database, bookKey);
+
+  /// The term the user defined for [heading], if any.
   MyWord? myWordFor(DictionaryHeading heading) =>
       MyWords.forHeading(_database, heading);
 
-  /// Adds a word to My words, or replaces [replaceEntryId] with it.
-  void saveMyWord({
+  /// Adds a term to My terms, or replaces [replaceEntryId] with it. Returns
+  /// the new entry's id.
+  int saveMyWord({
     required String term,
-    required String meaning,
+    String meaning = '',
     String reading = '',
     int? replaceEntryId,
+    TermOrigin? origin,
   }) {
-    MyWords.save(
+    int entryId = MyWords.save(
       _database,
       term: term,
       reading: reading,
       meaning: meaning,
       replaceEntryId: replaceEntryId,
+      origin: origin,
+      fromLabel: origin == null || origin.bookTitle.isEmpty
+          ? null
+          : t.my_terms_from(title: origin.bookTitle),
     );
     _onMyWordsChanged();
+    return entryId;
   }
 
-  /// Removes a word from My words.
+  /// Removes a term from My terms.
   void deleteMyWord(int entryId) {
     MyWords.delete(_database, entryId);
     _onMyWordsChanged();
@@ -1365,6 +1376,7 @@ class AppModel with ChangeNotifier {
       directory: _databaseDirectory.path,
       maxSizeMiB: 8192,
     );
+    MyWords.rename(_database);
 
     /// Preloads the search database in memory.
     searchDictionary(

@@ -650,6 +650,37 @@
     });
   };
 
+  /*
+   * Puts ッツ's saved position back to [characters], [progress] without
+   * moving the page. Used after a visit to a memo or term, so the reader's
+   * own place is kept.
+   */
+  jdj.writePosition = function (characters, progress) {
+    var id = bookId();
+    if (isNaN(id)) {
+      return Promise.resolve(false);
+    }
+    return openBooks().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('bookmark', 'readwrite');
+        tx.objectStore('bookmark').put({
+          dataId: id,
+          exploredCharCount: characters,
+          progress: progress,
+          lastBookmarkModified: Date.now(),
+        });
+        tx.oncomplete = function () {
+          resolve(true);
+        };
+        tx.onerror = function () {
+          reject(tx.error);
+        };
+      }).finally(function () {
+        db.close();
+      });
+    });
+  };
+
   jdj.readPosition = function () {
     var id = bookId();
     if (isNaN(id)) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
+import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
@@ -13,9 +14,9 @@ class MyWordsAction extends QuickAction {
   MyWordsAction()
       : super(
           uniqueKey: key,
-          label: 'My Words',
-          description: 'Write your own meaning for a word. It shows first'
-              ' whenever you look the word up.',
+          label: 'My Terms',
+          description: 'Write your own meaning for a term. It shows first'
+              ' whenever you look the term up.',
           icon: Ui.bookmark,
         );
 
@@ -40,12 +41,20 @@ class MyWordsAction extends QuickAction {
     required DictionaryHeading heading,
     required String? dictionaryName,
   }) async {
+    MyWord? existing = appModel.myWordFor(heading);
+    TermOrigin? origin = existing == null
+        ? await ReaderTtuSource.instance.termOrigin?.call('')
+        : null;
+    if (!context.mounted) {
+      return;
+    }
     await showMyWordEditor(
       context: context,
       appModel: appModel,
       term: heading.term,
       reading: heading.reading,
-      existing: appModel.myWordFor(heading),
+      origin: origin,
+      existing: existing,
     );
   }
 }

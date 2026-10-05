@@ -133,7 +133,12 @@ class TtuLaunch {
     this.excerpt,
     this.memo,
     this.returnTo,
+    this.keepPlace = false,
   });
+
+  /// Opened to look at a memo or term: ッツ's saved reading position is left
+  /// where it was, instead of moving to wherever this visit ends.
+  final bool keepPlace;
 
   /// The book to open.
   final TtuBook book;

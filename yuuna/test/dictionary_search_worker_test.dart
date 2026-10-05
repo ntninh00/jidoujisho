@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
 import 'package:yuuna/dictionary.dart';
@@ -86,6 +88,7 @@ void main() {
     DictionarySearchOutcome outcome = reply!.outcome!;
     int eat = DictionaryHeading.hash(term: '食べる', reading: 'たべる');
     expect(outcome.headingIds.first, eat);
+
     /// 食べたい deinflects to 食べる across all four characters.
     expect(outcome.bestLength, 4);
 
@@ -182,7 +185,8 @@ void main() {
     int entryId = MyWords.save(
       isar,
       term: 'RAG',
-      meaning: 'Retrieval-augmented generation\nLooks things up before answering',
+      meaning:
+          'Retrieval-augmented generation\nLooks things up before answering',
     );
     int mine = DictionaryHeading.hash(term: 'RAG', reading: '');
 
@@ -242,8 +246,82 @@ void main() {
     MyWords.delete(isar, entryId);
   });
 
-  test('English matches whole words, not the start of a longer word',
-      () async {
+  test('a selection like "software as a service (SaaS)" splits into a term',
+      () {
+    expect(MyWords.split('software as a\nservice (SaaS)'),
+        (term: 'SaaS', meaning: 'software as a service'));
+    expect(MyWords.split('RAG (retrieval-augmented generation).'),
+        (term: 'RAG', meaning: 'retrieval-augmented generation'));
+    expect(MyWords.split('サービスとしてのソフトウェア（SaaS）'),
+        (term: 'SaaS', meaning: 'サービスとしてのソフトウェア'));
+    expect(MyWords.split('just a phrase'), isNull);
+  });
+
+  test('terms keep the book they came from, and list by book', () {
+    TermOrigin origin = const TermOrigin(
+      bookKey: '52160/3',
+      bookTitle: 'Designing Data-Intensive Applications',
+      characters: 1200,
+      progress: 0.42,
+      excerpt: 'software as a service (SaaS)',
+    );
+    int first = MyWords.save(
+      isar,
+      term: 'SaaS',
+      meaning: 'software as a service',
+      origin: origin,
+      fromLabel: 'From Designing Data-Intensive Applications',
+    );
+    int second = MyWords.save(
+      isar,
+      term: 'OLTP',
+      origin:
+          const TermOrigin(bookKey: '52160/3', bookTitle: 'D', progress: 0.1),
+    );
+    int other =
+        MyWords.save(isar, term: 'ETL', meaning: 'extract, transform, load');
+
+    List<MyWord> fromBook = MyWords.fromBook(isar, '52160/3');
+    expect(fromBook.map((word) => word.term), ['OLTP', 'SaaS']);
+    MyWord saas = fromBook.last;
+    expect(saas.meaning, 'software as a service');
+    expect(saas.origin!.excerpt, 'software as a service (SaaS)');
+    expect(saas.origin!.characters, 1200);
+    expect(fromBook.first.meaning, isEmpty);
+
+    /// The line naming the book is shown small and in italics.
+    DictionaryEntry entry = isar.dictionaryEntrys.getSync(first)!;
+    dom.Element node = StructuredContent.processContent(
+      jsonDecode(entry.definitions.last),
+    )!
+        .toNode() as dom.Element;
+    String html = node.outerHtml;
+    expect(html, contains('From Designing Data-Intensive Applications'));
+    expect(html, contains('italic'));
+
+    for (int id in [first, second, other]) {
+      MyWords.delete(isar, id);
+    }
+  });
+
+  test('the dictionary called My words is renamed My terms', () {
+    int id = MyWords.save(isar, term: 'X', meaning: 'x');
+    Dictionary mine = isar.dictionarys.getSync(MyWords.dictionaryId)!;
+    isar.writeTxnSync(() {
+      isar.dictionarys.putSync(Dictionary(
+        id: mine.id,
+        name: 'My words',
+        formatKey: mine.formatKey,
+        order: mine.order,
+      ));
+    });
+    MyWords.rename(isar);
+    expect(isar.dictionarys.getSync(MyWords.dictionaryId)!.name, 'My terms');
+    expect(MyWords.all(isar).single.term, 'X');
+    MyWords.delete(isar, id);
+  });
+
+  test('English matches whole words, not the start of a longer word', () async {
     isar.writeTxnSync(() {
       Dictionary dictionary = isar.dictionarys.getSync(1)!;
       DictionaryHeading heading = DictionaryHeading(term: 'boo');

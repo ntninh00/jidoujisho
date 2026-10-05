@@ -973,8 +973,16 @@ class TtuBookDetailsSheet extends BasePage {
     required this.onEdit,
     required this.onDelete,
     this.onLanguage,
+    this.termCount = 0,
+    this.onTerms,
     super.key,
   });
+
+  /// How many terms were saved from the book.
+  final int termCount;
+
+  /// Lists the terms saved from the book.
+  final VoidCallback? onTerms;
 
   /// The book shown.
   final TtuBook book;
@@ -1214,18 +1222,26 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
             ],
           ),
           const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: red,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+              ),
+              onPressed: widget.onRead,
+              icon: const Icon(Ui.play_arrow_rounded, size: 20),
+              label: Text(
+                book.progress > 0 ? t.ttu_continue : t.ttu_read,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(
-                child: _action(
-                  icon: Ui.play_arrow_rounded,
-                  label: book.progress > 0 ? t.ttu_continue : t.ttu_read,
-                  background: red,
-                  foreground: Colors.white,
-                  onTap: widget.onRead,
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: _action(
                   icon: Ui.edit_note,
@@ -1235,6 +1251,18 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
                   onTap: widget.onMemos,
                 ),
               ),
+              if (widget.onTerms != null) ...[
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _action(
+                    icon: Ui.myWords,
+                    label: widget.termCount > 0
+                        ? '${t.ttu_terms} · ${widget.termCount}'
+                        : t.ttu_terms,
+                    onTap: widget.onTerms!,
+                  ),
+                ),
+              ],
               const SizedBox(width: 8),
               Expanded(
                 child: _action(

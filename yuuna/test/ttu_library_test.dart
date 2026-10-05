@@ -35,8 +35,8 @@ void main() {
   const String japanese = '吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。';
 
   test('three-letter language codes such as eng are understood', () async {
-    String path = writeEpub(
-        '<dc:language id="pub-language">eng</dc:language>', english);
+    String path =
+        writeEpub('<dc:language id="pub-language">eng</dc:language>', english);
     expect(await TtuLibrary.detectLanguageCode(path), 'en');
   });
 
