@@ -238,6 +238,15 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     return path.endsWith('/b.html') || path.endsWith('/b');
   }
 
+  /// A text field on top of the reader has the keyboard, such as the My words
+  /// editor opened from the popup. The reader must not take focus back.
+  bool get _someoneIsTyping {
+    BuildContext? focused = FocusManager.instance.primaryFocus?.context;
+    return focused != null &&
+        (focused.widget is EditableText ||
+            focused.findAncestorWidgetOfExactType<EditableText>() != null);
+  }
+
   bool get _openedForBook =>
       widget.item?.mediaIdentifier.contains('/b.html') ?? false;
 
@@ -258,7 +267,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         if (mediaSource.volumePageTurningEnabled &&
             !(ModalRoute.of(context)?.isCurrent ?? false) &&
             !appModel.isCreatorOpen &&
-            !_isRecursiveSearching) {
+            !_isRecursiveSearching &&
+            !_someoneIsTyping) {
           _focusNode.requestFocus();
         }
       },
