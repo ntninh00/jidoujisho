@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:spaces/spaces.dart';
@@ -21,6 +22,7 @@ class DictionaryResultPage extends BasePage {
     this.spaceBeforeFirstResult = true,
     this.footerWidget,
     this.shrinkWrap = false,
+    this.flat = false,
     super.key,
   });
 
@@ -56,6 +58,9 @@ class DictionaryResultPage extends BasePage {
 
   /// Size to the results instead of filling the space, as in the popup.
   final bool shrinkWrap;
+
+  /// Terms without cards, split by thin lines. Used inside the popup.
+  final bool flat;
 
   @override
   BasePageState<DictionaryResultPage> createState() =>
@@ -115,6 +120,8 @@ class _DictionaryResultPageState extends BasePageState<DictionaryResultPage> {
       child: RawScrollbar(
         thumbVisibility: true,
         thickness: 3,
+        radius: const Radius.circular(2),
+        thumbColor: Theme.of(context).unselectedWidgetColor.withOpacity(0.4),
         controller: _scrollController,
         child: Padding(
           padding: Spacing.of(context).insets.onlyRight.extraSmall,
@@ -130,7 +137,9 @@ class _DictionaryResultPageState extends BasePageState<DictionaryResultPage> {
                       ? Spacing.of(context).insets.onlyTop.normal
                       : EdgeInsets.zero),
               ...headings
-                  .map((heading) => DictionaryTermPage(
+                  .mapIndexed((index, heading) => DictionaryTermPage(
+                        flat: widget.flat,
+                        showDivider: index > 0,
                         lastSelectedMapping: lastSelectedMapping,
                         opacity: widget.opacity,
                         cardColor: widget.cardColor,

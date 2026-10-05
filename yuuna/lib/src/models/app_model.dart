@@ -459,6 +459,10 @@ class AppModel with ChangeNotifier {
         labelSmall: textStyle,
       );
 
+  /// The accent used across the app. Themes and widgets read it from
+  /// [ColorScheme.primary]; change it here to change the accent everywhere.
+  static const Color accentColor = Colors.red;
+
   /// Shows when the current mode is a light theme.
   ThemeData get theme => ThemeData(
         scaffoldBackgroundColor: Colors.white,
@@ -473,12 +477,12 @@ class AppModel with ChangeNotifier {
         switchTheme: SwitchThemeData(
           thumbColor: MaterialStateColor.resolveWith((states) {
             return states.contains(MaterialState.selected)
-                ? Colors.red
+                ? accentColor
                 : Colors.white;
           }),
           trackColor: MaterialStateColor.resolveWith((states) {
             return states.contains(MaterialState.selected)
-                ? Colors.red.withOpacity(0.5)
+                ? accentColor.withOpacity(0.5)
                 : Colors.grey;
           }),
         ),
@@ -534,7 +538,7 @@ class AppModel with ChangeNotifier {
             ),
           ),
           focusedBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.red),
+            borderSide: BorderSide(color: accentColor),
           ),
         ),
         scrollbarTheme: ScrollbarThemeData(
@@ -542,8 +546,8 @@ class AppModel with ChangeNotifier {
           thumbVisibility: MaterialStateProperty.all(true),
         ),
         sliderTheme: const SliderThemeData(
-          thumbColor: Colors.red,
-          activeTrackColor: Colors.red,
+          thumbColor: accentColor,
+          activeTrackColor: accentColor,
           inactiveTrackColor: Colors.grey,
           trackShape: RectangularSliderTrackShape(),
           trackHeight: 2,
@@ -551,8 +555,8 @@ class AppModel with ChangeNotifier {
         ),
         colorScheme: ColorScheme.fromSwatch()
             .copyWith(
-              primary: Colors.red,
-              secondary: Colors.red,
+              primary: accentColor,
+              secondary: accentColor,
               brightness: Brightness.light,
             )
             .copyWith(background: Colors.white),
@@ -565,12 +569,12 @@ class AppModel with ChangeNotifier {
         switchTheme: SwitchThemeData(
           thumbColor: MaterialStateColor.resolveWith((states) {
             return states.contains(MaterialState.selected)
-                ? Colors.red
+                ? accentColor
                 : Colors.grey;
           }),
           trackColor: MaterialStateColor.resolveWith((states) {
             return states.contains(MaterialState.selected)
-                ? Colors.red.withOpacity(0.5)
+                ? accentColor.withOpacity(0.5)
                 : Colors.grey;
           }),
         ),
@@ -632,15 +636,15 @@ class AppModel with ChangeNotifier {
             ),
           ),
           focusedBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.red),
+            borderSide: BorderSide(color: accentColor),
           ),
         ),
         scrollbarTheme: ScrollbarThemeData(
           thumbVisibility: MaterialStateProperty.all(true),
         ),
         sliderTheme: const SliderThemeData(
-          thumbColor: Colors.red,
-          activeTrackColor: Colors.red,
+          thumbColor: accentColor,
+          activeTrackColor: accentColor,
           inactiveTrackColor: Colors.grey,
           trackShape: RectangularSliderTrackShape(),
           trackHeight: 2,
@@ -648,8 +652,8 @@ class AppModel with ChangeNotifier {
         ),
         colorScheme: ColorScheme.fromSwatch()
             .copyWith(
-              primary: Colors.red,
-              secondary: Colors.red,
+              primary: accentColor,
+              secondary: accentColor,
               brightness: Brightness.dark,
             )
             .copyWith(background: Colors.black),

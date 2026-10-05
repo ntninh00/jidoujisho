@@ -53,11 +53,11 @@ class _DictionaryEntryPageState extends ConsumerState<DictionaryEntryPage> {
       ),
       child: ExpandablePanel(
         theme: ExpandableThemeData(
-          iconPadding: EdgeInsets.zero,
-          iconSize: Theme.of(context).textTheme.titleLarge?.fontSize,
+          iconPadding: const EdgeInsets.only(left: 4, right: 2),
+          iconSize: 16,
           iconRotationAngle: 0,
-          expandIcon: Ui.arrow_drop_down,
-          collapseIcon: Ui.arrow_drop_down,
+          expandIcon: Ui.angleRight,
+          collapseIcon: Ui.angleDown,
           iconColor: Theme.of(context).unselectedWidgetColor,
           headerAlignment: ExpandablePanelHeaderAlignment.center,
         ),
@@ -139,9 +139,9 @@ class _DictionaryEntryTagsWrap extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     Dictionary dictionary = entry.dictionary.value!;
     List<Widget> children = [
-      JidoujishoTag(
+      JidoujishoTag.dictionary(
+        context: context,
         text: dictionary.name,
-        backgroundColor: Colors.red.shade900,
       ),
       ...entry.tags.map((tag) {
         return JidoujishoTag(
@@ -160,13 +160,14 @@ class _DictionaryEntryTagsWrap extends ConsumerWidget {
         children: [
           Flexible(child: last),
           SizedBox(
-            height: 22,
-            width: 22,
+            height: 24,
+            width: 24,
             child: PopupMenuButton<VoidCallback>(
-              iconSize: 16,
+              iconSize: 14,
               padding: EdgeInsets.zero,
+              splashRadius: 14,
               icon: Icon(
-                Ui.more_vert,
+                Ui.menuDots,
                 color: Theme.of(context).unselectedWidgetColor,
               ),
               color: Theme.of(context).popupMenuTheme.color,

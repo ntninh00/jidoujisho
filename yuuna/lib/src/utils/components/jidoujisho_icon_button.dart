@@ -165,8 +165,11 @@ class _JidoujishoIconButtonState extends State<JidoujishoIconButton> {
               }
             : null,
         onTapDown: widget.onTapDown,
-        child: ColoredBox(
-          color: widget.backgroundColor ?? Colors.transparent,
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            color: widget.backgroundColor ?? Colors.transparent,
+            shape: widget.shapeBorder,
+          ),
           child: Padding(
             padding: widget.padding ?? const EdgeInsets.all(8),
             child: Icon(

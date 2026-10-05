@@ -440,6 +440,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           spaceBeforeFirstResult: false,
           footerWidget: footerWidget,
           shrinkWrap: true,
+          flat: true,
         );
       },
     );
@@ -454,8 +455,12 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     return SliverToBoxAdapter(
       child: Padding(
         padding: Spacing.of(context).insets.all.small,
-        child: Tooltip(
-          message: t.show_more,
+        child: Material(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: _isSearchingNotifier.value
                 ? null
@@ -468,10 +473,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
                               appModel.maximumTerms,
                     );
                   },
-            child: Container(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.black.withOpacity(0.05),
+            child: SizedBox(
               width: double.maxFinite,
               child: Padding(
                 padding: Spacing.of(context).insets.all.normal,

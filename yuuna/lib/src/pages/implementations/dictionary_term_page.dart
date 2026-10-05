@@ -28,6 +28,8 @@ class DictionaryTermPage extends ConsumerWidget {
     this.cardColor,
     this.opacity = 1,
     this.footerWidget,
+    this.flat = false,
+    this.showDivider = false,
     super.key,
   });
 
@@ -61,6 +63,13 @@ class DictionaryTermPage extends ConsumerWidget {
   /// Opacity for entries.
   final double opacity;
 
+  /// Draws the term straight on the surface behind it instead of on a card,
+  /// as in the popup, which is already a card.
+  final bool flat;
+
+  /// A thin line above the term, between flat terms.
+  final bool showDivider;
+
   /// Last selected mapping for optimisation purposes. Not including this
   /// before caused rendering jank as database queries were performed multiple
   /// times for getting this value.
@@ -84,18 +93,30 @@ class DictionaryTermPage extends ConsumerWidget {
 
     return SliverStack(
       children: [
-        SliverPositioned.fill(
-          child: Card(
-            color: cardColor?.withOpacity(opacity) ??
-                (appModel.isDarkMode
-                    ? Color.fromRGBO(16, 16, 16, opacity)
-                    : Color.fromRGBO(249, 249, 249, opacity)),
-            elevation: 0,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
+        if (flat && showDivider)
+          SliverPositioned(
+            top: 0,
+            left: 12,
+            right: 12,
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: Theme.of(context).dividerColor.withOpacity(0.25),
             ),
           ),
-        ),
+        if (!flat)
+          SliverPositioned.fill(
+            child: Card(
+              color: cardColor?.withOpacity(opacity) ??
+                  (appModel.isDarkMode
+                      ? Color.fromRGBO(16, 16, 16, opacity)
+                      : Color.fromRGBO(249, 249, 249, opacity)),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          ),
         SliverPadding(
           padding: EdgeInsets.only(
             left: Spacing.of(context).spaces.semiBig,
@@ -258,18 +279,24 @@ class _DictionaryTermActionsRowState
         Color defaultColor = Theme.of(context).brightness == Brightness.dark
             ? Colors.white
             : Colors.black;
-        enabledColor = colors[quickAction.uniqueKey] ?? defaultColor;
+        Color? active = colors[quickAction.uniqueKey];
+        enabledColor = active != null
+            ? Theme.of(context).colorScheme.primary
+            : defaultColor;
         button = Padding(
-          padding: Spacing.of(context).insets.onlyLeft.semiSmall,
+          padding: const EdgeInsets.only(left: 6),
           child: JidoujishoIconButton(
             busy: true,
             enabledColor: enabledColor,
             disabledColor: enabledColor.withOpacity(0.5),
-            shapeBorder: const RoundedRectangleBorder(),
+            shapeBorder: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10)),
+            ),
             backgroundColor: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white.withOpacity(0.05)
+                ? Colors.white.withOpacity(0.07)
                 : Colors.black.withOpacity(0.05),
-            size: Spacing.of(context).spaces.semiBig,
+            padding: const EdgeInsets.all(8),
+            size: 18,
             tooltip: quickAction.getLocalisedLabel(appModel),
             icon: quickAction.icon,
             onTap: () async {
@@ -355,9 +382,9 @@ class _DictionaryTermPitchList extends ConsumerWidget {
             children: [
               Padding(
                 padding: Spacing.of(context).insets.onlyBottom.semiSmall,
-                child: JidoujishoTag(
+                child: JidoujishoTag.dictionary(
+                  context: context,
                   text: dictionary.name,
-                  backgroundColor: Colors.red.shade900,
                 ),
               ),
               ...pitchWidgets,
@@ -380,9 +407,9 @@ class _DictionaryTermPitchList extends ConsumerWidget {
 
           return Wrap(
             children: [
-              JidoujishoTag(
+              JidoujishoTag.dictionary(
+                context: context,
                 text: dictionary.name,
-                backgroundColor: Colors.red.shade900,
               ),
               ...pitchWidgets,
             ],
@@ -435,13 +462,13 @@ class _DictionaryTermFreqList extends ConsumerWidget {
     List<Widget> children =
         frequenciesByDictionary.map((frequenciesForDictionary) {
       return Padding(
-        padding: Spacing.of(context).insets.onlyBottom.normal,
-        child: JidoujishoTag(
+        padding: Spacing.of(context).insets.onlyBottom.small,
+        child: JidoujishoTag.dictionary(
+          context: context,
           text: frequenciesForDictionary.key.name,
           trailingText: frequenciesForDictionary.value
               .map((e) => e.displayValue)
               .join(', '),
-          backgroundColor: Colors.red.shade900,
         ),
       );
     }).toList();
