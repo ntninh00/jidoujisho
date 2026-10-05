@@ -1294,7 +1294,10 @@ class TtuReaderSettingsSheet extends BasePage {
   /// Create the sheet. [languages] are the languages that have books.
   const TtuReaderSettingsSheet({
     required this.languages,
-    required this.onOpenTtuPage,
+    this.onOpenTtuPage,
+    this.onPresetChanged,
+    this.onOptionsChanged,
+    this.extraFonts = const [],
     super.key,
   });
 
@@ -1302,7 +1305,23 @@ class TtuReaderSettingsSheet extends BasePage {
   final List<Language> languages;
 
   /// Opens one of ッツ's own pages, such as `manage.html`, for a language.
-  final void Function(Language language, String page) onOpenTtuPage;
+  /// Without it, as over an open book, those links are left out.
+  final void Function(Language language, String page)? onOpenTtuPage;
+
+  /// Set over an open book: shows each page change on the book itself. The
+  /// flag is true for changes ッツ must lay the book out again for, such as
+  /// the direction or layout.
+  final void Function(TtuPagePreset preset, {required bool structural})?
+      onPresetChanged;
+
+  /// Set over an open book: a reading option such as full screen changed.
+  final VoidCallback? onOptionsChanged;
+
+  /// Fonts the user added in ッツ's settings.
+  final List<String> extraFonts;
+
+  /// Whether the sheet is over an open book.
+  bool get live => onPresetChanged != null;
 
   @override
   BasePageState<TtuReaderSettingsSheet> createState() =>
@@ -1319,14 +1338,91 @@ class _TtuReaderSettingsSheetState
           : widget.languages.first;
   late TtuPagePreset _preset = source.presetFor(_language);
 
-  void _toggle(void Function() change) {
+  void _toggle(void Function() change) async {
     change();
     setState(() {});
+
+    /// The preference is written asynchronously; let it land first.
+    await Future<void>.delayed(Duration.zero);
+    widget.onOptionsChanged?.call();
   }
 
   void _update(void Function(TtuPagePreset preset) change) {
+    bool vertical = _preset.vertical;
+    bool paginated = _preset.paginated;
+    int columns = _preset.columns;
     setState(() => change(_preset));
     source.savePreset(_language, _preset);
+    bool structural = vertical != _preset.vertical ||
+        paginated != _preset.paginated ||
+        columns != _preset.columns;
+    widget.onPresetChanged?.call(_preset, structural: structural);
+  }
+
+  /// Font names and their labels: ッツ's own, then the user's.
+  List<MapEntry<String, String>> get _fonts => [
+        MapEntry('', t.ttu_font_serif),
+        MapEntry('Noto Sans JP', t.ttu_font_sans),
+        MapEntry('Shippori Mincho', t.ttu_font_mincho),
+        MapEntry('Klee One', t.ttu_font_klee),
+        MapEntry('Genei Koburi Mincho v5', t.ttu_font_genei),
+        for (String font in widget.extraFonts.isNotEmpty
+            ? widget.extraFonts
+            : source.userFontsFor(_language))
+          MapEntry(font, font),
+      ];
+
+  /// The fonts as a row of chips that scrolls when there are many.
+  Widget _fontChips() {
+    String selected = _preset.fontFamily;
+    if (!_fonts.any((font) => font.key == selected)) {
+      selected = '';
+    }
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          for (MapEntry<String, String> font in _fonts)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(
+                  font.value,
+                  style: TextStyle(
+                    fontFamily: _previewFamilyOf(font.key),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                selected: font.key == selected,
+                showCheckmark: false,
+                shape: const StadiumBorder(),
+                selectedColor: theme.colorScheme.primary.withOpacity(0.18),
+                onSelected: (_) =>
+                    _update((preset) => preset.fontFamily = font.key),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The bundled font that draws a sample of [font] in the preview.
+  String? _previewFamilyOf(String font) {
+    switch (font) {
+      case '':
+        return 'PreviewSerif';
+      case 'Noto Sans JP':
+        return 'NotoSansJP';
+      case 'Shippori Mincho':
+        return 'PreviewMincho';
+      case 'Klee One':
+        return 'PreviewKlee';
+      case 'Genei Koburi Mincho v5':
+        return 'PreviewGenei';
+    }
+    return null;
   }
 
   String get _effectiveTheme =>
@@ -1464,13 +1560,8 @@ class _TtuReaderSettingsSheetState
     );
   }
 
-  /// The Flutter font closest to the chosen ッツ font, for the preview.
-  String? get _previewFontFamily {
-    if (_preset.fontFamily == 'Noto Sans JP') {
-      return 'NotoSansJP';
-    }
-    return 'serif';
-  }
+  /// The bundled font that draws the chosen ッツ font in the preview.
+  String? get _previewFontFamily => _previewFamilyOf(_preset.fontFamily);
 
   Widget _preview() {
     List<int> colors = TtuPagePreset.themeColors[_effectiveTheme]!;
@@ -1559,10 +1650,14 @@ class _TtuReaderSettingsSheetState
     bool hasScroll = !_preset.paginated;
     bool japanese = _language is JapaneseLanguage;
 
+    bool live = widget.live;
+    void Function(Language language, String page)? openTtuPage =
+        widget.onOpenTtuPage;
+
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.8,
-      minChildSize: 0.4,
+      initialChildSize: live ? 0.5 : 0.8,
+      minChildSize: live ? 0.3 : 0.4,
       maxChildSize: 0.95,
       builder: (context, controller) => ListView(
         controller: controller,
@@ -1588,8 +1683,8 @@ class _TtuReaderSettingsSheetState
               ],
             ),
           ),
-          _group(t.ttu_page, info: t.ttu_page_info),
-          if (languages.length > 1)
+          _group(t.ttu_page, info: live ? null : t.ttu_page_info),
+          if (!live && languages.length > 1)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Align(
@@ -1608,7 +1703,7 @@ class _TtuReaderSettingsSheetState
                 ),
               ),
             ),
-          _preview(),
+          if (!live) _preview(),
           SizedBox(
             height: 74,
             child: ListView(
@@ -1625,23 +1720,11 @@ class _TtuReaderSettingsSheetState
               ],
             ),
           ),
-          _row(
-            t.ttu_font,
-            _segmented<String>(
-              values: TtuPagePreset.fontFamilies,
-              labels: [
-                t.ttu_font_serif,
-                t.ttu_font_sans,
-                t.ttu_font_mincho,
-                t.ttu_font_klee,
-              ],
-              selected: TtuPagePreset.fontFamilies.contains(_preset.fontFamily)
-                  ? _preset.fontFamily
-                  : '',
-              onSelect: (value) =>
-                  _update((preset) => preset.fontFamily = value),
-            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
+            child: Text(t.ttu_font, style: textTheme.bodyMedium),
           ),
+          _fontChips(),
           _row(
             t.ttu_text_size,
             _stepper(
@@ -1819,27 +1902,29 @@ class _TtuReaderSettingsSheetState
                 ],
               ),
             ),
-          _group(t.ttu_more),
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            leading: const Icon(Ui.cloud_upload_outlined),
-            title: Text(t.ttu_backup_sync),
-            trailing: const Icon(Ui.chevron_right),
-            onTap: () {
-              Navigator.pop(context);
-              widget.onOpenTtuPage(_language, 'manage.html');
-            },
-          ),
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            leading: const Icon(Ui.tune),
-            title: Text(t.ttu_all_settings),
-            trailing: const Icon(Ui.chevron_right),
-            onTap: () {
-              Navigator.pop(context);
-              widget.onOpenTtuPage(_language, 'settings.html');
-            },
-          ),
+          if (openTtuPage != null) _group(t.ttu_more),
+          if (openTtuPage != null)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              leading: const Icon(Ui.cloud_upload_outlined),
+              title: Text(t.ttu_backup_sync),
+              trailing: const Icon(Ui.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                openTtuPage(_language, 'manage.html');
+              },
+            ),
+          if (openTtuPage != null)
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              leading: const Icon(Ui.tune),
+              title: Text(t.ttu_all_settings),
+              trailing: const Icon(Ui.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                openTtuPage(_language, 'settings.html');
+              },
+            ),
         ],
       ),
     );

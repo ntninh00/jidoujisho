@@ -1275,6 +1275,7 @@ class AppModel with ChangeNotifier {
       'ebook-reader',
       'ipadic',
       'noto-sans',
+      'preview-fonts',
       've',
     ];
 

@@ -221,11 +221,13 @@ class TtuPagePreset {
   bool blurImages;
 
   /// ッツ's built-in fonts, with the empty name meaning its default serif.
+  /// Fonts the user added in ッツ's settings can be chosen too.
   static const List<String> fontFamilies = [
     '',
     'Noto Sans JP',
     'Shippori Mincho',
     'Klee One',
+    'Genei Koburi Mincho v5',
   ];
 
   /// ッツ theme name without the `-theme` suffix, or null to leave ッツ's own.
@@ -282,7 +284,7 @@ class TtuPagePreset {
       'toggle'
     ].contains(furiganaStyle) ? furiganaStyle : 'partial'}');
     s.setItem('autoBookmark', '${autoBookmark ? '1' : '0'}');
-    s.setItem('fontFamilyGroupOne', '${fontFamilies.contains(fontFamily) ? fontFamily : ''}');
+    s.setItem('fontFamilyGroupOne', ${jsonEncode(fontFamily)});
     s.setItem('lineHeight', '$lineHeight');
     s.setItem('firstDimensionMargin', '$margin');
     s.setItem('pageColumns', '$columns');

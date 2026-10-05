@@ -578,5 +578,9 @@
     "ttu_terms": "Terms",
     "ttu_no_terms": "No terms saved from this book yet",
     "ttu_place_kept": "Your place stays at $position",
-    "ttu_read_on": "Read"
+    "ttu_read_on": "Read",
+    "ttu_font_genei": "Genei",
+    "ttu_chapters": "Chapters",
+    "ttu_no_chapters": "This book has no chapter list",
+    "ttu_applying": "Applying settings"
 }

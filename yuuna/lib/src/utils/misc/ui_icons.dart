@@ -398,4 +398,6 @@ class Ui {
       IconData(0xed67, fontFamily: _regular); // moon
   static const IconData cloudUpload =
       IconData(0xe510, fontFamily: _regular); // cloud-upload
+  static const IconData chapters =
+      IconData(0xec31, fontFamily: _regular); // list
 }

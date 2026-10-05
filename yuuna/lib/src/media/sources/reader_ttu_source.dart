@@ -687,6 +687,24 @@ class ReaderTtuSource extends ReaderMediaSource {
     );
   }
 
+  /// Fonts the user added in ッツ's settings for [language], as last seen
+  /// when one of its pages was open.
+  List<String> userFontsFor(Language language) {
+    String fonts = getPreference<String>(
+      key: 'ttu_user_fonts_${language.languageCode}',
+      defaultValue: '',
+    );
+    return fonts.split('\n').where((font) => font.isNotEmpty).toList();
+  }
+
+  /// Remembers the fonts the user added in ッツ's settings for [language].
+  void rememberUserFonts(Language language, List<String> fonts) async {
+    await setPreference<String>(
+      key: 'ttu_user_fonts_${language.languageCode}',
+      value: fonts.join('\n'),
+    );
+  }
+
   /// Hides the status and navigation bars while reading. Off by default, so
   /// the phone's swipe gestures work with one swipe; on brings back the
   /// original full screen where the first swipe only shows the bars.

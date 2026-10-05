@@ -135,6 +135,9 @@
 
   var CONTROLS = 'button, a, input, select, textarea, label, [role="button"], [role="dialog"]';
 
+  /* Height of the strips at the top and bottom edges that open the menu. */
+  var MENU_STRIP = 40;
+
   function onTap(e) {
     var target = e.target;
     if (!target || !target.closest) {
@@ -152,15 +155,25 @@
       return;
     }
     if (!target.closest('.book-content')) {
-      /* Margins close the popup; ッツ's own buttons are left alone. */
+      /* Margins close the popup, and the edge strips open the app's menu;
+       * ッツ's own buttons are left alone. */
       if (!target.closest(CONTROLS)) {
-        dismiss(e);
+        if (e.clientY < MENU_STRIP || e.clientY > window.innerHeight - MENU_STRIP) {
+          post({ type: 'menu' });
+        } else {
+          dismiss(e);
+        }
       }
       return;
     }
 
     var hit = hitTest(e.clientX, e.clientY);
     if (!hit) {
+      /* The strips along the top and bottom edges open the app's menu. */
+      if (e.clientY < MENU_STRIP || e.clientY > window.innerHeight - MENU_STRIP) {
+        post({ type: 'menu' });
+        return;
+      }
       dismiss(e);
       return;
     }
@@ -804,10 +817,111 @@
     return run();
   };
 
+  /* ---------- chapters ---------- */
+
+  /* The book's chapters as ッツ stored them, with its character count. */
+  jdj.chapters = function () {
+    var id = bookId();
+    if (isNaN(id)) {
+      return Promise.resolve(null);
+    }
+    return openBooks().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var request = db.transaction('data', 'readonly').objectStore('data').get(id);
+        request.onsuccess = function () {
+          var book = request.result;
+          if (!book) {
+            resolve(null);
+            return;
+          }
+          resolve({
+            characters: book.characters || 0,
+            sections: (book.sections || []).map(function (s) {
+              return {
+                label: s.label || '',
+                start: s.startCharacter || 0,
+                characters: s.characters || 0,
+                parent: s.parentChapter || null,
+              };
+            }),
+          });
+        };
+        request.onerror = function () {
+          reject(request.error);
+        };
+      }).finally(function () {
+        db.close();
+      });
+    });
+  };
+
+  /* ---------- live preview of page settings ---------- */
+
+  /*
+   * Shows page settings on the book straight away while the settings sheet
+   * is open. ッツ applies them properly when the book reloads afterwards.
+   */
+  var PREVIEW_STYLE_ID = 'jdj-preview-style';
+
+  jdj.preview = function (p) {
+    var root = document.querySelector('.book-content');
+    var style = document.getElementById(PREVIEW_STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = PREVIEW_STYLE_ID;
+      document.head.appendChild(style);
+    }
+    var vertical = !!root && /vertical/.test(getComputedStyle(root).writingMode);
+    var css = '.book-content{' +
+      'font-size:' + p.fontSize + 'px!important;' +
+      'line-height:' + p.lineHeight + '!important;' +
+      'font-family:' + (p.fontFamily ? '"' + p.fontFamily + '",' : '') + '"Noto Serif JP",serif!important;' +
+      (vertical
+        ? 'padding-left:' + p.margin + 'px!important;padding-right:' + p.margin + 'px!important;'
+        : 'padding-top:' + p.margin + 'px!important;padding-bottom:' + p.margin + 'px!important;') +
+      (p.foreground ? 'color:' + p.foreground + '!important;' : '') +
+      '}';
+    if (p.background) {
+      css += 'html,body{background-color:' + p.background + '!important}';
+    }
+    style.textContent = css;
+    if (root) {
+      var classes = root.classList;
+      classes.toggle('book-content--hide-spoiler-image', !!p.blurImages);
+      classes.toggle('book-content--avoid-page-break', !!p.avoidPageBreak);
+      if (p.furigana !== undefined) {
+        classes.toggle('book-content--hide-furigana', !p.furigana);
+        ['partial', 'full', 'toggle'].forEach(function (name) {
+          classes.toggle('book-content--furigana-style-' + name, p.furiganaStyle === name);
+        });
+      }
+    }
+    if (window.__jdjFit) {
+      window.__jdjFit.run();
+    }
+    if (word || flashState) {
+      redraw();
+    }
+  };
+
+  /* ッツ's own fonts, and fonts the user added in ッツ's settings. */
+  jdj.userFonts = function () {
+    try {
+      var fonts = JSON.parse(localStorage.getItem('userfonts') || '[]');
+      return fonts.map(function (font) {
+        return font && (font.name || font.fontName || String(font));
+      }).filter(Boolean);
+    } catch (_) {
+      return [];
+    }
+  };
+
   /* Unselectable furigana, and selection colours: drawn as rounded boxes
-   * where possible, the browser's own square selection otherwise. */
+   * where possible, the browser's own square selection otherwise. ッツ's own
+   * header is replaced by the app's menu. */
   var style = document.createElement('style');
   style.textContent =
+    'button.fixed.inset-x-0.top-0.h-8{display:none!important}' +
     'rt,rp{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
     '::selection{color:white;background:rgba(255,0,0,0.6)}' +
     'html.jdj-round-selection ::selection{color:inherit;background:transparent}';

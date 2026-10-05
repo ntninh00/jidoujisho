@@ -213,6 +213,18 @@ flutter:
     - family: UiconsSolid
       fonts:
         - asset: assets/fonts/uicons-solid-rounded.ttf
+    - family: PreviewSerif
+      fonts:
+        - asset: assets/fonts/preview/preview-serif.ttf
+    - family: PreviewMincho
+      fonts:
+        - asset: assets/fonts/preview/preview-mincho.ttf
+    - family: PreviewKlee
+      fonts:
+        - asset: assets/fonts/preview/preview-klee.ttf
+    - family: PreviewGenei
+      fonts:
+        - asset: assets/fonts/preview/preview-genei.ttf
     - family: NotoSansIPA
       fonts:
         - asset: assets/fonts/noto-sans-ipa.ttf

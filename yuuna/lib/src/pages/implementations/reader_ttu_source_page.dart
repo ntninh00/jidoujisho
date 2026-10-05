@@ -31,7 +31,7 @@ class ReaderTtuSourcePage extends BaseSourcePage {
 }
 
 /// What the loading screen says while ッツ opens a book.
-enum _MaskKind { opening, jumping, returning }
+enum _MaskKind { opening, jumping, returning, applying }
 
 class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     with WidgetsBindingObserver {
@@ -71,11 +71,27 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   bool _leaving = false;
   int _lookupSerial = 0;
 
-  /// The reader went back from a memo or term to its own place.
+  /// The visit ended: the reader went back to their own place, or chose a
+  /// chapter to read from.
   bool _wentBack = false;
 
   /// This visit is to a memo or term: ッツ's saved place stays as it was.
   bool get _keepPlace => (_launch?.keepPlace ?? false) && !_wentBack;
+
+  /// The menu over the book, opened from its top or bottom edge.
+  final ValueNotifier<bool> _menuVisible = ValueNotifier(false);
+
+  /// Where the reader is, shown in the menu.
+  String _menuDetail = '';
+
+  /// The book's chapters and length, read once from ッツ.
+  List<TtuChapter>? _chapters;
+  int _bookCharacters = 0;
+
+  /// The place when the settings opened; the book reopens there.
+  TtuPosition? _settingsAnchor;
+  bool _settingsChanged = false;
+  Timer? _layoutReload;
 
   @override
   void initState() {
@@ -125,6 +141,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     }
     WidgetsBinding.instance.removeObserver(this);
     _backChipTimer?.cancel();
+    _layoutReload?.cancel();
+    _menuVisible.dispose();
     _maskVisible.dispose();
     _backChip.dispose();
     _focusNode.dispose();
@@ -179,6 +197,11 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// shelf, without asking.
   @override
   Future<bool> onWillPop() async {
+    if (_menuVisible.value) {
+      _menuVisible.value = false;
+      return false;
+    }
+
     /// A formula opened at full size closes first.
     Object? viewerClosed = await _controller?.evaluateJavascript(
       source: 'window.__jdjFit ? window.__jdjFit.close() : false',
@@ -390,6 +413,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                 alignment: Alignment.center,
                 children: <Widget>[
                   buildBody(),
+                  buildMenu(),
                   buildDictionary(),
                   if (_maskBuilt) buildMask(),
                   buildBackChip(),
@@ -463,6 +487,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       _MaskKind.opening => t.ttu_opening,
       _MaskKind.jumping => t.ttu_jumping_to,
       _MaskKind.returning => t.ttu_returning_to,
+      _MaskKind.applying => t.ttu_applying,
     };
     double? progress = _maskProgress;
 
@@ -650,27 +675,320 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// Goes back to where the reader was before jumping to a memo.
   void _goBack(TtuPosition back) {
     TtuLaunch? launch = _launch;
-    InAppWebViewController? controller = _controller;
-    if (launch == null || controller == null) {
+    if (launch == null) {
       return;
     }
     _backChipTimer?.cancel();
     _backChip.value = null;
     _wentBack = true;
     mediaSource.returnPositions.remove(launch.book.key);
+    _reloadAt(launch.book, back, _MaskKind.returning);
+  }
+
+  /// Opens [book] again at [position], behind the loading screen.
+  Future<void> _reloadAt(
+    TtuBook book,
+    TtuPosition position,
+    _MaskKind kind,
+  ) async {
+    InAppWebViewController? controller = _controller;
+    if (controller == null || !mounted) {
+      return;
+    }
     setState(() {
-      _maskKind = _MaskKind.returning;
-      _maskProgress = back.progress;
+      _maskKind = kind;
+      _maskProgress = position.progress;
       _maskBuilt = true;
     });
     _maskVisible.value = true;
     _flashPending = false;
     _chipPending = false;
-    controller.loadUrl(
+    await controller.loadUrl(
       urlRequest: URLRequest(
-        url: WebUri(TtuLaunch.jumpUrl(book: launch.book, position: back)),
+        url: WebUri(TtuLaunch.jumpUrl(book: book, position: position)),
       ),
     );
+  }
+
+  /* ---------- menu, chapters and settings over the book ---------- */
+
+  /// A tap on the book's top or bottom edge: closes the popup if one is
+  /// open, otherwise shows or hides the menu.
+  void _onMenuTap() {
+    if (isDictionaryShown) {
+      clearDictionaryResult();
+      mediaSource.clearCurrentSentence();
+      return;
+    }
+    if (_menuVisible.value) {
+      _menuVisible.value = false;
+      return;
+    }
+    _menuVisible.value = true;
+    _refreshMenuDetail();
+  }
+
+  Future<void> _refreshMenuDetail() async {
+    TtuPosition? position = await _capturePosition();
+    await _loadChapters();
+    if (!mounted) {
+      return;
+    }
+    TtuChapter? chapter = position == null
+        ? null
+        : ttuChapterAt(_chapters ?? const [], position.characters);
+    setState(() {
+      _menuDetail = [
+        if (chapter != null && chapter.label.isNotEmpty) chapter.label,
+        if (position != null) ttuPercent(position.progress),
+      ].join(' · ');
+    });
+  }
+
+  Future<void> _loadChapters() async {
+    if (_chapters != null) {
+      return;
+    }
+    try {
+      CallAsyncJavaScriptResult? result =
+          await _controller?.callAsyncJavaScript(
+        functionBody:
+            'return window.__jdj ? await window.__jdj.chapters() : null;',
+      );
+      Object? value = result?.value;
+      if (value is Map) {
+        _bookCharacters = (value['characters'] as num?)?.toInt() ?? 0;
+        _chapters = ((value['sections'] as List?) ?? const [])
+            .whereType<Map>()
+            .map(TtuChapter.fromMap)
+            .toList();
+      }
+    } catch (error) {
+      debugPrint('Could not read chapters: $error');
+    }
+  }
+
+  Widget buildMenu() {
+    List<Color> colors = _pageColors;
+    bool reduceMotion = MediaQuery.of(context).disableAnimations;
+    Duration duration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 160);
+    return ValueListenableBuilder<bool>(
+      valueListenable: _menuVisible,
+      builder: (context, visible, _) => IgnorePointer(
+        ignoring: !visible,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _menuVisible.value = false,
+              ),
+            ),
+            Align(
+              alignment: Alignment.topCenter,
+              child: AnimatedSlide(
+                offset: visible ? Offset.zero : const Offset(0, -0.4),
+                duration: duration,
+                curve: Curves.easeOutCubic,
+                child: AnimatedOpacity(
+                  opacity: visible ? 1 : 0,
+                  duration: duration,
+                  child: TtuReaderMenu(
+                    title: _launch?.book.title ?? widget.item?.title ?? '',
+                    detail: _menuDetail,
+                    background: colors[0],
+                    foreground: colors[1],
+                    onBack: _leaveFromMenu,
+                    onChapters: _showChapters,
+                    onSettings: _showLiveSettings,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _leaveFromMenu() async {
+    _menuVisible.value = false;
+    bool leave = await onWillPop();
+    if (leave && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _showChapters() async {
+    _menuVisible.value = false;
+    await _loadChapters();
+    TtuPosition? position = await _capturePosition();
+    if (!mounted) {
+      return;
+    }
+    _isRecursiveSearching = true;
+    await showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuChaptersSheet(
+        chapters: _chapters ?? const [],
+        totalCharacters: _bookCharacters,
+        position: position?.characters ?? 0,
+        onSelect: _goToChapter,
+      ),
+    );
+    _isRecursiveSearching = false;
+    _focusNode.requestFocus();
+  }
+
+  /// Reads on from [chapter]. Choosing a chapter ends a visit to a memo or
+  /// term, so the saved place follows the reader again.
+  void _goToChapter(TtuChapter chapter) async {
+    TtuBook? book = await _currentBook();
+    if (book == null) {
+      return;
+    }
+    _wentBack = true;
+    double progress = _bookCharacters > 0 ? chapter.start / _bookCharacters : 0;
+    await _reloadAt(
+      book,
+      TtuPosition(characters: chapter.start, progress: progress),
+      _MaskKind.jumping,
+    );
+  }
+
+  /// Fonts the user added in ッツ's own settings.
+  Future<List<String>> _userFonts() async {
+    try {
+      Object? value = await _controller?.evaluateJavascript(
+        source: 'window.__jdj ? window.__jdj.userFonts() : []',
+      );
+      if (value is List) {
+        return value.whereType<String>().toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  /// The page settings over the book. Most changes show on the page at
+  /// once; changes to the layout reopen the book at the same place, and so
+  /// does closing the sheet, so ッツ applies everything properly.
+  Future<void> _showLiveSettings() async {
+    _menuVisible.value = false;
+    _settingsAnchor = await _capturePosition();
+    _settingsChanged = false;
+    List<String> fonts = await _userFonts();
+    mediaSource.rememberUserFonts(_language, fonts);
+    if (!mounted) {
+      return;
+    }
+    _isRecursiveSearching = true;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      barrierColor: Colors.transparent,
+      backgroundColor: Theme.of(context).cardColor,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => TtuReaderSettingsSheet(
+        languages: [_language],
+        extraFonts: fonts,
+        onPresetChanged: _onPresetChanged,
+        onOptionsChanged: _onOptionsChanged,
+      ),
+    );
+    _isRecursiveSearching = false;
+    _layoutReload?.cancel();
+    if (_settingsChanged) {
+      await _applySettings();
+    }
+    _focusNode.requestFocus();
+  }
+
+  void _onPresetChanged(TtuPagePreset preset, {required bool structural}) {
+    _settingsChanged = true;
+    if (structural) {
+      _layoutReload?.cancel();
+      _layoutReload = Timer(const Duration(milliseconds: 350), _applySettings);
+      return;
+    }
+    _previewPreset(preset);
+  }
+
+  static String _cssColor(int argb) =>
+      'rgba(${(argb >> 16) & 0xff}, ${(argb >> 8) & 0xff}, ${argb & 0xff}, '
+      '${(((argb >> 24) & 0xff) / 255).toStringAsFixed(3)})';
+
+  /// Shows [preset] on the page straight away.
+  void _previewPreset(TtuPagePreset preset) {
+    String theme = preset.theme ?? (appModel.isDarkMode ? 'dark' : 'light');
+    List<int> colors =
+        TtuPagePreset.themeColors[theme] ?? TtuPagePreset.themeColors['dark']!;
+    Map<String, Object> payload = {
+      'fontSize': preset.fontSize,
+      'lineHeight': preset.lineHeight,
+      'fontFamily': preset.fontFamily,
+      'margin': preset.margin,
+      'background': _cssColor(colors[0]),
+      'foreground': _cssColor(colors[1]),
+      'blurImages': preset.blurImages,
+      'avoidPageBreak': preset.avoidPageBreak,
+      if (_language is JapaneseLanguage) 'furigana': preset.furigana,
+      'furiganaStyle': preset.furiganaStyle,
+    };
+    _controller?.evaluateJavascript(
+      source: 'window.__jdj && window.__jdj.preview(${jsonEncode(payload)});',
+    );
+    setState(() {});
+  }
+
+  /// Reopens the book at the place the settings opened at, with ッツ given
+  /// the new settings.
+  Future<void> _applySettings() async {
+    _settingsChanged = false;
+    InAppWebViewController? controller = _controller;
+    TtuBook? book = await _currentBook();
+    if (controller == null || book == null || !mounted) {
+      return;
+    }
+    _settingsScript = mediaSource.settingsScriptFor(
+      _language,
+      darkMode: appModel.isDarkMode,
+      keepPlace: _keepPlace,
+    );
+    await controller.removeAllUserScripts();
+    await controller.addUserScripts(userScripts: [
+      UserScript(
+        source: _settingsScript ?? '',
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+      UserScript(
+        source: _fitScript ?? '',
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+    ]);
+    TtuPosition position = _settingsAnchor ??
+        TtuPosition(
+          characters: book.exploredCharCount,
+          progress: book.progress,
+        );
+    await _reloadAt(book, position, _MaskKind.applying);
+  }
+
+  /// A reading option changed from the settings over the book.
+  void _onOptionsChanged() async {
+    await appModel.applyMediaSystemUi();
+    if (mediaSource.keepScreenOn) {
+      await Wakelock.enable();
+    } else {
+      await Wakelock.disable();
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void setDictionaryColors() async {
@@ -805,6 +1123,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
             Object? message = arguments.isEmpty ? null : arguments.first;
             if (message is Map && message['type'] == 'lookup') {
               onLookup(Map<String, dynamic>.from(message));
+            } else if (message is Map && message['type'] == 'menu') {
+              _onMenuTap();
             }
             return null;
           },
@@ -867,6 +1187,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
           setDictionaryColors();
         }
         await _onPageLoaded(controller, uri);
+        mediaSource.rememberUserFonts(_language, await _userFonts());
         Future.delayed(const Duration(seconds: 1), _focusNode.requestFocus);
       },
       onTitleChanged: (controller, title) async {
@@ -984,6 +1305,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (!_ready || !mounted) {
       return;
     }
+    _menuVisible.value = false;
 
     FocusScope.of(context).unfocus();
     _focusNode.requestFocus();
