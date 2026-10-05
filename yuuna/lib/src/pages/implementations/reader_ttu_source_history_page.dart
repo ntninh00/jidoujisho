@@ -249,11 +249,6 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                   style: textTheme.bodyMedium!
                       .copyWith(fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  t.ttu_reading_file,
-                  style: textTheme.bodySmall!
-                      .copyWith(color: theme.unselectedWidgetColor),
-                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(2),
@@ -291,17 +286,19 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
             child: Icon(mediaSource.icon, size: 40, color: red),
           ),
           const SizedBox(height: 18),
-          Text(
-            t.ttu_empty_title,
-            textAlign: TextAlign.center,
-            style: textTheme.titleLarge!.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t.ttu_empty_body,
-            textAlign: TextAlign.center,
-            style: textTheme.bodyMedium!
-                .copyWith(color: theme.unselectedWidgetColor, height: 1.5),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  t.ttu_empty_title,
+                  textAlign: TextAlign.center,
+                  style: textTheme.titleLarge!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              JidoujishoInfoButton(message: t.ttu_empty_body),
+            ],
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(

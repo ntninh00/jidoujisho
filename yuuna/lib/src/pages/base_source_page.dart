@@ -33,6 +33,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   @override
   void initState() {
     super.initState();
+    appModelNoUpdate.myWordsVersion.addListener(_onMyWordsChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _creatorActiveStreamSubscription = appModel.creatorActiveStream.listen(
@@ -49,8 +50,22 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
 
   @override
   void dispose() {
+    appModelNoUpdate.myWordsVersion.removeListener(_onMyWordsChanged);
     _creatorActiveStreamSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Shows a word just added to My words in the open popup.
+  void _onMyWordsChanged() {
+    String? term = _lastSearchTerm;
+    JidoujishoPopupPosition? position = _popupPositionNotifier.value;
+    if (term != null && position != null && isDictionaryShown) {
+      searchDictionaryResult(
+        searchTerm: term,
+        position: position,
+        overrideMaximumTerms: appModel.maximumTerms,
+      );
+    }
   }
 
   /// Used for listening to when the Card Creator is opened and closed.
@@ -519,7 +534,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     );
     if (appModel.isMediaOpen) {
       await Future.delayed(const Duration(milliseconds: 5), () {});
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await appModel.applyMediaSystemUi();
     }
   }
 

@@ -166,7 +166,45 @@ class TtuPagePreset {
     required this.vertical,
     required this.paginated,
     required this.furigana,
+    this.fontFamily = '',
+    this.lineHeight = 1.65,
+    this.margin = 0,
+    this.columns = 0,
+    this.furiganaStyle = 'partial',
+    this.avoidPageBreak = false,
+    this.blurImages = true,
   });
+
+  /// ッツ's font for the text, or empty for its default serif.
+  String fontFamily;
+
+  /// Line height as a multiple of the font size.
+  double lineHeight;
+
+  /// Space at the page edges in CSS pixels: top and bottom for horizontal
+  /// text, left and right for vertical text.
+  int margin;
+
+  /// Page columns in Pages layout, or 0 to let ッツ choose.
+  int columns;
+
+  /// How hidden furigana shows: `partial` greyed out, `full` hidden, or
+  /// `toggle` shown on tap.
+  String furiganaStyle;
+
+  /// Keeps a paragraph on one page instead of splitting it.
+  bool avoidPageBreak;
+
+  /// Covers pictures until tapped, as ッツ does for spoilers.
+  bool blurImages;
+
+  /// ッツ's built-in fonts, with the empty name meaning its default serif.
+  static const List<String> fontFamilies = [
+    '',
+    'Noto Sans JP',
+    'Shippori Mincho',
+    'Klee One',
+  ];
 
   /// ッツ theme name without the `-theme` suffix, or null to leave ッツ's own.
   String? theme;
@@ -216,7 +254,18 @@ class TtuPagePreset {
     s.setItem('writingMode', '${vertical ? 'vertical-rl' : 'horizontal-tb'}');
     s.setItem('viewMode', '${paginated ? 'paginated' : 'continuous'}');
     s.setItem('hideFurigana', '${furigana ? '0' : '1'}');
+    s.setItem('furiganaStyle', '${const [
+      'partial',
+      'full',
+      'toggle'
+    ].contains(furiganaStyle) ? furiganaStyle : 'partial'}');
     s.setItem('autoBookmark', '${autoBookmark ? '1' : '0'}');
+    s.setItem('fontFamilyGroupOne', '${fontFamilies.contains(fontFamily) ? fontFamily : ''}');
+    s.setItem('lineHeight', '$lineHeight');
+    s.setItem('firstDimensionMargin', '$margin');
+    s.setItem('pageColumns', '$columns');
+    s.setItem('avoidPageBreak', '${avoidPageBreak ? '1' : '0'}');
+    s.setItem('hideSpoilerImage', '${blurImages ? '1' : '0'}');
   } catch (e) {}
 })();
 ''';

@@ -208,7 +208,7 @@ class AnkiMapping {
     'ja-JP': {
       0: CardCreatorAction.key,
       1: InstantExportAction.key,
-      2: AddToStashAction.key,
+      2: MyWordsAction.key,
       3: CopyToClipboardAction.key,
       4: ShareAction.key,
       5: PlayAudioAction.key,
@@ -216,7 +216,7 @@ class AnkiMapping {
     'en-US': {
       0: CardCreatorAction.key,
       1: InstantExportAction.key,
-      2: AddToStashAction.key,
+      2: MyWordsAction.key,
       3: CopyToClipboardAction.key,
       4: ShareAction.key,
       5: PlayAudioAction.key,

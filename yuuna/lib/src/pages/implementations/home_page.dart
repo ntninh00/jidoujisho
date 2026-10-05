@@ -53,6 +53,7 @@ class _HomePageState extends BasePageState<HomePage>
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       appModel.populateDefaultMapping(appModel.targetLanguage);
+      appModel.moveStashButtonToMyWords();
       appModel.populateBookmarks();
       if (appModel.isFirstTimeSetup) {
         await appModel.showLanguageMenu();
@@ -60,9 +61,28 @@ class _HomePageState extends BasePageState<HomePage>
             appModel.targetLanguage.standardFormat);
 
         appModel.setFirstTimeSetupFlag();
+      } else {
+        _openQuickSearch();
       }
     });
   }
+
+  /// When the app was left on the Dictionary tab, it opens ready to type,
+  /// like a quick dictionary.
+  void _openQuickSearch() {
+    MediaType current =
+        appModel.mediaTypes.values.toList()[currentHomeTabIndex];
+    bool onTop = ModalRoute.of(context)?.isCurrent ?? false;
+    if (current is DictionaryMediaType &&
+        onTop &&
+        !appModel.isMediaOpen &&
+        current.floatingSearchBarController.isClosed) {
+      current.floatingSearchBarController.open();
+    }
+  }
+
+  /// When the app went to the background.
+  DateTime? _pausedAt;
 
   void refresh() {
     setState(() {});
@@ -78,7 +98,17 @@ class _HomePageState extends BasePageState<HomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    if (AppLifecycleState.paused == state) {
+      _pausedAt = DateTime.now();
+    }
     if (AppLifecycleState.resumed == state) {
+      DateTime? pausedAt = _pausedAt;
+      _pausedAt = null;
+      if (pausedAt != null &&
+          DateTime.now().difference(pausedAt) > const Duration(seconds: 30)) {
+        _openQuickSearch();
+      }
+
       /// Keep the search database ready.
       debugPrint('Lifecycle Resumed');
       appModel.searchDictionary(

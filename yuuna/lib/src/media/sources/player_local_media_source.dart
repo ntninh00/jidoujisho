@@ -126,6 +126,9 @@ class PlayerLocalMediaSource extends PlayerMediaSource {
     Directory? directory,
     FutureOr Function(String)? onFileSelected,
   }) async {
+    if (!await ensureFileAccess(context: context, appModel: appModel)) {
+      return;
+    }
     List<Directory> rootDirectories =
         await appModel.getFilePickerDirectoriesForMediaType(mediaType);
 

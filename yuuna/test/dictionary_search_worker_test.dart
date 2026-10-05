@@ -167,6 +167,54 @@ void main() {
         contains(DictionaryHeading.hash(term: 'run', reading: '')));
   });
 
+  test('a word in My words is listed before other dictionaries', () async {
+    isar.writeTxnSync(() {
+      Dictionary dictionary = isar.dictionarys.getSync(1)!;
+      DictionaryHeading heading = DictionaryHeading(term: 'rag');
+      isar.dictionaryHeadings.putSync(heading);
+      DictionaryEntry entry =
+          DictionaryEntry(definitions: ['a piece of cloth'], popularity: 5);
+      entry.heading.value = heading;
+      entry.dictionary.value = dictionary;
+      isar.dictionaryEntrys.putSync(entry);
+    });
+
+    int entryId = MyWords.save(
+      isar,
+      term: 'RAG',
+      meaning: 'Retrieval-augmented generation\nLooks things up before answering',
+    );
+    int mine = DictionaryHeading.hash(term: 'RAG', reading: '');
+
+    DictionarySearchReply? reply = await DictionarySearchWorker.instance.search(
+      function: prepareSearchResultsEnglishLanguage,
+      params: params('RAG is useful'),
+    );
+    expect(reply!.outcome!.headingIds.first, mine);
+    expect(reply.outcome!.headingIds,
+        contains(DictionaryHeading.hash(term: 'rag', reading: '')));
+
+    /// The dictionary comes first in order and keeps the user's lines.
+    expect(isar.dictionarys.getSync(MyWords.dictionaryId)!.order, 0);
+    MyWord word = MyWords.all(isar).single;
+    expect(word.term, 'RAG');
+    expect(word.meaning,
+        'Retrieval-augmented generation\nLooks things up before answering');
+
+    /// Editing stores a new entry; deleting removes the heading made for it.
+    int edited = MyWords.save(
+      isar,
+      term: 'RAG',
+      meaning: 'Retrieval-augmented generation',
+      replaceEntryId: entryId,
+    );
+    expect(edited, isNot(entryId));
+    expect(isar.dictionaryEntrys.getSync(entryId), isNull);
+    MyWords.delete(isar, edited);
+    expect(MyWords.all(isar), isEmpty);
+    expect(isar.dictionaryHeadings.getSync(mine), isNull);
+  });
+
   test('English matches whole words, not the start of a longer word',
       () async {
     isar.writeTxnSync(() {

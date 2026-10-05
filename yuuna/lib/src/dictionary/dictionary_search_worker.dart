@@ -229,6 +229,16 @@ Future<void> _workerMain(SendPort mainPort) async {
     DictionarySearchOutcome? outcome;
     try {
       outcome = await function(params);
+
+      /// Words the user defined come first.
+      Isar? database = Isar.getInstance();
+      if (outcome != null && database != null) {
+        outcome = DictionarySearchOutcome(
+          searchTerm: outcome.searchTerm,
+          bestLength: outcome.bestLength,
+          headingIds: MyWords.putFirst(database, outcome.headingIds),
+        );
+      }
     } catch (error, stack) {
       mainPort.send(<Object?>[id, 'error', '$error\n$stack']);
       continue;

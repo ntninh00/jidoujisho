@@ -30,6 +30,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   void initState() {
     super.initState();
     appModelNoUpdate.dictionarySearchAgainNotifier.addListener(searchAgain);
+    appModelNoUpdate.myWordsVersion.addListener(_onMyWordsChanged);
     appModelNoUpdate.dictionaryEntriesNotifier.addListener(() {
       if (mediaType.floatingSearchBarController.isClosed) {
         if (!appModel.isMediaOpen &&
@@ -46,7 +47,22 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   @override
   void dispose() {
+    appModelNoUpdate.myWordsVersion.removeListener(_onMyWordsChanged);
     super.dispose();
+  }
+
+  /// Shows a word just added to My words in the open results.
+  void _onMyWordsChanged() {
+    if (mediaType.floatingSearchBarController.query.isNotEmpty) {
+      searchAgain();
+    }
+  }
+
+  void _openMyWords() {
+    showTtuSheet<void>(
+      context: context,
+      builder: (_) => const MyWordsSheet(),
+    );
   }
 
   bool get shouldPlaceholderBeShown => appModel.dictionaryHistory.isEmpty;
@@ -250,6 +266,16 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         ),
         onSelected: (action) => action(),
         itemBuilder: (context) => [
+          PopupMenuItem<VoidCallback>(
+            value: _openMyWords,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Ui.myWords),
+              title: Text(t.my_words),
+            ),
+          ),
+          const PopupMenuDivider(),
           PopupMenuItem<VoidCallback>(
             value: showDeleteSearchHistoryPrompt,
             child: ListTile(
@@ -474,8 +500,12 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     return SliverToBoxAdapter(
       child: Padding(
         padding: Spacing.of(context).insets.all.small,
-        child: Tooltip(
-          message: t.show_more,
+        child: Material(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white.withOpacity(0.06)
+              : Colors.black.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: _isSearching
                 ? null
@@ -486,10 +516,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
                           _result!.headingIds.length + appModel.maximumTerms,
                     );
                   },
-            child: Container(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withOpacity(0.05)
-                  : Colors.black.withOpacity(0.05),
+            child: SizedBox(
               width: double.maxFinite,
               child: Padding(
                 padding: Spacing.of(context).insets.all.normal,

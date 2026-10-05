@@ -104,7 +104,7 @@ class CardCreatorAction extends QuickAction {
       );
 
       if (appModel.isMediaOpen && appModel.shouldHideStatusBarWhenInMedia) {
-        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        await appModel.applyMediaSystemUi();
       }
     }
   }

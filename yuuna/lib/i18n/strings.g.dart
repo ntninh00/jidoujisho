@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 490
+/// Strings: 538
 ///
-/// Built on 2026-10-05 at 18:02 UTC
+/// Built on 2026-10-05 at 20:43 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -601,19 +601,19 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_furigana => 'Show furigana';
 	String get ttu_furigana_desc => 'Readings above kanji, when the book has them';
 	String get ttu_while_reading => 'While reading';
-	String get ttu_auto_save => 'Save my place automatically';
+	String get ttu_auto_save => 'Save my place';
 	String get ttu_auto_save_desc => 'Saves as you read and when you leave a book';
-	String get ttu_highlight => 'Highlight the word you tap';
+	String get ttu_highlight => 'Highlight the looked-up word';
 	String get ttu_highlight_desc => 'Marks the word the dictionary looked up';
-	String get ttu_volume => 'Turn pages with volume keys';
+	String get ttu_volume => 'Volume keys turn pages';
 	String get ttu_volume_desc => 'Each press turns one page';
-	String get ttu_volume_swap => 'Swap the volume keys';
+	String get ttu_volume_swap => 'Swap volume keys';
 	String get ttu_volume_swap_desc => 'If the keys go the wrong way';
 	String get ttu_scroll_step => 'Scroll step';
 	String get ttu_scroll_step_desc => 'How far each key press scrolls in Scroll layout';
-	String get ttu_full_screen => 'Use the full screen';
+	String get ttu_full_screen => 'Full screen';
 	String get ttu_full_screen_desc => 'Draws under the status bar. Best on phones without a notch';
-	String get ttu_match_popup => 'Match the dictionary popup to the page';
+	String get ttu_match_popup => 'Popup matches the page';
 	String get ttu_match_popup_desc => 'Uses the page theme for the popup';
 	String get ttu_more => 'More';
 	String get ttu_backup_sync => 'Backup and sync';
@@ -634,6 +634,54 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String ttu_weeks_ago({required Object n}) => '${n} weeks ago';
 	String get ttu_month_ago => '1 month ago';
 	String ttu_months_ago({required Object n}) => '${n} months ago';
+	String get my_words => 'My words';
+	String get my_words_add => 'Add to My words';
+	String get my_words_edit => 'Edit word';
+	String get my_words_word => 'Word';
+	String get my_words_reading => 'Reading';
+	String get my_words_meaning => 'Meaning';
+	String get my_words_meaning_hint => 'Retrieval-augmented generation';
+	String get my_words_saved => 'Saved to My words';
+	String get my_words_deleted => 'Word removed';
+	String get my_words_empty => 'No words yet';
+	String get my_words_info => 'Your own meanings. They show first whenever you look the word up, in any book.';
+	String get my_words_new => 'New word';
+	String get add_word => 'Add word';
+	String get ttu_page_info => 'Books in this language open with these settings.';
+	String get ttu_font => 'Font';
+	String get ttu_font_serif => 'Serif';
+	String get ttu_font_sans => 'Sans';
+	String get ttu_font_mincho => 'Mincho';
+	String get ttu_font_klee => 'Klee';
+	String get ttu_line_spacing => 'Line spacing';
+	String get ttu_margins => 'Margins';
+	String get ttu_columns => 'Columns';
+	String get ttu_columns_auto => 'Auto';
+	String get ttu_furigana_label => 'Furigana';
+	String get ttu_furigana_show => 'Show';
+	String get ttu_furigana_faded => 'Faded';
+	String get ttu_furigana_hidden => 'Hide';
+	String get ttu_furigana_tap => 'On tap';
+	String get ttu_furigana_info => 'Faded shows readings in grey. On tap shows them when you tap a word.';
+	String get ttu_avoid_break => 'Keep paragraphs whole';
+	String get ttu_avoid_break_info => 'Moves a paragraph to the next page instead of splitting it.';
+	String get ttu_blur_images => 'Blur images';
+	String get ttu_blur_images_info => 'Hides pictures behind a spoiler cover until you tap them.';
+	String get ttu_full_screen_info => 'Hides the status and navigation bars. A swipe from the edge then only shows them, so it takes two swipes to leave or open notifications.';
+	String get ttu_camera_area => 'Use the camera area';
+	String get ttu_camera_area_info => 'Lets the page run under the camera cutout.';
+	String get ttu_keep_screen_on => 'Keep the screen on';
+	String get ttu_auto_save_info => 'Saves as you read and when you leave a book.';
+	String get ttu_match_popup_info => 'Uses the page theme for the dictionary popup.';
+	String get ttu_scroll_step_info => 'How far each key press scrolls in Scroll layout.';
+	String get file_access_title => 'Allow access to your files?';
+	String get file_access_media => 'Photos, videos and audio';
+	String get file_access_all => 'All files';
+	String get file_access_allow => 'Allow';
+	String get file_access_not_now => 'Not now';
+	String get file_access_info => 'Needed to open videos and manga from folders on your phone. Photos, videos and audio is enough to play videos; All files also finds subtitle files next to them. Books and dictionaries never need this.';
+	String get file_access_info_short => 'Needed to open videos and manga from folders on your phone. Books and dictionaries never need this.';
+	String get file_access_denied => 'Files can\'t be opened without access. You can allow it in Android settings.';
 }
 
 // Path: retrying_in
@@ -1129,19 +1177,19 @@ extension on _StringsEn {
 			case 'ttu_furigana': return 'Show furigana';
 			case 'ttu_furigana_desc': return 'Readings above kanji, when the book has them';
 			case 'ttu_while_reading': return 'While reading';
-			case 'ttu_auto_save': return 'Save my place automatically';
+			case 'ttu_auto_save': return 'Save my place';
 			case 'ttu_auto_save_desc': return 'Saves as you read and when you leave a book';
-			case 'ttu_highlight': return 'Highlight the word you tap';
+			case 'ttu_highlight': return 'Highlight the looked-up word';
 			case 'ttu_highlight_desc': return 'Marks the word the dictionary looked up';
-			case 'ttu_volume': return 'Turn pages with volume keys';
+			case 'ttu_volume': return 'Volume keys turn pages';
 			case 'ttu_volume_desc': return 'Each press turns one page';
-			case 'ttu_volume_swap': return 'Swap the volume keys';
+			case 'ttu_volume_swap': return 'Swap volume keys';
 			case 'ttu_volume_swap_desc': return 'If the keys go the wrong way';
 			case 'ttu_scroll_step': return 'Scroll step';
 			case 'ttu_scroll_step_desc': return 'How far each key press scrolls in Scroll layout';
-			case 'ttu_full_screen': return 'Use the full screen';
+			case 'ttu_full_screen': return 'Full screen';
 			case 'ttu_full_screen_desc': return 'Draws under the status bar. Best on phones without a notch';
-			case 'ttu_match_popup': return 'Match the dictionary popup to the page';
+			case 'ttu_match_popup': return 'Popup matches the page';
 			case 'ttu_match_popup_desc': return 'Uses the page theme for the popup';
 			case 'ttu_more': return 'More';
 			case 'ttu_backup_sync': return 'Backup and sync';
@@ -1162,6 +1210,54 @@ extension on _StringsEn {
 			case 'ttu_weeks_ago': return ({required Object n}) => '${n} weeks ago';
 			case 'ttu_month_ago': return '1 month ago';
 			case 'ttu_months_ago': return ({required Object n}) => '${n} months ago';
+			case 'my_words': return 'My words';
+			case 'my_words_add': return 'Add to My words';
+			case 'my_words_edit': return 'Edit word';
+			case 'my_words_word': return 'Word';
+			case 'my_words_reading': return 'Reading';
+			case 'my_words_meaning': return 'Meaning';
+			case 'my_words_meaning_hint': return 'Retrieval-augmented generation';
+			case 'my_words_saved': return 'Saved to My words';
+			case 'my_words_deleted': return 'Word removed';
+			case 'my_words_empty': return 'No words yet';
+			case 'my_words_info': return 'Your own meanings. They show first whenever you look the word up, in any book.';
+			case 'my_words_new': return 'New word';
+			case 'add_word': return 'Add word';
+			case 'ttu_page_info': return 'Books in this language open with these settings.';
+			case 'ttu_font': return 'Font';
+			case 'ttu_font_serif': return 'Serif';
+			case 'ttu_font_sans': return 'Sans';
+			case 'ttu_font_mincho': return 'Mincho';
+			case 'ttu_font_klee': return 'Klee';
+			case 'ttu_line_spacing': return 'Line spacing';
+			case 'ttu_margins': return 'Margins';
+			case 'ttu_columns': return 'Columns';
+			case 'ttu_columns_auto': return 'Auto';
+			case 'ttu_furigana_label': return 'Furigana';
+			case 'ttu_furigana_show': return 'Show';
+			case 'ttu_furigana_faded': return 'Faded';
+			case 'ttu_furigana_hidden': return 'Hide';
+			case 'ttu_furigana_tap': return 'On tap';
+			case 'ttu_furigana_info': return 'Faded shows readings in grey. On tap shows them when you tap a word.';
+			case 'ttu_avoid_break': return 'Keep paragraphs whole';
+			case 'ttu_avoid_break_info': return 'Moves a paragraph to the next page instead of splitting it.';
+			case 'ttu_blur_images': return 'Blur images';
+			case 'ttu_blur_images_info': return 'Hides pictures behind a spoiler cover until you tap them.';
+			case 'ttu_full_screen_info': return 'Hides the status and navigation bars. A swipe from the edge then only shows them, so it takes two swipes to leave or open notifications.';
+			case 'ttu_camera_area': return 'Use the camera area';
+			case 'ttu_camera_area_info': return 'Lets the page run under the camera cutout.';
+			case 'ttu_keep_screen_on': return 'Keep the screen on';
+			case 'ttu_auto_save_info': return 'Saves as you read and when you leave a book.';
+			case 'ttu_match_popup_info': return 'Uses the page theme for the dictionary popup.';
+			case 'ttu_scroll_step_info': return 'How far each key press scrolls in Scroll layout.';
+			case 'file_access_title': return 'Allow access to your files?';
+			case 'file_access_media': return 'Photos, videos and audio';
+			case 'file_access_all': return 'All files';
+			case 'file_access_allow': return 'Allow';
+			case 'file_access_not_now': return 'Not now';
+			case 'file_access_info': return 'Needed to open videos and manga from folders on your phone. Photos, videos and audio is enough to play videos; All files also finds subtitle files next to them. Books and dictionaries never need this.';
+			case 'file_access_info_short': return 'Needed to open videos and manga from folders on your phone. Books and dictionaries never need this.';
+			case 'file_access_denied': return 'Files can\'t be opened without access. You can allow it in Android settings.';
 			default: return null;
 		}
 	}

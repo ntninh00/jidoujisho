@@ -2654,6 +2654,12 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
   /// Shows the dialog for importing an external subtitle.
   Future<void> importExternalSubtitle() async {
     final themeData = Theme.of(context);
+    if (!await ensureFileAccess(context: context, appModel: appModel)) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
 
     Iterable<String>? filePaths = await FilesystemPicker.open(
       title: '',

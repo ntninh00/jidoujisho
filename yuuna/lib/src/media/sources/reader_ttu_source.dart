@@ -439,6 +439,37 @@ class ReaderTtuSource extends ReaderMediaSource {
         key: 'page_${code}_furigana',
         defaultValue: true,
       ),
+      fontFamily: getPreference<String>(
+        key: 'page_${code}_font',
+        defaultValue: '',
+      ),
+      lineHeight: getPreference<double>(
+        key: 'page_${code}_line_height',
+        defaultValue: 1.65,
+      ),
+      margin: getPreference<int>(
+        key: 'page_${code}_margin',
+        defaultValue: 0,
+      ),
+      columns: getPreference<int>(
+        key: 'page_${code}_columns',
+        defaultValue: 0,
+      ),
+      furiganaStyle: getPreference<String>(
+        key: 'page_${code}_furigana_style',
+        defaultValue: 'partial',
+      ),
+      avoidPageBreak: getPreference<bool>(
+        key: 'page_${code}_avoid_break',
+        defaultValue: false,
+      ),
+
+      /// Spoiler covers suit novels; in English books, which are often
+      /// non-fiction, they mostly hide figures.
+      blurImages: getPreference<bool>(
+        key: 'page_${code}_blur_images',
+        defaultValue: language is JapaneseLanguage,
+      ),
     );
   }
 
@@ -455,6 +486,19 @@ class ReaderTtuSource extends ReaderMediaSource {
         key: 'page_${code}_paginated', value: preset.paginated);
     await setPreference<bool>(
         key: 'page_${code}_furigana', value: preset.furigana);
+    await setPreference<String>(
+        key: 'page_${code}_font', value: preset.fontFamily);
+    await setPreference<double>(
+        key: 'page_${code}_line_height', value: preset.lineHeight);
+    await setPreference<int>(key: 'page_${code}_margin', value: preset.margin);
+    await setPreference<int>(
+        key: 'page_${code}_columns', value: preset.columns);
+    await setPreference<String>(
+        key: 'page_${code}_furigana_style', value: preset.furiganaStyle);
+    await setPreference<bool>(
+        key: 'page_${code}_avoid_break', value: preset.avoidPageBreak);
+    await setPreference<bool>(
+        key: 'page_${code}_blur_images', value: preset.blurImages);
   }
 
   /// Script that applies the page settings for [language] before ッツ loads.
@@ -570,6 +614,28 @@ class ReaderTtuSource extends ReaderMediaSource {
       key: 'highlight_on_tap',
       value: !highlightOnTap,
     );
+  }
+
+  /// Hides the status and navigation bars while reading. Off by default, so
+  /// the phone's swipe gestures work with one swipe; on brings back the
+  /// original full screen where the first swipe only shows the bars.
+  bool get fullScreen {
+    return getPreference<bool>(key: 'ttu_full_screen', defaultValue: false);
+  }
+
+  /// Toggles hiding the system bars while reading.
+  void toggleFullScreen() async {
+    await setPreference<bool>(key: 'ttu_full_screen', value: !fullScreen);
+  }
+
+  /// Keeps the screen on while a book is open.
+  bool get keepScreenOn {
+    return getPreference<bool>(key: 'ttu_keep_screen_on', defaultValue: true);
+  }
+
+  /// Toggles keeping the screen on while reading.
+  void toggleKeepScreenOn() async {
+    await setPreference<bool>(key: 'ttu_keep_screen_on', value: !keepScreenOn);
   }
 
   /// This ensures that the internal version included with the app always uses

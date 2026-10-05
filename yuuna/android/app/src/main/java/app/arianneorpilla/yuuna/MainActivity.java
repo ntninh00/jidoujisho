@@ -30,10 +30,14 @@ import java.io.File;
 import com.ichi2.anki.api.NoteInfo;
 import com.ryanheise.audioservice.AudioServiceActivity;
 import android.content.res.Configuration;
+import android.content.pm.PackageManager;
 
 public class MainActivity extends AudioServiceActivity {
     private static final String ANKIDROID_CHANNEL = "app.arianneorpilla.yuuna/anki";
-    private static final int AD_PERM_REQUEST = 0;
+    private static final int AD_PERM_REQUEST = 4210;
+
+    /// Waits for the answer to the AnkiDroid permission request.
+    private MethodChannel.Result pendingAnkiPermission;
 
     private Activity context;
     private AnkiDroidHelper mAnkiDroid;
@@ -48,6 +52,16 @@ public class MainActivity extends AudioServiceActivity {
         mAnkiDroid = new AnkiDroidHelper(context);
     }
     
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == AD_PERM_REQUEST && pendingAnkiPermission != null) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            pendingAnkiPermission.success(granted);
+            pendingAnkiPermission = null;
+        }
+    }
 
     private boolean deckExists(String deck) {
         Long deckId = mAnkiDroid.findDeckIdByName(deck);
@@ -200,9 +214,14 @@ public class MainActivity extends AudioServiceActivity {
                             break;
                         case "requestAnkidroidPermissions":
                             if (mAnkiDroid.shouldRequestPermission()) {
+                                if (pendingAnkiPermission != null) {
+                                    pendingAnkiPermission.success(false);
+                                }
+                                pendingAnkiPermission = result;
                                 mAnkiDroid.requestPermission(MainActivity.this, AD_PERM_REQUEST);
+                            } else {
+                                result.success(true);
                             }
-                            result.success(true);
                             break;
                         case "addFileToMedia":
                             System.out.println(filename);

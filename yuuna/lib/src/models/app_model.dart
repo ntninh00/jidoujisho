@@ -372,6 +372,45 @@ class AppModel with ChangeNotifier {
     });
   }
 
+  /// Changes whenever a word is added to, edited in or removed from My words,
+  /// so open lookups can show it.
+  final ValueNotifier<int> myWordsVersion = ValueNotifier(0);
+
+  /// Every word in My words, newest first.
+  List<MyWord> get myWords => MyWords.all(_database);
+
+  /// The word the user defined for [heading], if any.
+  MyWord? myWordFor(DictionaryHeading heading) =>
+      MyWords.forHeading(_database, heading);
+
+  /// Adds a word to My words, or replaces [replaceEntryId] with it.
+  void saveMyWord({
+    required String term,
+    required String meaning,
+    String reading = '',
+    int? replaceEntryId,
+  }) {
+    MyWords.save(
+      _database,
+      term: term,
+      reading: reading,
+      meaning: meaning,
+      replaceEntryId: replaceEntryId,
+    );
+    _onMyWordsChanged();
+  }
+
+  /// Removes a word from My words.
+  void deleteMyWord(int entryId) {
+    MyWords.delete(_database, entryId);
+    _onMyWordsChanged();
+  }
+
+  void _onMyWordsChanged() {
+    clearDictionaryResultsCache();
+    myWordsVersion.value++;
+  }
+
   /// Returns all dictionary history results. Oldest is first.
   List<DictionarySearchResult> get dictionaryHistory =>
       _database.dictionarySearchResults
@@ -1022,6 +1061,7 @@ class AppModel with ChangeNotifier {
       CardCreatorAction(),
       InstantExportAction(),
       AddToStashAction(),
+      MyWordsAction(),
       CopyToClipboardAction(),
       ShareAction(),
       PlayAudioAction(),
@@ -1034,6 +1074,34 @@ class AppModel with ChangeNotifier {
         ),
       ),
     );
+  }
+
+  /// The popup's bookmark button now adds to My words. Profiles made before
+  /// that still point it at the Stash, so move them over once.
+  void moveStashButtonToMyWords() {
+    if (_preferences.get('my_words_button', defaultValue: false)) {
+      return;
+    }
+    List<AnkiMapping> updated = [];
+    for (AnkiMapping mapping in _database.ankiMappings.where().findAllSync()) {
+      Map<int, String>? actions = mapping.actions;
+      if (actions == null || actions.containsValue(MyWordsAction.key)) {
+        continue;
+      }
+      for (MapEntry<int, String> action in actions.entries) {
+        if (action.value == AddToStashAction.key) {
+          mapping.actions = {...actions, action.key: MyWordsAction.key};
+          updated.add(mapping);
+          break;
+        }
+      }
+    }
+    if (updated.isNotEmpty) {
+      _database.writeTxnSync(() {
+        _database.ankiMappings.putAllSync(updated);
+      });
+    }
+    _preferences.put('my_words_button', true);
   }
 
   /// Populate default mapping if it does not exist in the database.
@@ -1214,9 +1282,9 @@ class AppModel with ChangeNotifier {
     _preferences = await Hive.openBox('appModel');
     _dictionaryHistory = await Hive.openBox('dictionaryHistory');
 
-    /// Perform startup activities unnecessary to further initialisation here.
-    await requestExternalStoragePermissions();
-    await requestAnkidroidPermissions();
+    /// Nothing is asked for at startup. File and AnkiDroid access are asked
+    /// for when a feature first needs them, see [requestFileAccess] and
+    /// [requestAnkidroidPermissions].
 
     /// These directories will commonly be accessed.
     _temporaryDirectory = await getTemporaryDirectory();
@@ -1967,34 +2035,29 @@ class AppModel with ChangeNotifier {
     _shouldHideStatusBarWhenInMedia = true;
   }
 
-  /// Requests for full external storage permissions. Required to handle video
-  /// files and their subtitle files in the same directory.
-  Future<void> requestExternalStoragePermissions() async {
-    if (isFirstTimeSetup) {
-      Fluttertoast.showToast(
-        msg: t.storage_permissions,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-      );
-    }
+  /// Whether the app may offer a choice between media-only and all-files
+  /// access. Below Android 11 storage access covers both.
+  bool get canLimitFileAccess => _androidDeviceInfo.version.sdkInt >= 30;
 
-    final cameraGranted = await Permission.camera.isGranted;
-    if (!cameraGranted) {
-      await Permission.camera.request();
-    }
-
-    final storageGranted = await Permission.storage.isGranted;
-    if (!storageGranted) {
-      await Permission.storage.request();
-    }
-
-    if (_androidDeviceInfo.version.sdkInt >= 30) {
-      final manageStorageGranted =
-          await Permission.manageExternalStorage.isGranted;
-      if (!manageStorageGranted) {
-        await Permission.manageExternalStorage.request();
+  /// Whether the app can read files on the phone. With [allFiles], only
+  /// access to every file counts, which subtitle files beside videos need.
+  Future<bool> hasFileAccess({bool allFiles = false}) async {
+    if (canLimitFileAccess) {
+      if (await Permission.manageExternalStorage.isGranted) {
+        return true;
       }
+      return !allFiles && await Permission.storage.isGranted;
     }
+    return Permission.storage.isGranted;
+  }
+
+  /// Asks for file access: photos, videos and audio only, or with
+  /// [allFiles], every file. Resolves to whether access was granted.
+  Future<bool> requestFileAccess({required bool allFiles}) async {
+    if (allFiles && canLimitFileAccess) {
+      return (await Permission.manageExternalStorage.request()).isGranted;
+    }
+    return (await Permission.storage.request()).isGranted;
   }
 
   /// Used to communicate back and forth with Dart and native code.
@@ -2035,10 +2098,18 @@ class AppModel with ChangeNotifier {
     );
   }
 
-  /// Used to ask for AnkiDroid database permissions. Should be called at
-  /// startup.
-  Future<void> requestAnkidroidPermissions() async {
-    await methodChannel.invokeMethod('requestAnkidroidPermissions');
+  /// Asks for access to AnkiDroid's cards, the first time cards are needed.
+  /// Resolves to whether access is granted. Once granted, Android does not
+  /// ask again.
+  Future<bool> requestAnkidroidPermissions() async {
+    try {
+      return await methodChannel
+              .invokeMethod<bool>('requestAnkidroidPermissions') ??
+          false;
+    } catch (error) {
+      debugPrint('AnkiDroid permission: $error');
+      return false;
+    }
   }
 
   /// Adds the default 'jidoujisho Kinomoto' model to the list of Anki card types.
@@ -2111,6 +2182,7 @@ class AppModel with ChangeNotifier {
   /// Get a list of decks from the Anki background service that can be used
   /// for export.
   Future<List<String>> getDecks() async {
+    await requestAnkidroidPermissions();
     try {
       Map<dynamic, dynamic> result =
           await methodChannel.invokeMethod('getDecks');
@@ -2127,6 +2199,7 @@ class AppModel with ChangeNotifier {
   /// Get a list of models from the Anki background service that can be used
   /// for export.
   Future<List<String>> getModelList() async {
+    await requestAnkidroidPermissions();
     try {
       Map<dynamic, dynamic> result =
           await methodChannel.invokeMethod('getModelList');
@@ -2148,6 +2221,7 @@ class AppModel with ChangeNotifier {
   /// Get a list of field names for a given [model] name in Anki. This function
   /// assumes that the model name can be found in [getDecks] and is valid.
   Future<List<String>> getFieldList(String model) async {
+    await requestAnkidroidPermissions();
     try {
       List<String> fields = List<String>.from(
         await methodChannel.invokeMethod(
@@ -2207,6 +2281,7 @@ class AppModel with ChangeNotifier {
     required String deck,
     required Function() onSuccess,
   }) async {
+    await requestAnkidroidPermissions();
     if (mapping.isExportFieldsEmpty) {
       Fluttertoast.showToast(
         msg: t.export_profile_empty,
@@ -2595,6 +2670,23 @@ class AppModel with ChangeNotifier {
   /// Whether or not the media item should be killed upon exit.
   bool _shouldKillMediaOnPop = false;
 
+  /// The system bar mode while media is open. The reader keeps the status and
+  /// navigation bars, so the phone's swipe gestures work with one swipe,
+  /// unless its full screen setting is on.
+  SystemUiMode get mediaSystemUiMode {
+    MediaSource? source = _currentMediaSource;
+    if (source is ReaderTtuSource && !source.fullScreen) {
+      return SystemUiMode.edgeToEdge;
+    }
+    return SystemUiMode.immersiveSticky;
+  }
+
+  /// Puts the system bars back as the open media wants them, after a page
+  /// or sheet on top of it closes.
+  Future<void> applyMediaSystemUi() {
+    return SystemChrome.setEnabledSystemUIMode(mediaSystemUiMode);
+  }
+
   /// A helper function for launching a media source.
   Future<void> openMedia({
     required WidgetRef ref,
@@ -2621,7 +2713,7 @@ class AppModel with ChangeNotifier {
     _overrideDictionaryTheme = null;
 
     await Wakelock.enable();
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    await applyMediaSystemUi();
 
     if (item != null && mediaSource.implementsHistory) {
       addMediaItem(item);

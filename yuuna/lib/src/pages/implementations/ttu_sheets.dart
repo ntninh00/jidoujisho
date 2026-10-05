@@ -712,6 +712,8 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                               : '${t.ttu_memos} · ${memos.length}',
                           style: textTheme.labelMedium!.copyWith(color: muted),
                         ),
+                        JidoujishoInfoButton(
+                            message: t.ttu_memo_hint, size: 14),
                         const Spacer(),
                         if (memos.length > 1) ...[
                           _SortButton(
@@ -759,23 +761,6 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                           widget.onOpen(memo: memo);
                         },
                         onEdit: () => _edit(memo),
-                      ),
-                    ),
-                  if (memos.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Row(
-                        children: [
-                          Icon(Ui.edit_note, size: 18, color: muted),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              t.ttu_memo_hint,
-                              style:
-                                  textTheme.bodySmall!.copyWith(color: muted),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                 ],
@@ -1167,7 +1152,7 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               _stat(
                 label: t.ttu_language,
                 value: book.language.languageName,
-                detail: t.ttu_uses_dictionaries,
+                detail: '',
               ),
             ],
           ),
@@ -1262,11 +1247,10 @@ class _TtuReaderSettingsSheetState
   String get _effectiveTheme =>
       _preset.theme ?? (appModelNoUpdate.isDarkMode ? 'dark' : 'light');
 
-  Widget _group(String title, {String? note}) {
+  Widget _group(String title, {String? info}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(20, 18, 12, 2),
+      child: Row(
         children: [
           Text(
             title.toUpperCase(),
@@ -1276,46 +1260,73 @@ class _TtuReaderSettingsSheetState
               letterSpacing: 0.6,
             ),
           ),
-          if (note != null)
-            Text(
-              note,
-              style: textTheme.bodySmall!
-                  .copyWith(color: theme.unselectedWidgetColor),
-            ),
+          if (info != null) JidoujishoInfoButton(message: info, size: 14),
         ],
       ),
     );
   }
 
+  /// A setting that is on or off. The whole row toggles it.
   Widget _switch({
     required String title,
-    required String description,
     required bool value,
     required ValueChanged<bool> onChanged,
+    String? info,
     bool indent = false,
   }) {
-    return SwitchListTile(
-      value: value,
-      onChanged: onChanged,
-      contentPadding: EdgeInsets.only(left: indent ? 36 : 20, right: 12),
-      title: Text(title, style: textTheme.bodyMedium),
-      subtitle: Text(
-        description,
-        style:
-            textTheme.bodySmall!.copyWith(color: theme.unselectedWidgetColor),
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(indent ? 36 : 20, 2, 12, 2),
+        child: Row(
+          children: [
+            Flexible(child: Text(title, style: textTheme.bodyMedium)),
+            if (info != null) JidoujishoInfoButton(message: info),
+            const Spacer(),
+            Switch(value: value, onChanged: onChanged),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _row(String title, Widget trailing) {
+  Widget _row(String title, Widget trailing, {String? info}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 16, 6),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: textTheme.bodyMedium)),
+          Flexible(child: Text(title, style: textTheme.bodyMedium)),
+          if (info != null) JidoujishoInfoButton(message: info),
+          const Spacer(),
           trailing,
         ],
       ),
+    );
+  }
+
+  /// A number with minus and plus buttons.
+  Widget _stepper({
+    required String value,
+    required VoidCallback? onLess,
+    required VoidCallback? onMore,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _RoundButton(icon: Ui.remove, onTap: onLess),
+        SizedBox(
+          width: 44,
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: textTheme.bodyLarge!.copyWith(
+              fontWeight: FontWeight.bold,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+        _RoundButton(icon: Ui.add, onTap: onMore),
+      ],
     );
   }
 
@@ -1368,6 +1379,14 @@ class _TtuReaderSettingsSheetState
     );
   }
 
+  /// The Flutter font closest to the chosen ッツ font, for the preview.
+  String? get _previewFontFamily {
+    if (_preset.fontFamily == 'Noto Sans JP') {
+      return 'NotoSansJP';
+    }
+    return 'serif';
+  }
+
   Widget _preview() {
     List<int> colors = TtuPagePreset.themeColors[_effectiveTheme]!;
     Color background = Color(colors[0]);
@@ -1379,17 +1398,17 @@ class _TtuReaderSettingsSheetState
     TextStyle style = TextStyle(
       color: foreground,
       fontSize: size,
-      height: 1.6,
-      fontFamily: _language.defaultFontFamily,
+      height: _preset.lineHeight,
+      fontFamily: _previewFontFamily,
     );
 
     Widget content = _preset.vertical
         ? LayoutBuilder(
             builder: (context, constraints) {
+              double column = size * _preset.lineHeight;
               int perColumn =
                   max(1, (constraints.maxHeight / (size * 1.05)).floor());
-              int columns =
-                  max(1, (constraints.maxWidth / (size * 1.6)).floor());
+              int columns = max(1, (constraints.maxWidth / column).floor());
               List<String> characters = sample.characters.toList();
               return Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -1397,7 +1416,7 @@ class _TtuReaderSettingsSheetState
                 children: [
                   for (int c = columns - 1; c >= 0; c--)
                     SizedBox(
-                      width: size * 1.6,
+                      width: column,
                       child: Column(
                         children: [
                           for (int i = c * perColumn;
@@ -1419,11 +1438,14 @@ class _TtuReaderSettingsSheetState
           )
         : Text(sample, style: style, overflow: TextOverflow.fade);
 
+    double inset = 10 + _preset.margin * 0.3;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       height: 116,
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 6),
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      padding: _preset.vertical
+          ? EdgeInsets.fromLTRB(inset + 4, 10, inset + 4, 10)
+          : EdgeInsets.fromLTRB(14, inset, 14, inset),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(ttuCardRadius),
@@ -1433,10 +1455,24 @@ class _TtuReaderSettingsSheetState
     );
   }
 
+  /// The furigana choice as one value: shown, or how it is hidden.
+  String get _furiganaChoice =>
+      _preset.furigana ? 'show' : _preset.furiganaStyle;
+
+  void _setFurigana(String choice) {
+    _update((preset) {
+      preset.furigana = choice == 'show';
+      if (choice != 'show') {
+        preset.furiganaStyle = choice;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     List<Language> languages = widget.languages;
     bool hasScroll = !_preset.paginated;
+    bool japanese = _language is JapaneseLanguage;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -1461,16 +1497,16 @@ class _TtuReaderSettingsSheetState
                 ),
                 IconButton(
                   tooltip: t.dialog_close,
-                  icon: const Icon(Ui.close),
+                  icon: const Icon(Ui.cross),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
-          _group(t.ttu_page, note: t.ttu_page_note),
+          _group(t.ttu_page, info: t.ttu_page_info),
           if (languages.length > 1)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: _segmented<Language>(
@@ -1488,10 +1524,6 @@ class _TtuReaderSettingsSheetState
               ),
             ),
           _preview(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Text(t.ttu_theme, style: textTheme.bodyMedium),
-          ),
           SizedBox(
             height: 74,
             child: ListView(
@@ -1502,39 +1534,65 @@ class _TtuReaderSettingsSheetState
                   _ThemeSwatch(
                     name: name,
                     selected: _effectiveTheme == name,
-                    sample: _language is JapaneseLanguage ? 'あ' : 'Aa',
+                    sample: japanese ? 'あ' : 'Aa',
                     onTap: () => _update((preset) => preset.theme = name),
                   ),
               ],
             ),
           ),
           _row(
-            t.ttu_text_size,
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _RoundButton(
-                  label: 'A−',
-                  onTap: () => _update((preset) =>
-                      preset.fontSize = max(12, preset.fontSize - 2)),
-                ),
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    '${_preset.fontSize}',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyLarge!.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-                _RoundButton(
-                  label: 'A+',
-                  onTap: () => _update((preset) =>
-                      preset.fontSize = min(48, preset.fontSize + 2)),
-                ),
+            t.ttu_font,
+            _segmented<String>(
+              values: TtuPagePreset.fontFamilies,
+              labels: [
+                t.ttu_font_serif,
+                t.ttu_font_sans,
+                t.ttu_font_mincho,
+                t.ttu_font_klee,
               ],
+              selected: TtuPagePreset.fontFamilies.contains(_preset.fontFamily)
+                  ? _preset.fontFamily
+                  : '',
+              onSelect: (value) =>
+                  _update((preset) => preset.fontFamily = value),
+            ),
+          ),
+          _row(
+            t.ttu_text_size,
+            _stepper(
+              value: '${_preset.fontSize}',
+              onLess: _preset.fontSize > 12
+                  ? () => _update((preset) => preset.fontSize -= 2)
+                  : null,
+              onMore: _preset.fontSize < 48
+                  ? () => _update((preset) => preset.fontSize += 2)
+                  : null,
+            ),
+          ),
+          _row(
+            t.ttu_line_spacing,
+            _stepper(
+              value: _preset.lineHeight.toStringAsFixed(1),
+              onLess: _preset.lineHeight > 1.25
+                  ? () => _update((preset) => preset.lineHeight =
+                      ((preset.lineHeight - 0.1) * 10).round() / 10)
+                  : null,
+              onMore: _preset.lineHeight < 2.45
+                  ? () => _update((preset) => preset.lineHeight =
+                      ((preset.lineHeight + 0.1) * 10).round() / 10)
+                  : null,
+            ),
+          ),
+          _row(
+            t.ttu_margins,
+            _stepper(
+              value: '${_preset.margin}',
+              onLess: _preset.margin > 0
+                  ? () => _update((preset) => preset.margin -= 8)
+                  : null,
+              onMore: _preset.margin < 96
+                  ? () => _update((preset) => preset.margin += 8)
+                  : null,
             ),
           ),
           _row(
@@ -1556,37 +1614,93 @@ class _TtuReaderSettingsSheetState
                   _update((preset) => preset.paginated = value),
             ),
           ),
-          if (_language is JapaneseLanguage)
-            _switch(
-              title: t.ttu_furigana,
-              description: t.ttu_furigana_desc,
-              value: _preset.furigana,
-              onChanged: (value) =>
-                  _update((preset) => preset.furigana = value),
+          if (_preset.paginated)
+            _row(
+              t.ttu_columns,
+              _segmented<int>(
+                values: const [0, 1, 2],
+                labels: [t.ttu_columns_auto, '1', '2'],
+                selected: _preset.columns,
+                onSelect: (value) =>
+                    _update((preset) => preset.columns = value),
+              ),
             ),
+          if (japanese)
+            _row(
+              t.ttu_furigana_label,
+              _segmented<String>(
+                values: const ['show', 'partial', 'full', 'toggle'],
+                labels: [
+                  t.ttu_furigana_show,
+                  t.ttu_furigana_faded,
+                  t.ttu_furigana_hidden,
+                  t.ttu_furigana_tap,
+                ],
+                selected: _furiganaChoice,
+                onSelect: _setFurigana,
+              ),
+              info: t.ttu_furigana_info,
+            ),
+          _switch(
+            title: t.ttu_avoid_break,
+            info: t.ttu_avoid_break_info,
+            value: _preset.avoidPageBreak,
+            onChanged: (value) =>
+                _update((preset) => preset.avoidPageBreak = value),
+          ),
+          _switch(
+            title: t.ttu_blur_images,
+            info: t.ttu_blur_images_info,
+            value: _preset.blurImages,
+            onChanged: (value) =>
+                _update((preset) => preset.blurImages = value),
+          ),
           _group(t.ttu_while_reading),
           _switch(
+            title: t.ttu_full_screen,
+            info: t.ttu_full_screen_info,
+            value: source.fullScreen,
+            onChanged: (_) => _toggle(source.toggleFullScreen),
+          ),
+          if (source.fullScreen)
+            _switch(
+              title: t.ttu_camera_area,
+              info: t.ttu_camera_area_info,
+              value: source.extendPageBeyondNavigationBar,
+              indent: true,
+              onChanged: (_) =>
+                  _toggle(source.toggleExtendPageBeyondNavigationBar),
+            ),
+          _switch(
+            title: t.ttu_keep_screen_on,
+            value: source.keepScreenOn,
+            onChanged: (_) => _toggle(source.toggleKeepScreenOn),
+          ),
+          _switch(
             title: t.ttu_auto_save,
-            description: t.ttu_auto_save_desc,
+            info: t.ttu_auto_save_info,
             value: source.autoSavePosition,
             onChanged: (_) => _toggle(source.toggleAutoSavePosition),
           ),
           _switch(
             title: t.ttu_highlight,
-            description: t.ttu_highlight_desc,
             value: source.highlightOnTap,
             onChanged: (_) => _toggle(source.toggleHighlightOnTap),
           ),
           _switch(
+            title: t.ttu_match_popup,
+            info: t.ttu_match_popup_info,
+            value: source.adaptTtuTheme,
+            onChanged: (_) => _toggle(source.toggleAdaptTtuTheme),
+          ),
+          _switch(
             title: t.ttu_volume,
-            description: t.ttu_volume_desc,
             value: source.volumePageTurningEnabled,
             onChanged: (_) => _toggle(source.toggleVolumePageTurningEnabled),
           ),
           if (source.volumePageTurningEnabled)
             _switch(
               title: t.ttu_volume_swap,
-              description: t.ttu_volume_swap_desc,
               value: source.volumePageTurningInverted,
               indent: true,
               onChanged: (_) => _toggle(source.toggleVolumePageTurningInverted),
@@ -1599,12 +1713,9 @@ class _TtuReaderSettingsSheetState
                 children: [
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          t.ttu_scroll_step,
-                          style: textTheme.bodyMedium,
-                        ),
-                      ),
+                      Text(t.ttu_scroll_step, style: textTheme.bodyMedium),
+                      JidoujishoInfoButton(message: t.ttu_scroll_step_info),
+                      const Spacer(),
                       Text(
                         '${source.volumePageTurningSpeed}',
                         style: textTheme.bodySmall,
@@ -1620,33 +1731,14 @@ class _TtuReaderSettingsSheetState
                     onChanged: (value) => _toggle(
                         () => source.setVolumePageTurningSpeed(value.round())),
                   ),
-                  Text(
-                    t.ttu_scroll_step_desc,
-                    style: textTheme.bodySmall!
-                        .copyWith(color: theme.unselectedWidgetColor),
-                  ),
                 ],
               ),
             ),
-          _switch(
-            title: t.ttu_full_screen,
-            description: t.ttu_full_screen_desc,
-            value: source.extendPageBeyondNavigationBar,
-            onChanged: (_) =>
-                _toggle(source.toggleExtendPageBeyondNavigationBar),
-          ),
-          _switch(
-            title: t.ttu_match_popup,
-            description: t.ttu_match_popup_desc,
-            value: source.adaptTtuTheme,
-            onChanged: (_) => _toggle(source.toggleAdaptTtuTheme),
-          ),
           _group(t.ttu_more),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             leading: const Icon(Ui.cloud_upload_outlined),
             title: Text(t.ttu_backup_sync),
-            subtitle: Text(t.ttu_backup_sync_desc),
             trailing: const Icon(Ui.chevron_right),
             onTap: () {
               Navigator.pop(context);
@@ -1657,7 +1749,6 @@ class _TtuReaderSettingsSheetState
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             leading: const Icon(Ui.tune),
             title: Text(t.ttu_all_settings),
-            subtitle: Text(t.ttu_all_settings_desc),
             trailing: const Icon(Ui.chevron_right),
             onTap: () {
               Navigator.pop(context);
@@ -1730,12 +1821,14 @@ class _ThemeSwatch extends StatelessWidget {
 
 class _RoundButton extends StatelessWidget {
   const _RoundButton({
-    required this.label,
+    required this.icon,
     required this.onTap,
   });
 
-  final String label;
-  final VoidCallback onTap;
+  final IconData icon;
+
+  /// Null at the end of the range, which greys the button out.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1747,14 +1840,12 @@ class _RoundButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: SizedBox(
-          width: 38,
-          height: 38,
-          child: Center(
-            child: Text(
-              label,
-              style: theme.textTheme.labelMedium!
-                  .copyWith(fontWeight: FontWeight.bold),
-            ),
+          width: 36,
+          height: 36,
+          child: Icon(
+            icon,
+            size: 18,
+            color: onTap == null ? theme.disabledColor : null,
           ),
         ),
       ),
@@ -1810,9 +1901,7 @@ class _TtuSourcePickerSheetState extends BasePageState<TtuSourcePickerSheet> {
                     selectedColor: theme.colorScheme.primary,
                     leading: Icon(source.icon),
                     title: Text(source.getLocalisedSourceName(appModel)),
-                    subtitle: Text(source.getLocalisedDescription(appModel)),
-                    trailing:
-                        source == current ? const Icon(Ui.check) : null,
+                    trailing: source == current ? const Icon(Ui.check) : null,
                     onTap: () {
                       Navigator.pop(context);
                       appModel.setCurrentSourceForMediaType(

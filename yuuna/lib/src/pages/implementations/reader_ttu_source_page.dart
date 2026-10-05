@@ -10,9 +10,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_assets_server/local_assets_server.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:spaces/spaces.dart';
-import 'package:yuuna/creator.dart';
+import 'package:wakelock/wakelock.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
@@ -102,6 +101,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       darkMode: appModelNoUpdate.isDarkMode,
     );
     await appModelNoUpdate.setSessionLanguage(_language);
+    if (!mediaSource.keepScreenOn) {
+      await Wakelock.disable();
+    }
     if (mounted) {
       setState(() => _ready = true);
     }
@@ -140,7 +142,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     );
     if (appModel.isMediaOpen) {
       await Future.delayed(const Duration(milliseconds: 5), () {});
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await appModel.applyMediaSystemUi();
     }
     _isRecursiveSearching = false;
 
@@ -297,21 +299,26 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       },
       child: WillPopScope(
         onWillPop: onWillPop,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          resizeToAvoidBottomInset: false,
-          body: SafeArea(
-            top: !mediaSource.extendPageBeyondNavigationBar,
-            bottom: false,
-            child: Stack(
-              fit: StackFit.expand,
-              alignment: Alignment.center,
-              children: <Widget>[
-                buildBody(),
-                buildDictionary(),
-                if (_maskBuilt) buildMask(),
-                buildBackChip(),
-              ],
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: _systemBarStyle,
+          child: Scaffold(
+            backgroundColor:
+                mediaSource.fullScreen ? Colors.black : _pageColors[0],
+            resizeToAvoidBottomInset: false,
+            body: SafeArea(
+              top: !mediaSource.fullScreen ||
+                  !mediaSource.extendPageBeyondNavigationBar,
+              bottom: !mediaSource.fullScreen,
+              child: Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: <Widget>[
+                  buildBody(),
+                  buildDictionary(),
+                  if (_maskBuilt) buildMask(),
+                  buildBackChip(),
+                ],
+              ),
             ),
           ),
         ),
@@ -350,6 +357,22 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     List<int> colors =
         TtuPagePreset.themeColors[theme] ?? TtuPagePreset.themeColors['dark']!;
     return [Color(colors[0]), Color(colors[1])];
+  }
+
+  /// Status and navigation bars in the page's colours, so they read as part
+  /// of the page when they are shown.
+  SystemUiOverlayStyle get _systemBarStyle {
+    Color page = _pageColors[0];
+    bool dark = page.computeLuminance() < 0.4;
+    Brightness icons = dark ? Brightness.light : Brightness.dark;
+    return SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: icons,
+      statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: page,
+      systemNavigationBarDividerColor: page,
+      systemNavigationBarIconBrightness: icons,
+    );
   }
 
   /// Covers the WebView while ッツ loads, saying where the book will open.
@@ -1004,61 +1027,17 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
           hideDefaultSystemContextMenuItems: true,
         ),
         menuItems: [
-          searchMenuItem(),
-          memoMenuItem(),
-          stashMenuItem(),
           copyMenuItem(),
-          shareMenuItem(),
-          creatorMenuItem(),
+          memoMenuItem(),
+          addWordMenuItem(),
         ],
       );
-
-  /// Get the default context menu for sources that make use of embedded web
-  /// views.
-  ContextMenu get emptyContextMenu => ContextMenu(
-        settings: ContextMenuSettings(
-          hideDefaultSystemContextMenuItems: true,
-        ),
-        menuItems: [],
-      );
-
-  ContextMenuItem searchMenuItem() {
-    return ContextMenuItem(
-      id: 1,
-      title: t.search,
-      action: searchMenuAction,
-    );
-  }
-
-  ContextMenuItem stashMenuItem() {
-    return ContextMenuItem(
-      id: 2,
-      title: t.stash,
-      action: stashMenuAction,
-    );
-  }
 
   ContextMenuItem copyMenuItem() {
     return ContextMenuItem(
       id: 3,
       title: t.copy,
       action: copyMenuAction,
-    );
-  }
-
-  ContextMenuItem shareMenuItem() {
-    return ContextMenuItem(
-      id: 4,
-      title: t.share,
-      action: shareMenuAction,
-    );
-  }
-
-  ContextMenuItem creatorMenuItem() {
-    return ContextMenuItem(
-      id: 5,
-      title: t.creator,
-      action: creatorMenuAction,
     );
   }
 
@@ -1070,28 +1049,33 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     );
   }
 
-  void searchMenuAction() async {
-    String searchTerm = await getSelectedText();
-    _isRecursiveSearching = true;
-
-    await unselectWebViewTextSelection();
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await Future.delayed(const Duration(milliseconds: 5), () {});
-    await appModel.openRecursiveDictionarySearch(
-      searchTerm: searchTerm,
-      killOnPop: false,
+  ContextMenuItem addWordMenuItem() {
+    return ContextMenuItem(
+      id: 7,
+      title: t.add_word,
+      action: addWordMenuAction,
     );
-    await Future.delayed(const Duration(milliseconds: 5), () {});
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-    _isRecursiveSearching = false;
-    _focusNode.requestFocus();
   }
 
-  void stashMenuAction() async {
-    String searchTerm = await getSelectedText();
-    appModel.addToStash(terms: [searchTerm]);
+  /// Opens My words with the selected text as the word.
+  void addWordMenuAction() async {
+    String term = await getSelectedText();
     await unselectWebViewTextSelection();
+    if (term.isEmpty) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    _isRecursiveSearching = true;
+    await showMyWordEditor(
+      context: context,
+      appModel: appModel,
+      term: term,
+    );
+    _isRecursiveSearching = false;
+    await appModel.applyMediaSystemUi();
+    _focusNode.requestFocus();
   }
 
   /// The book on screen, as far as the page knows it.
@@ -1145,7 +1129,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       characters: position.characters,
     );
     _isRecursiveSearching = false;
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    await appModel.applyMediaSystemUi();
     _focusNode.requestFocus();
 
     if (text == null) {
@@ -1168,42 +1152,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     );
   }
 
-  void creatorMenuAction() async {
-    String text = (await getSelectedText()).replaceAll('\\n', '\n');
-
-    await unselectWebViewTextSelection();
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await Future.delayed(const Duration(milliseconds: 5), () {});
-
-    await appModel.openCreator(
-      ref: ref,
-      killOnPop: false,
-      creatorFieldValues: CreatorFieldValues(
-        textValues: {
-          SentenceField.instance: text,
-          TermField.instance: '',
-          ClozeBeforeField.instance: '',
-          ClozeInsideField.instance: '',
-          ClozeAfterField.instance: '',
-        },
-      ),
-    );
-
-    await Future.delayed(const Duration(milliseconds: 5), () {});
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-    _focusNode.requestFocus();
-  }
-
   void copyMenuAction() async {
     String searchTerm = await getSelectedText();
     Clipboard.setData(ClipboardData(text: searchTerm));
-    await unselectWebViewTextSelection();
-  }
-
-  void shareMenuAction() async {
-    String searchTerm = await getSelectedText();
-    Share.share(searchTerm);
     await unselectWebViewTextSelection();
   }
 

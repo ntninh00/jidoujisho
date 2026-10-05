@@ -204,6 +204,9 @@ class ReaderMokuroSource extends ReaderMediaSource {
       {required BuildContext context,
       required WidgetRef ref,
       required AppModel appModel}) async {
+    if (!await ensureFileAccess(context: context, appModel: appModel)) {
+      return;
+    }
     List<Directory> rootDirectories =
         await appModel.getFilePickerDirectoriesForMediaType(mediaType);
 
