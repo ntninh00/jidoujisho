@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to return a formatted text from hidden dictionary entries from
 /// collapsed dictionaries only.
@@ -14,7 +14,7 @@ class CollapsedMeaningField extends Field {
           label: 'Collapsed Meaning',
           description: 'Dictionary definitions only from collapsed'
               ' dictionaries.',
-          icon: Icons.close_fullscreen,
+          icon: Ui.close_fullscreen,
         );
 
   /// Get the singleton instance of this field.

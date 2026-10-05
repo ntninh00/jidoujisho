@@ -207,6 +207,12 @@ flutter:
     - assets/ttu-ebook-reader/settings/
 
   fonts:
+    - family: UiconsRegular
+      fonts:
+        - asset: assets/fonts/uicons-regular-rounded.ttf
+    - family: UiconsSolid
+      fonts:
+        - asset: assets/fonts/uicons-solid-rounded.ttf
     - family: NotoSansJP
       fonts:
         - asset: assets/fonts/NotoSansJP-Regular.otf

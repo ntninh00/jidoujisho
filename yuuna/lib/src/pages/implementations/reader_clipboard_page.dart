@@ -92,7 +92,7 @@ class _ReaderClipboardPageState<ReaderClipboardPage>
   Widget buildPlaceholder() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.paste,
+        icon: Ui.paste,
         message: t.no_text_in_clipboard,
       ),
     );

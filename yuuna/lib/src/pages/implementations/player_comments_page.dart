@@ -105,7 +105,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () async {
         Navigator.pop(context);
       },
@@ -159,7 +159,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
   Widget buildPlaceholder() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.comments_disabled,
+        icon: Ui.comments_disabled,
         message: t.no_comments_queried,
       ),
     );
@@ -380,7 +380,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
                   if (comment.isHearted) const Space.extraSmall(),
                   if (comment.isHearted)
                     const Icon(
-                      Icons.favorite,
+                      Ui.favorite,
                       size: 12,
                       color: Colors.redAccent,
                     )
@@ -443,7 +443,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
               Row(
                 children: [
                   const Icon(
-                    Icons.thumb_up_sharp,
+                    Ui.thumb_up_sharp,
                     size: 11,
                   ),
                   const Space.small(),
@@ -473,7 +473,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.reply,
+                            Ui.reply,
                             size: 11,
                             color: Colors.red,
                           ),
@@ -505,7 +505,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.sentence_picker,
-        icon: Icons.colorize,
+        icon: Ui.colorize,
         onTap: () async {
           appModel.openExampleSentenceDialog(
             exampleSentences: appModel.targetLanguage
@@ -545,7 +545,7 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.card_creator,
-        icon: Icons.note_add,
+        icon: Ui.note_add,
         onTap: () async {
           await appModel.openCreator(
             creatorFieldValues: CreatorFieldValues(

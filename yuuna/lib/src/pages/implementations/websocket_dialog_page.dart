@@ -78,7 +78,7 @@ class _WebsocketDialogPageState extends BasePageState<WebsocketDialogPage> {
                     size: 18,
                     tooltip: t.clear,
                     onTap: _addressController.clear,
-                    icon: Icons.clear,
+                    icon: Ui.clear,
                   ),
                 ),
               ),

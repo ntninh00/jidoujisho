@@ -125,7 +125,7 @@ class _LanguageDialogPageState extends BasePageState<LanguageDialogPage> {
                     children: <InlineSpan>[
                       WidgetSpan(
                         child: Icon(
-                          Icons.info,
+                          Ui.info,
                           size: textTheme.bodySmall?.fontSize,
                         ),
                       ),

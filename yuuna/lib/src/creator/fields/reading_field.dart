@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to track the current sentence context from the current playing media
 /// in the application.
@@ -13,7 +13,7 @@ class ReadingField extends Field {
           uniqueKey: key,
           label: 'Reading',
           description: 'Pronunciation or speech pattern.',
-          icon: Icons.surround_sound_outlined,
+          icon: Ui.surround_sound_outlined,
         );
 
   /// Get the singleton instance of this field.

@@ -49,7 +49,7 @@ class MassifExampleSentencesEnhancement extends Enhancement {
           uniqueKey: key,
           label: 'Massif Example Sentences',
           description: 'Get curated example sentences via Massif.',
-          icon: Icons.article,
+          icon: Ui.article,
           field: TermField.instance,
         );
 

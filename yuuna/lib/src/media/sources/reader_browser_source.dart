@@ -17,7 +17,7 @@ class ReaderBrowserSource extends ReaderMediaSource with ChangeNotifier {
           sourceName: 'Browser',
           description:
               'Navigate websites with a browser which allows searching and mining selected text.',
-          icon: Icons.language,
+          icon: Ui.language,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -96,7 +96,7 @@ class ReaderBrowserSource extends ReaderMediaSource with ChangeNotifier {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.tweaks,
-        icon: Icons.tune,
+        icon: Ui.tune,
         onTap: () {
           showDialog(
             context: context,
@@ -175,7 +175,7 @@ class ReaderBrowserSource extends ReaderMediaSource with ChangeNotifier {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.browse,
-        icon: Icons.launch,
+        icon: Ui.launch,
         onTap: () => openLinkAction(
           context: context,
           ref: ref,

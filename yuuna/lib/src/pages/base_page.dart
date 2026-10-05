@@ -83,7 +83,7 @@ class BasePageState<T extends BasePage> extends ConsumerState<T> {
   }) {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.error,
+        icon: Ui.error,
         message: '$error',
       ),
     );

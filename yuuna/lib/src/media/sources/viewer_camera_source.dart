@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// A media source that allows the user to take images or pick media from their
 /// library and use optical character recognition features.
@@ -12,7 +12,7 @@ class ViewerCameraSource extends ViewerMediaSource {
           sourceName: 'Camera',
           description:
               'View images taken with the camera or picked from media.',
-          icon: Icons.camera_alt_outlined,
+          icon: Ui.camera_alt_outlined,
           implementsSearch: false,
           implementsHistory: false,
         );

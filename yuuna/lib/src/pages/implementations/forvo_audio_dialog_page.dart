@@ -118,7 +118,7 @@ class _ForvoAudioDialogPageState extends BasePageState<ForvoAudioDialogPage> {
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_recordings_found,
       ),
     );
@@ -150,7 +150,7 @@ class _ForvoAudioDialogPageState extends BasePageState<ForvoAudioDialogPage> {
                   : theme.unselectedWidgetColor.withOpacity(0.1),
               child: Row(
                 children: [
-                  const Icon(Icons.record_voice_over),
+                  const Icon(Ui.record_voice_over),
                   const SizedBox(width: 10),
                   Text(
                     result.contributor,

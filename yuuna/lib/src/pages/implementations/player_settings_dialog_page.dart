@@ -198,7 +198,7 @@ class _DictionaryDialogPageState extends BasePageState {
             appModel.setDoubleTapSeekDuration(appModel.doubleTapSeekDuration);
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.undo,
+          icon: Ui.undo,
         ),
         labelText: t.double_tap_seek_duration,
       ),

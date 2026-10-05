@@ -6,7 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:yuuna/dictionary.dart';
-import 'package:yuuna/i18n/strings.g.dart';
+import 'package:yuuna/utils.dart';
 
 /// A dictionary format for archives following the ABBYY Lingvo or DSL format
 /// compatible with GoldenDict.
@@ -20,7 +20,7 @@ class AbbyyLingvoFormat extends DictionaryFormat {
       : super(
           uniqueKey: 'abbyy_lingvo',
           name: 'ABBYY Lingvo (DSL)',
-          icon: Icons.auto_stories_rounded,
+          icon: Ui.auto_stories_rounded,
           allowedExtensions: const ['dsl'],
           isTextFormat: true,
           fileType: FileType.any,

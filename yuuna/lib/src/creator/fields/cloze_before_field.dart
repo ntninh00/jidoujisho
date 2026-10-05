@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Text before highlighted text in a sentence
 class ClozeBeforeField extends Field {
@@ -13,7 +13,7 @@ class ClozeBeforeField extends Field {
           label: 'Cloze Before',
           description: 'Text before highlighted text in a sentence. '
               'Empty if nothing is highlighted.',
-          icon: Icons.keyboard_double_arrow_left,
+          icon: Ui.keyboard_double_arrow_left,
         );
 
   /// Get the singleton instance of this field.

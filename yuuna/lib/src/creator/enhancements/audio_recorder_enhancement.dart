@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// An enhancement that can be used to record audio.
 class AudioRecorderEnhancement extends AudioEnhancement {
@@ -18,7 +19,7 @@ class AudioRecorderEnhancement extends AudioEnhancement {
           label: 'Audio Recorder',
           description:
               'Record and use audio captured from the device microphone.',
-          icon: Icons.mic,
+          icon: Ui.mic,
         );
 
   /// Used to identify this enhancement and to allow a constant value for the

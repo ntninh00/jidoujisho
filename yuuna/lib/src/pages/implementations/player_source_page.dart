@@ -1239,10 +1239,10 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
           child: JidoujishoIconButton(
             size: 24,
             icon: ended
-                ? Icons.replay
+                ? Ui.replay
                 : playing
-                    ? Icons.pause
-                    : Icons.play_arrow,
+                    ? Ui.pause
+                    : Ui.play_arrow,
             tooltip: ended
                 ? t.replay
                 : playing
@@ -1260,14 +1260,14 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
   /// This gets the icon for the central play/pause button.
   Widget getCentralIcon() {
     if (_playerController.value.isEnded) {
-      return const Icon(Icons.replay, size: 32);
+      return const Icon(Ui.replay, size: 32);
     } else {
       if (!_playerController.value.isInitialized) {
-        return const Icon(Icons.play_arrow, color: Colors.transparent);
+        return const Icon(Ui.play_arrow, color: Colors.transparent);
       }
 
       if (!_playerController.value.isPlaying) {
-        return const Icon(Icons.play_arrow);
+        return const Icon(Ui.play_arrow);
       }
 
       return AnimatedIcon(
@@ -1480,7 +1480,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       color: Colors.transparent,
       child: JidoujishoIconButton(
         size: 24,
-        icon: Icons.perm_media,
+        icon: Ui.perm_media,
         tooltip: t.pick_video_file,
         onTap: () async {
           bool shouldResume = !_dialogSmartPaused;
@@ -1522,7 +1522,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       color: Colors.transparent,
       child: JidoujishoIconButton(
         size: 24,
-        icon: Icons.video_settings,
+        icon: Ui.video_settings,
         tooltip: t.change_quality,
         onTap: () async {
           StreamManifest manifest = source.getStreamManifest(widget.item!);
@@ -1547,7 +1547,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       color: Colors.transparent,
       child: JidoujishoIconButton(
         size: 24,
-        icon: Icons.comment_outlined,
+        icon: Ui.comment_outlined,
         tooltip: t.comments,
         onTap: () async {
           clearDictionaryResult();
@@ -1636,7 +1636,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
   Widget buildAudioSubtitlesButton() {
     JidoujishoBottomSheetOption audioOption = JidoujishoBottomSheetOption(
       label: t.player_option_select_audio,
-      icon: Icons.music_note_outlined,
+      icon: Ui.music_note_outlined,
       action: () async {
         Map<int, String> audioEmbeddedTracks =
             await _playerController.getAudioTracks();
@@ -1663,7 +1663,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     options.addAll([
       JidoujishoBottomSheetOption(
         label: t.player_option_select_subtitle,
-        icon: Icons.subtitles_outlined,
+        icon: Ui.subtitles_outlined,
         action: () async {
           Map<int, String> subtitleEmbeddedTracks =
               await _playerController.getSpuTracks();
@@ -1693,7 +1693,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_align_subtitle_transcript,
-        icon: Icons.timer,
+        icon: Ui.timer,
         action: () async {
           final navigator = Navigator.of(context);
           clearDictionaryResult();
@@ -1768,7 +1768,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_subtitle_appearance,
-        icon: Icons.text_fields,
+        icon: Ui.text_fields,
         action: () async {
           bool shouldResume = !_dialogSmartPaused;
           await dialogSmartPause();
@@ -1788,7 +1788,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_blur_preferences,
-        icon: Icons.blur_circular_sharp,
+        icon: Ui.blur_circular_sharp,
         action: () async {
           await showModalBottomSheet(
             context: context,
@@ -1802,7 +1802,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_load_subtitles,
-        icon: Icons.upload_file,
+        icon: Ui.upload_file,
         action: () async {
           bool shouldResume = !_dialogSmartPaused;
           await dialogSmartPause();
@@ -1818,7 +1818,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       color: Colors.transparent,
       child: JidoujishoIconButton(
         size: 24,
-        icon: Icons.queue_music_outlined,
+        icon: Ui.queue_music_outlined,
         tooltip: t.audio_subtitles,
         onTap: () async {
           if (await _playerController.getAudioTracksCount() == 0) {
@@ -1847,8 +1847,8 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
         label: t.player_option_blur_use,
         active: appModel.blurOptions.visible,
         icon: appModel.blurOptions.visible
-            ? Icons.blur_on_outlined
-            : Icons.blur_off_outlined,
+            ? Ui.blur_on_outlined
+            : Ui.blur_off_outlined,
         action: () async {
           BlurOptions options = appModel.blurOptions;
           options.visible = !options.visible;
@@ -1858,7 +1858,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_blur_options,
-        icon: Icons.blur_circular_sharp,
+        icon: Ui.blur_circular_sharp,
         action: () async {
           bool shouldResume = !_dialogSmartPaused;
           await dialogSmartPause();
@@ -1876,7 +1876,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_blur_reset,
-        icon: Icons.timer_sharp,
+        icon: Ui.timer_sharp,
         action: () async {
           BlurOptions options = appModel.blurOptions;
           options.left = -1;
@@ -1903,7 +1903,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     embeddedTracks.forEach((index, label) {
       JidoujishoBottomSheetOption option = JidoujishoBottomSheetOption(
         label: '${t.player_option_audio} - $label',
-        icon: Icons.music_note_outlined,
+        icon: Ui.music_note_outlined,
         active: audioTrack == index,
         action: () async {
           await _playerController.setAudioTrack(index);
@@ -1952,7 +1952,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     for (SubtitleItem item in _subtitleItems) {
       JidoujishoBottomSheetOption option = JidoujishoBottomSheetOption(
         label: getSubtitleLabel(item: item, embeddedTracks: embeddedTracks),
-        icon: Icons.subtitles_outlined,
+        icon: Ui.subtitles_outlined,
         active: _subtitleItem == item,
         action: () {
           _subtitleItem = item;
@@ -1972,7 +1972,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       JidoujishoBottomSheetOption(
         label: getSubtitleLabel(
             item: _emptySubtitleItem, embeddedTracks: embeddedTracks),
-        icon: Icons.subtitles_off_outlined,
+        icon: Ui.subtitles_off_outlined,
         active: _subtitleItem == _emptySubtitleItem,
         action: () {
           _subtitleItem = _emptySubtitleItem;
@@ -1992,7 +1992,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       color: Colors.transparent,
       child: JidoujishoIconButton(
         size: 24,
-        icon: Icons.more_vert,
+        icon: Ui.more_vert,
         tooltip: t.show_options,
         onTap: () async {
           await showModalBottomSheet(
@@ -2017,9 +2017,9 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     };
 
     Map<PlaybackMode, IconData> playbackModeByIcon = {
-      PlaybackMode.normalPlayback: Icons.play_arrow,
-      PlaybackMode.condensedPlayback: Icons.skip_next,
-      PlaybackMode.autoPausePlayback: Icons.pause,
+      PlaybackMode.normalPlayback: Ui.play_arrow,
+      PlaybackMode.condensedPlayback: Ui.skip_next,
+      PlaybackMode.autoPausePlayback: Ui.pause,
     };
 
     return [
@@ -2043,7 +2043,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     List<JidoujishoBottomSheetOption> options = [
       JidoujishoBottomSheetOption(
         label: t.player_option_change_mode,
-        icon: Icons.play_circle_outline,
+        icon: Ui.play_circle_outline,
         action: () async {
           await showModalBottomSheet(
             context: context,
@@ -2059,8 +2059,8 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       JidoujishoBottomSheetOption(
         label: t.player_option_listening_comprehension,
         icon: appModel.isPlayerListeningComprehensionMode
-            ? Icons.hearing
-            : Icons.hearing_disabled,
+            ? Ui.hearing
+            : Ui.hearing_disabled,
         active: appModel.isPlayerListeningComprehensionMode,
         action: () async {
           appModel.togglePlayerListeningComprehensionMode();
@@ -2070,8 +2070,8 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       JidoujishoBottomSheetOption(
         label: t.player_change_player_orientation,
         icon: appModel.isPlayerOrientationPortrait
-            ? Icons.stay_current_landscape
-            : Icons.stay_current_portrait,
+            ? Ui.stay_current_landscape
+            : Ui.stay_current_portrait,
         action: () async {
           appModel.togglePlayerOrientationPortrait();
 
@@ -2091,8 +2091,8 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       JidoujishoBottomSheetOption(
         label: t.stretch_to_fill_screen,
         icon: appModel.isStretchToFill
-            ? Icons.fit_screen
-            : Icons.fit_screen_outlined,
+            ? Ui.fit_screen
+            : Ui.fit_screen_outlined,
         active: appModel.isStretchToFill,
         action: () async {
           appModel.toggleStretchToFill();
@@ -2112,14 +2112,14 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_share_subtitle,
-        icon: Icons.share,
+        icon: Ui.share,
         action: () async {
           await Share.share(getNearestSubtitle()?.data ?? '');
         },
       ),
       JidoujishoBottomSheetOption(
         label: t.player_option_export,
-        icon: Icons.mobile_screen_share,
+        icon: Ui.mobile_screen_share,
         action: () async {
           List<Subtitle> subtitles = [];
           Subtitle? singleSubtitle = getNearestSubtitle();

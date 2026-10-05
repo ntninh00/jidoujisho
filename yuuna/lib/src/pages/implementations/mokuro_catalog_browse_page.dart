@@ -96,7 +96,7 @@ class _MokuroCatalogBrowsePageState
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () {
         Navigator.pop(context);
       },
@@ -121,7 +121,7 @@ class _MokuroCatalogBrowsePageState
         } else {
           return JidoujishoIconButton(
             tooltip: t.create_catalog,
-            icon: Icons.keyboard_return,
+            icon: Ui.keyboard_return,
             onTap: _controller.goBack,
           );
         }
@@ -132,7 +132,7 @@ class _MokuroCatalogBrowsePageState
   Widget buildCreateCatalogButton() {
     return JidoujishoIconButton(
       tooltip: t.create_catalog,
-      icon: Icons.bookmark_add,
+      icon: Ui.bookmark_add,
       onTap: () async {
         showDialog(
           context: context,

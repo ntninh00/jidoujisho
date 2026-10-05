@@ -85,7 +85,7 @@ class _MokuroCatalogDialogPageState
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.bookmark,
+        icon: Ui.bookmark,
         message: t.no_catalogs_listed,
       ),
     );
@@ -114,7 +114,7 @@ class _MokuroCatalogDialogPageState
       type: MaterialType.transparency,
       key: ValueKey(catalog.id),
       child: ListTile(
-        leading: const Icon(Icons.bookmark),
+        leading: const Icon(Ui.bookmark),
         title: Row(
           children: [
             Expanded(

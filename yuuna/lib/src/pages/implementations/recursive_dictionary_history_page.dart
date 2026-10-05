@@ -67,7 +67,7 @@ class _RecursiveDictionaryHistoryPageState
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () {
         Navigator.pop(context);
       },

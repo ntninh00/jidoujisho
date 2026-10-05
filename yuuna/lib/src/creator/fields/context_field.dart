@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Returns information about the current context in human-readable format
 class ContextField extends Field {
@@ -12,7 +12,7 @@ class ContextField extends Field {
           uniqueKey: key,
           label: 'Context',
           description: 'Name of current source media.',
-          icon: Icons.perm_media,
+          icon: Ui.perm_media,
         );
 
   /// Get the singleton instance of this field.

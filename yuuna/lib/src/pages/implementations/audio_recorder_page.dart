@@ -8,9 +8,8 @@ import 'package:multi_value_listenable_builder/multi_value_listenable_builder.da
 // ignore: depend_on_referenced_packages
 import 'package:record_mp3_plus/record_mp3_plus.dart';
 import 'package:spaces/spaces.dart';
-import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/pages.dart';
-import 'package:yuuna/src/utils/misc/jidoujisho_time_format.dart';
+import 'package:yuuna/utils.dart';
 
 /// The content of the dialog used for selecting segmented units of a source
 /// text.
@@ -106,15 +105,15 @@ class _AudioRecorderDialogPageState
       builder: (context, values, _) {
         PlayerState? playerState = values.elementAt(0);
 
-        IconData iconData = Icons.play_arrow;
+        IconData iconData = Ui.play_arrow;
 
         if (playerState == null ||
             playerState.processingState == ProcessingState.completed) {
-          iconData = Icons.play_arrow;
+          iconData = Ui.play_arrow;
         } else if (playerState.playing) {
-          iconData = Icons.pause;
+          iconData = Ui.pause;
         } else {
-          iconData = Icons.play_arrow;
+          iconData = Ui.play_arrow;
         }
 
         return IconButton(
@@ -280,7 +279,7 @@ class _AudioRecorderDialogPageState
                 opacity: 0.5,
                 child: IconButton(
                   icon: Icon(
-                    Icons.play_arrow_outlined,
+                    Ui.play_arrow_outlined,
                     size: 24,
                     color: theme.unselectedWidgetColor,
                   ),

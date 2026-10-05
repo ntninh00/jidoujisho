@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// Media type that encapsulates dictionary search results.
 class DictionaryMediaType extends MediaType {
@@ -8,8 +9,8 @@ class DictionaryMediaType extends MediaType {
   DictionaryMediaType._privateConstructor()
       : super(
           uniqueKey: 'dictionary_media_type',
-          icon: Icons.auto_stories_rounded,
-          outlinedIcon: Icons.auto_stories_outlined,
+          icon: Ui.auto_stories_rounded,
+          outlinedIcon: Ui.auto_stories_outlined,
         );
 
   /// Get the singleton instance of this media type.

@@ -237,7 +237,7 @@ class _RecursiveDictionaryPageState
       showIfClosed: false,
       child: JidoujishoIconButton(
         tooltip: t.back,
-        icon: Icons.arrow_back,
+        icon: Ui.arrow_back,
         onTap: () async {
           if (widget.killOnPop) {
             appModel.shutdown();
@@ -299,7 +299,7 @@ class _RecursiveDictionaryPageState
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.text_segmentation,
-        icon: Icons.account_tree,
+        icon: Ui.account_tree,
         onTap: () async {
           await appModel.openTextSegmentationDialog(
             sourceText: _controller.query,
@@ -324,7 +324,7 @@ class _RecursiveDictionaryPageState
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.card_creator,
-        icon: Icons.note_add,
+        icon: Ui.note_add,
         onTap: () {
           appModel.openCreator(
             killOnPop: false,
@@ -351,7 +351,7 @@ class _RecursiveDictionaryPageState
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.clear,
-        icon: Icons.manage_search,
+        icon: Ui.manage_search,
         onTap: showDeleteSearchHistoryPrompt,
       ),
     );
@@ -507,7 +507,7 @@ class _RecursiveDictionaryPageState
   Widget buildEnterSearchTermPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search,
+        icon: Ui.search,
         message: t.enter_search_term,
       ),
     );
@@ -516,7 +516,7 @@ class _RecursiveDictionaryPageState
   Widget buildImportDictionariesPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.auto_stories_rounded,
+        icon: Ui.auto_stories_rounded,
         message: t.dictionaries_menu_empty,
       ),
     );
@@ -525,7 +525,7 @@ class _RecursiveDictionaryPageState
   Widget buildNoSearchResultsPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_search_results,
       ),
     );

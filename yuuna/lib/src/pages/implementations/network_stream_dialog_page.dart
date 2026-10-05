@@ -78,7 +78,7 @@ class _NetworkStreamDialogPageState
                       _controller.text =
                           (await Clipboard.getData('text/plain'))?.text ?? '';
                     },
-                    icon: Icons.paste,
+                    icon: Ui.paste,
                   ),
                   labelText: t.stream_url,
                 ),

@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:async_zip/async_zip.dart';
 import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:isar/isar.dart';
 import 'package:list_counter/list_counter.dart';
@@ -26,7 +25,7 @@ class YomichanFormat extends DictionaryFormat {
       : super(
           uniqueKey: 'yomichan',
           name: 'Yomichan Dictionary',
-          icon: Icons.auto_stories_rounded,
+          icon: Ui.auto_stories_rounded,
           allowedExtensions: const ['zip'],
           isTextFormat: false,
           fileType: FileType.custom,

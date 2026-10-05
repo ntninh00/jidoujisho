@@ -57,7 +57,7 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
                         ),
                         const SizedBox(width: 2),
                         Icon(
-                          Icons.expand_more,
+                          Ui.expand_more,
                           size: 20,
                           color: theme.unselectedWidgetColor,
                         ),
@@ -83,7 +83,7 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, size: 20, color: red),
+                      Icon(Ui.add, size: 20, color: red),
                       const SizedBox(width: 2),
                       Text(
                         t.ttu_add,
@@ -99,7 +99,7 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
             ),
             IconButton(
               tooltip: t.ttu_reader_settings,
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(Ui.settings_outlined),
               onPressed: () => source.showSettings(
                 context: context,
                 appModel: appModelNoUpdate,

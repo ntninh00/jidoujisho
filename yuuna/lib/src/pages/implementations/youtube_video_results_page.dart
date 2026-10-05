@@ -67,7 +67,7 @@ class _YoutubeVideoResultsPageState
         noItemsFoundIndicatorBuilder: (context) {
           return Center(
             child: JidoujishoPlaceholderMessage(
-              icon: Icons.search_off,
+              icon: Ui.search_off,
               message: t.no_search_results,
             ),
           );
@@ -113,7 +113,7 @@ class _YoutubeVideoResultsPageState
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () {
         Navigator.pop(context);
       },

@@ -76,7 +76,7 @@ class ImmersionKitEnhancement extends Enhancement {
           label: 'ImmersionKit',
           description:
               'Get example sentences complete with an image and audio.',
-          icon: Icons.movie,
+          icon: Ui.movie,
           field: TermField.instance,
         );
 

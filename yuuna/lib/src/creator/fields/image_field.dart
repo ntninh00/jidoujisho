@@ -7,8 +7,8 @@ import 'package:spaces/spaces.dart';
 import 'package:transparent_image/transparent_image.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
-import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Returns audio information from context.
 class ImageField extends ImageExportField {
@@ -19,7 +19,7 @@ class ImageField extends ImageExportField {
           label: 'Image',
           description: 'Visual supplement. Text field can be used to enter'
               ' search terms for image sources.',
-          icon: Icons.image,
+          icon: Ui.image,
         );
 
   /// Get the singleton instance of this field.

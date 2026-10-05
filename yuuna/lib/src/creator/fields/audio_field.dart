@@ -19,7 +19,7 @@ class AudioField extends AudioExportField {
           label: 'Term Audio',
           description: 'Audio pertaining to the term. Text field can be used'
               ' to enter search terms for audio sources.',
-          icon: Icons.audiotrack,
+          icon: Ui.audiotrack,
         );
 
   /// Get the singleton instance of this field.
@@ -146,15 +146,15 @@ class AudioField extends AudioExportField {
       builder: (context, values, _) {
         PlayerState? playerState = values.elementAt(0);
 
-        IconData iconData = Icons.play_arrow;
+        IconData iconData = Ui.play_arrow;
 
         if (playerState == null ||
             playerState.processingState == ProcessingState.completed) {
-          iconData = Icons.play_arrow;
+          iconData = Ui.play_arrow;
         } else if (playerState.playing) {
-          iconData = Icons.pause;
+          iconData = Ui.pause;
         } else {
-          iconData = Icons.play_arrow;
+          iconData = Ui.play_arrow;
         }
 
         return IconButton(

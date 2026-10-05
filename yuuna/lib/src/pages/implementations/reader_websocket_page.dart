@@ -72,7 +72,7 @@ class _ReaderWebsocketPageState
   Widget buildNoActiveConnection() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.leak_remove,
+        icon: Ui.leak_remove,
         message: t.no_active_connection,
       ),
     );
@@ -97,7 +97,7 @@ class _ReaderWebsocketPageState
   Widget buildEmpty() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.message,
+        icon: Ui.message,
         message: t.no_text_received,
       ),
     );
@@ -310,7 +310,7 @@ class _ReaderWebsocketPageState
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.sentence_picker,
-        icon: Icons.colorize,
+        icon: Ui.colorize,
         onTap: () async {
           appModel.openExampleSentenceDialog(
             exampleSentences: appModel.targetLanguage
@@ -350,7 +350,7 @@ class _ReaderWebsocketPageState
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.card_creator,
-        icon: Icons.note_add,
+        icon: Ui.note_add,
         onTap: () async {
           await appModel.openCreator(
             creatorFieldValues: CreatorFieldValues(

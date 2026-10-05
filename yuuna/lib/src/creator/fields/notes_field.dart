@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Supplies supplementary data that may be useful to include in a card.
 class NotesField extends Field {
@@ -12,7 +12,7 @@ class NotesField extends Field {
           uniqueKey: key,
           label: 'Notes',
           description: 'Supplementary information or personal observations.',
-          icon: Icons.description,
+          icon: Ui.description,
         );
 
   /// Get the singleton instance of this field.

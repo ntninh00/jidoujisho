@@ -118,7 +118,7 @@ class _SubtitleOptionsDialogPage
                                       .toString();
                               FocusScope.of(context).unfocus();
                             },
-                            icon: Icons.remove,
+                            icon: Ui.remove,
                           ),
                           JidoujishoIconButton(
                             size: 18,
@@ -131,7 +131,7 @@ class _SubtitleOptionsDialogPage
                                       .toString();
                               FocusScope.of(context).unfocus();
                             },
-                            icon: Icons.add,
+                            icon: Ui.add,
                           ),
                           JidoujishoIconButton(
                             size: 18,
@@ -140,7 +140,7 @@ class _SubtitleOptionsDialogPage
                               _delayController.text = '0';
                               FocusScope.of(context).unfocus();
                             },
-                            icon: Icons.undo,
+                            icon: Ui.undo,
                           ),
                           const SizedBox(width: 8),
                         ],
@@ -170,7 +170,7 @@ class _SubtitleOptionsDialogPage
                                     .toString();
                             FocusScope.of(context).unfocus();
                           },
-                          icon: Icons.remove,
+                          icon: Ui.remove,
                         ),
                         JidoujishoIconButton(
                           size: 18,
@@ -183,7 +183,7 @@ class _SubtitleOptionsDialogPage
                                     .toString();
                             FocusScope.of(context).unfocus();
                           },
-                          icon: Icons.add,
+                          icon: Ui.add,
                         ),
                         JidoujishoIconButton(
                           size: 18,
@@ -192,7 +192,7 @@ class _SubtitleOptionsDialogPage
                             _allowanceController.text = '0';
                             FocusScope.of(context).unfocus();
                           },
-                          icon: Icons.undo,
+                          icon: Ui.undo,
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -215,7 +215,7 @@ class _SubtitleOptionsDialogPage
                         _fontSizeController.text = '20.0';
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                     suffixText: t.unit_pixels,
                   ),
@@ -236,7 +236,7 @@ class _SubtitleOptionsDialogPage
                         _widthController.text = '3.0';
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                   ),
                 ),
@@ -256,7 +256,7 @@ class _SubtitleOptionsDialogPage
                         _blurController.text = '0.0';
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                   ),
                 ),
@@ -275,7 +275,7 @@ class _SubtitleOptionsDialogPage
                         _opacityController.text = '0.0';
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                   ),
                 ),
@@ -299,7 +299,7 @@ class _SubtitleOptionsDialogPage
                             }
                             launchUrlString('https://fonts.google.com/');
                           },
-                          icon: Icons.font_download,
+                          icon: Ui.font_download,
                         ),
                         JidoujishoIconButton(
                           size: 18,
@@ -308,7 +308,7 @@ class _SubtitleOptionsDialogPage
                             _fontNameController.text = '';
                             FocusScope.of(context).unfocus();
                           },
-                          icon: Icons.undo,
+                          icon: Ui.undo,
                         ),
                         const SizedBox(width: 8),
                       ],
@@ -328,7 +328,7 @@ class _SubtitleOptionsDialogPage
                         _regexFilterController.clear();
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                   ),
                 ),

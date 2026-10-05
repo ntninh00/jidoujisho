@@ -59,7 +59,7 @@ class _MokuroLinkDialogPageState extends BasePageState<MokuroLinkDialogPage> {
                     _controller.text =
                         (await Clipboard.getData('text/plain'))?.text ?? '';
                   },
-                  icon: Icons.paste,
+                  icon: Ui.paste,
                 ),
                 labelText: t.url,
               ),

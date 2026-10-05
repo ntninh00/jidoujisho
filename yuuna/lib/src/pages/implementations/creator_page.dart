@@ -231,7 +231,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
           children: <InlineSpan>[
             WidgetSpan(
               child: Icon(
-                Icons.info,
+                Ui.info,
                 size: textTheme.bodySmall?.fontSize,
               ),
             ),
@@ -260,7 +260,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
       ),
       child: Row(
         children: [
-          Icon(Icons.edit_note,
+          Icon(Ui.edit_note,
               color: Theme.of(context).unselectedWidgetColor,
               size: textTheme.labelLarge?.fontSize),
           const Space.semiSmall(),
@@ -286,8 +286,8 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
       theme: ExpandableThemeData(
         iconPadding: Spacing.of(context).insets.onlyRight.small,
         iconSize: Theme.of(context).textTheme.titleLarge?.fontSize,
-        expandIcon: Icons.arrow_drop_down,
-        collapseIcon: Icons.arrow_drop_down,
+        expandIcon: Ui.arrow_drop_down,
+        collapseIcon: Ui.arrow_drop_down,
         iconColor: Theme.of(context).unselectedWidgetColor,
         headerAlignment: ExpandablePanelHeaderAlignment.center,
       ),
@@ -343,7 +343,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.note_add,
+                Ui.note_add,
                 size: textTheme.titleSmall?.fontSize,
                 color: isExportable ? activeTextColor : inactiveTextColor,
               ),
@@ -376,7 +376,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.electric_bolt,
+                Ui.electric_bolt,
                 size: textTheme.titleSmall?.fontSize,
                 color: activeTextColor,
               ),
@@ -412,7 +412,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.edit,
+                Ui.edit,
                 size: textTheme.titleSmall?.fontSize,
                 color: activeTextColor,
               ),
@@ -668,7 +668,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () {
         if (widget.killOnPop) {
           appModel.shutdown();
@@ -682,7 +682,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
   Widget buildSearchClearButton() {
     return JidoujishoIconButton(
       tooltip: t.clear_creator_title,
-      icon: Icons.delete_sweep,
+      icon: Ui.delete_sweep,
       onTap: showClearPrompt,
     );
   }
@@ -781,7 +781,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
       isWideTapArea: true,
       size: textTheme.titleLarge?.fontSize,
       tooltip: t.add_field,
-      icon: Icons.add_circle,
+      icon: Ui.add_circle,
       onTap: () async {
         await showDialog(
           barrierDismissible: true,
@@ -808,7 +808,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
         isWideTapArea: true,
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.assign_auto_enhancement,
-        icon: Icons.add_circle,
+        icon: Ui.add_circle,
         onTap: () async {
           await showDialog(
             barrierDismissible: true,
@@ -924,7 +924,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
         isWideTapArea: true,
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.assign_manual_enhancement,
-        icon: Icons.add_circle,
+        icon: Ui.add_circle,
         onTap: () async {
           await showDialog(
             barrierDismissible: true,
@@ -1069,7 +1069,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
             tooltip: locked ? t.field_unlock : t.field_lock,
             size: textTheme.titleLarge?.fontSize,
             enabledColor: locked ? Colors.red : null,
-            icon: locked ? Icons.lock : field.icon,
+            icon: locked ? Ui.lock : field.icon,
             onTap: () {
               creatorModel.toggleLock(field);
 
@@ -1126,7 +1126,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
       padding: EdgeInsets.zero,
       tooltip: t.switch_profiles,
       icon: Icon(
-        Icons.switch_account,
+        Ui.switch_account,
         color: theme.iconTheme.color,
         size: 24,
       ),
@@ -1139,7 +1139,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
   Widget buildManageEnhancementsButton() {
     return JidoujishoIconButton(
       tooltip: t.enhancements,
-      icon: Icons.auto_fix_high,
+      icon: Ui.auto_fix_high,
       onTap: () async {
         await appModel.openCreatorEnhancementsEditor();
         setState(() {});
@@ -1160,7 +1160,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
           size: Theme.of(context).textTheme.titleLarge?.fontSize,
           tooltip: t.close_on_export,
           enabledColor: value ? Colors.red : null,
-          icon: Icons.exit_to_app,
+          icon: Ui.exit_to_app,
           onTap: () {
             appModel.toggleCloseCreatorOnExport();
             notifier.value = appModel.closeCreatorOnExport;

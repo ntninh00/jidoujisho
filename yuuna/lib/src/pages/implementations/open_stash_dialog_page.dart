@@ -51,7 +51,7 @@ class _OpenStashDialogPage extends BasePageState<OpenStashDialogPage> {
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.inventory_2,
+        icon: Ui.inventory_2,
         message: t.stash_placeholder,
       ),
     );

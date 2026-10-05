@@ -147,7 +147,7 @@ class _BrowserSettingsDialogPageState extends BasePageState {
             source.setHostsText('');
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.clear,
+          icon: Ui.clear,
         ),
         labelText: t.ad_block_hosts,
       ),

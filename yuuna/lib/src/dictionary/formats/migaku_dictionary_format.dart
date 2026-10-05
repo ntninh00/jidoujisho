@@ -2,13 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_archive/flutter_archive.dart';
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:yuuna/dictionary.dart';
-import 'package:yuuna/i18n/strings.g.dart';
+import 'package:yuuna/utils.dart';
 
 /// A dictionary format for archives following the ABBYY Lingvo or DSL format
 /// compatible with GoldenDict.
@@ -22,7 +21,7 @@ class MigakuFormat extends DictionaryFormat {
       : super(
           uniqueKey: 'migaku',
           name: 'Migaku Dictionary',
-          icon: Icons.auto_stories_rounded,
+          icon: Ui.auto_stories_rounded,
           allowedExtensions: const ['zip'],
           isTextFormat: false,
           fileType: FileType.any,

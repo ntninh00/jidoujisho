@@ -639,7 +639,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                   ),
                   IconButton(
                     tooltip: t.dialog_close,
-                    icon: const Icon(Icons.close),
+                    icon: const Icon(Ui.close),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -681,7 +681,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                 padding: const EdgeInsets.only(bottom: 12),
                 children: [
                   _ActionRow(
-                    icon: Icons.play_arrow_rounded,
+                    icon: Ui.play_arrow_rounded,
                     iconColor: red,
                     title: t.ttu_continue_reading,
                     subtitle: ttuPercent(book.progress),
@@ -692,7 +692,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                   ),
                   if (back != null)
                     _ActionRow(
-                      icon: Icons.undo_rounded,
+                      icon: Ui.undo_rounded,
                       iconColor: muted,
                       title: t.ttu_back_to_where,
                       subtitle:
@@ -745,7 +745,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                         alignment: Alignment.centerRight,
                         padding: const EdgeInsets.only(right: 24),
                         child: const Icon(
-                          Icons.delete_outline,
+                          Ui.delete_outline,
                           color: Colors.white,
                         ),
                       ),
@@ -766,7 +766,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Row(
                         children: [
-                          Icon(Icons.edit_note, size: 18, color: muted),
+                          Icon(Ui.edit_note, size: 18, color: muted),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -966,7 +966,7 @@ class _MemoRow extends StatelessWidget {
               ),
               IconButton(
                 tooltip: t.ttu_edit_memo,
-                icon: Icon(Icons.edit_outlined, size: 19, color: muted),
+                icon: Icon(Ui.edit_outlined, size: 19, color: muted),
                 onPressed: onEdit,
               ),
             ],
@@ -1176,7 +1176,7 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
             children: [
               Expanded(
                 child: _action(
-                  icon: Icons.play_arrow_rounded,
+                  icon: Ui.play_arrow_rounded,
                   label: book.progress > 0 ? t.ttu_continue : t.ttu_read,
                   background: red,
                   foreground: Colors.white,
@@ -1186,7 +1186,7 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _action(
-                  icon: Icons.edit_note,
+                  icon: Ui.edit_note,
                   label: widget.memoCount > 0
                       ? '${t.ttu_memos} · ${widget.memoCount}'
                       : t.ttu_memos,
@@ -1196,7 +1196,7 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _action(
-                  icon: Icons.edit_outlined,
+                  icon: Ui.edit_outlined,
                   label: t.ttu_edit,
                   onTap: widget.onEdit,
                 ),
@@ -1204,7 +1204,7 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               const SizedBox(width: 8),
               Expanded(
                 child: _action(
-                  icon: Icons.delete_outline,
+                  icon: Ui.delete_outline,
                   label: t.ttu_delete,
                   foreground: Colors.red.shade400,
                   onTap: widget.onDelete,
@@ -1461,7 +1461,7 @@ class _TtuReaderSettingsSheetState
                 ),
                 IconButton(
                   tooltip: t.dialog_close,
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Ui.close),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -1644,10 +1644,10 @@ class _TtuReaderSettingsSheetState
           _group(t.ttu_more),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            leading: const Icon(Icons.cloud_upload_outlined),
+            leading: const Icon(Ui.cloud_upload_outlined),
             title: Text(t.ttu_backup_sync),
             subtitle: Text(t.ttu_backup_sync_desc),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Ui.chevron_right),
             onTap: () {
               Navigator.pop(context);
               widget.onOpenTtuPage(_language, 'manage.html');
@@ -1655,10 +1655,10 @@ class _TtuReaderSettingsSheetState
           ),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-            leading: const Icon(Icons.tune),
+            leading: const Icon(Ui.tune),
             title: Text(t.ttu_all_settings),
             subtitle: Text(t.ttu_all_settings_desc),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Ui.chevron_right),
             onTap: () {
               Navigator.pop(context);
               widget.onOpenTtuPage(_language, 'settings.html');
@@ -1812,7 +1812,7 @@ class _TtuSourcePickerSheetState extends BasePageState<TtuSourcePickerSheet> {
                     title: Text(source.getLocalisedSourceName(appModel)),
                     subtitle: Text(source.getLocalisedDescription(appModel)),
                     trailing:
-                        source == current ? const Icon(Icons.check) : null,
+                        source == current ? const Icon(Ui.check) : null,
                     onTap: () {
                       Navigator.pop(context);
                       appModel.setCurrentSourceForMediaType(

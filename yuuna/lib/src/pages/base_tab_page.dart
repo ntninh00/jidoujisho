@@ -145,7 +145,7 @@ abstract class BaseTabPageState<T extends BaseTabPage> extends BasePageState {
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.back,
-        icon: Icons.arrow_back,
+        icon: Ui.arrow_back,
         onTap: () {
           mediaType.floatingSearchBarController.close();
         },

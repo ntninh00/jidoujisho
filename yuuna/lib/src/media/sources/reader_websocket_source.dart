@@ -17,7 +17,7 @@ class ReaderWebsocketSource extends ReaderMediaSource {
           uniqueKey: 'reader_websocket',
           sourceName: 'WebSocket',
           description: 'Select and mine text received from a WebSocket server.',
-          icon: Icons.webhook,
+          icon: Ui.webhook,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -125,7 +125,7 @@ class ReaderWebsocketSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.clear_text_title,
-        icon: Icons.clear_all,
+        icon: Ui.clear_all,
         onTap: () {
           showClearPrompt(
             appModel: appModel,
@@ -221,7 +221,7 @@ class ReaderWebsocketSource extends ReaderMediaSource {
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.connect_disconnect,
         enabledColor: isActive ? Colors.red : null,
-        icon: Icons.leak_add,
+        icon: Ui.leak_add,
         onTap: () {
           showConnectDialog(
             context: context,

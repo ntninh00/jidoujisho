@@ -8,6 +8,7 @@ import 'package:network_to_file_image/network_to_file_image.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// An enhancement that can be used to select a picture with the
 class PickImageEnhancement extends ImageEnhancement {
@@ -17,7 +18,7 @@ class PickImageEnhancement extends ImageEnhancement {
           uniqueKey: key,
           label: 'Pick Image',
           description: 'Pick a new image to use with an external picker.',
-          icon: Icons.upload_file,
+          icon: Ui.upload_file,
           field: ImageField.instance,
         );
 

@@ -38,7 +38,7 @@ class ReaderLyricsSource extends ReaderMediaSource {
           description:
               'Allows fetching and highlighting lyrics of current played media '
               'fetched from Google and Uta-Net.',
-          icon: Icons.queue_music,
+          icon: Ui.queue_music,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -274,7 +274,7 @@ kashi.children[0].children[0].innerText;
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.set_media,
         enabledColor: isOverride ? Colors.red : null,
-        icon: Icons.audio_file,
+        icon: Ui.audio_file,
         onTap: () {
           showSearchDialog(context: context);
         },

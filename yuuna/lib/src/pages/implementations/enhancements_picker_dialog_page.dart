@@ -86,7 +86,7 @@ class _EnhancementsPickerDialogPage
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.auto_fix_high,
+        icon: Ui.auto_fix_high,
         message: t.no_more_available_enhancements,
       ),
     );

@@ -79,7 +79,7 @@ class _BrowserDialogPageState extends BasePageState<BrowserDialogPage> {
                     onTap: () async {
                       _controller.clear();
                     },
-                    icon: Icons.clear,
+                    icon: Ui.clear,
                   ),
                   labelText: t.url,
                 ),

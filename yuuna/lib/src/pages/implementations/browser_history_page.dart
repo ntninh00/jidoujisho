@@ -84,7 +84,7 @@ class _BrowserHistoryPageState extends BaseHistoryPageState {
   Widget buildPlaceholder() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.book_sharp,
+        icon: Ui.book_sharp,
         message: t.reading_list_empty,
       ),
     );
@@ -238,7 +238,7 @@ class _BrowserHistoryPageState extends BaseHistoryPageState {
           height: 64,
           width: 64,
           child: Icon(
-            Icons.bookmark_add,
+            Ui.bookmark_add,
             color: theme.unselectedWidgetColor,
             size: 24,
           ),
@@ -269,7 +269,7 @@ class BookmarkButton extends ConsumerWidget {
 
   /// Fallback widget.
   Widget get fallback {
-    return const Icon(Icons.public);
+    return const Icon(Ui.public);
   }
 
   @override

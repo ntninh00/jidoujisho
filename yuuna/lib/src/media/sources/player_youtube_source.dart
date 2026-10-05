@@ -64,7 +64,7 @@ class PlayerYoutubeSource extends PlayerMediaSource {
           uniqueKey: 'player_youtube',
           sourceName: 'YouTube',
           description: 'Search and watch videos from YouTube.',
-          icon: Icons.smart_display,
+          icon: Ui.smart_display,
           implementsSearch: true,
           implementsHistory: true,
         );
@@ -161,7 +161,7 @@ class PlayerYoutubeSource extends PlayerMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.trending,
-        icon: Icons.whatshot,
+        icon: Ui.whatshot,
         onTap: () => showTrendingVideos(
           context: context,
           appModel: appModel,
@@ -189,7 +189,7 @@ class PlayerYoutubeSource extends PlayerMediaSource {
             size: Theme.of(context).textTheme.titleLarge?.fontSize,
             tooltip: t.caption_filter,
             enabledColor: value ? Colors.red : null,
-            icon: Icons.closed_caption,
+            icon: Ui.closed_caption,
             onTap: () {
               toggleCaptionFilter();
               notifier.value = !value;

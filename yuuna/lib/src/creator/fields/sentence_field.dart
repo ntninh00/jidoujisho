@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to track the current sentence context from the current playing media
 /// in the application.
@@ -14,7 +14,7 @@ class SentenceField extends Field {
           label: 'Sentence',
           description:
               'Subtitles, book excerpts and other contextual information.',
-          icon: Icons.format_align_center,
+          icon: Ui.format_align_center,
         );
 
   /// Get the singleton instance of this field.

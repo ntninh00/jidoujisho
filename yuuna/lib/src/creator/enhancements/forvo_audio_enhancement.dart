@@ -13,6 +13,7 @@ import 'package:html/parser.dart' as parser;
 import 'package:html/dom.dart' as dom;
 import 'package:http/http.dart' as http;
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// An entity used to neatly return and organise results fetched from Forvo.
 class ForvoResult {
@@ -37,7 +38,7 @@ class ForvoAudioEnhancement extends AudioEnhancement {
           uniqueKey: key,
           label: 'Forvo Audio',
           description: 'Get word audio from Forvo.',
-          icon: Icons.spatial_audio_off,
+          icon: Ui.spatial_audio_off,
           field: AudioField.instance,
         );
 

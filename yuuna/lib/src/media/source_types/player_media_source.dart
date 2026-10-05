@@ -279,7 +279,7 @@ abstract class PlayerMediaSource extends MediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.settings,
-        icon: Icons.settings,
+        icon: Ui.settings,
         onTap: () {
           showDialog(
             context: context,

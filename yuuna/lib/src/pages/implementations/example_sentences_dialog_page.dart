@@ -60,7 +60,7 @@ class _ExampleSentencesDialogPageState
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_sentences_found,
       ),
     );

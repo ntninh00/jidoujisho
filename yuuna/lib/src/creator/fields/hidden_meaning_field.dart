@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to return a formatted text from hidden dictionary entries.
 class HiddenMeaningField extends Field {
@@ -13,7 +13,7 @@ class HiddenMeaningField extends Field {
           label: 'Hidden Meaning',
           description: 'Dictionary definitions only from hidden'
               ' dictionaries.',
-          icon: Icons.visibility_off,
+          icon: Ui.visibility_off,
         );
 
   /// Get the singleton instance of this field.

@@ -87,7 +87,7 @@ class _BlurOptionsDialogPageState extends BasePageState<BlurOptionsDialogPage> {
                         _blurrinessController.text = '5.0';
                         FocusScope.of(context).unfocus();
                       },
-                      icon: Icons.undo,
+                      icon: Ui.undo,
                     ),
                     labelText: t.player_option_blur_radius,
                   ),

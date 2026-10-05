@@ -86,7 +86,7 @@ class _MediaItemEditDialogPageState
               suffixIcon: JidoujishoIconButton(
                 tooltip: t.undo,
                 isWideTapArea: true,
-                icon: Icons.undo,
+                icon: Ui.undo,
                 onTap: () async {
                   _nameOverrideController.text = widget.item.title;
                   FocusScope.of(context).unfocus();
@@ -116,7 +116,7 @@ class _MediaItemEditDialogPageState
                   JidoujishoIconButton(
                     tooltip: t.pick_image,
                     isWideTapArea: true,
-                    icon: Icons.file_upload,
+                    icon: Ui.file_upload,
                     onTap: () async {
                       ImagePicker imagePicker = ImagePicker();
                       final pickedFile = await imagePicker.pickImage(
@@ -135,7 +135,7 @@ class _MediaItemEditDialogPageState
                   JidoujishoIconButton(
                     tooltip: t.undo,
                     isWideTapArea: true,
-                    icon: Icons.undo,
+                    icon: Ui.undo,
                     onTap: () async {
                       _newFile = null;
                       _coverImageProvider = null;

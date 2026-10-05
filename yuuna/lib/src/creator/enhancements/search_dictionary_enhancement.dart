@@ -14,7 +14,7 @@ class SearchDictionaryEnhancement extends Enhancement {
           uniqueKey: key,
           label: 'Search Dictionary',
           description: 'Search the dictionary with the content of a field.',
-          icon: Icons.search,
+          icon: Ui.search,
           field: TermField.instance,
         );
 

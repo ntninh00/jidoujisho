@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ruby_text/ruby_text.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Returns the formatted furigana HTML of a [DictionaryHeading].
 class FuriganaField extends Field {
@@ -14,7 +14,7 @@ class FuriganaField extends Field {
           uniqueKey: key,
           label: 'Furigana',
           description: 'Pre-fills text to export for Furigana.',
-          icon: Icons.data_array,
+          icon: Ui.data_array,
         );
 
   /// Get the singleton instance of this field.

@@ -134,7 +134,7 @@ class _DictionaryDialogPageState extends BasePageState {
                 .setSearchDebounceDelay(appModel.defaultSearchDebounceDelay);
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.undo,
+          icon: Ui.undo,
         ),
         labelText: t.auto_search_debounce_delay,
       ),
@@ -167,7 +167,7 @@ class _DictionaryDialogPageState extends BasePageState {
             appModel.setDictionaryFontSize(appModel.defaultDictionaryFontSize);
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.undo,
+          icon: Ui.undo,
         ),
         labelText: t.dictionary_font_size,
       ),
@@ -201,7 +201,7 @@ class _DictionaryDialogPageState extends BasePageState {
                 appModel.defaultMaximumDictionaryTermsInResult);
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.undo,
+          icon: Ui.undo,
         ),
         labelText: t.maximum_terms,
       ),
@@ -227,7 +227,7 @@ class _DictionaryDialogPageState extends BasePageState {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.checklist_sharp,
+              Ui.checklist_sharp,
               size: textTheme.titleSmall?.fontSize,
               color: activeTextColor,
             ),

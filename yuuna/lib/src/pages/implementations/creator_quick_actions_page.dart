@@ -59,7 +59,7 @@ class _CreatorQuickActionsPageState extends BasePageState {
                     children: <InlineSpan>[
                       WidgetSpan(
                         child: Icon(
-                          Icons.info,
+                          Ui.info,
                           size: textTheme.bodySmall?.fontSize,
                         ),
                       ),
@@ -128,7 +128,7 @@ class _CreatorQuickActionsPageState extends BasePageState {
         isWideTapArea: true,
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.assign_action,
-        icon: Icons.add_circle,
+        icon: Ui.add_circle,
         onTap: () async {
           await showDialog(
             barrierDismissible: true,

@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Highlighted text in a sentence.
 class ClozeInsideField extends Field {
@@ -12,7 +12,7 @@ class ClozeInsideField extends Field {
           uniqueKey: key,
           label: 'Cloze Inside',
           description: 'Highlighted text in a sentence.',
-          icon: Icons.dehaze,
+          icon: Ui.dehaze,
         );
 
   /// Get the singleton instance of this field.

@@ -1,10 +1,10 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 
 /// Returns the frequency of a [DictionaryHeading] (uses harmonic mean for
 /// multiple entries, idea taken from @MarvNC).
@@ -16,7 +16,7 @@ class FrequencyField extends Field {
           label: 'Frequency',
           description: 'Adds frequency of headword for sorting purposes,'
               ' calculated using the harmonic mean.',
-          icon: Icons.insert_chart,
+          icon: Ui.insert_chart,
         );
 
   /// Get the singleton instance of this field.

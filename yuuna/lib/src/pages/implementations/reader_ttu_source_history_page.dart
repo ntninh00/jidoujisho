@@ -236,7 +236,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
       ),
       child: Row(
         children: [
-          Icon(Icons.menu_book_outlined, color: theme.colorScheme.primary),
+          Icon(Ui.menu_book_outlined, color: theme.colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -311,7 +311,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
               shape: const StadiumBorder(),
               padding: const EdgeInsets.fromLTRB(16, 12, 22, 12),
             ),
-            icon: const Icon(Icons.add),
+            icon: const Icon(Ui.add),
             label: Text(t.ttu_add_book),
             onPressed: () => mediaSource.pickAndImport(
               context: context,
@@ -384,7 +384,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
           mainAxisSize: MainAxisSize.min,
           children: [
             JidoujishoPlaceholderMessage(
-              icon: Icons.lan_outlined,
+              icon: Ui.lan_outlined,
               message: message,
             ),
             const SizedBox(height: 12),
@@ -525,7 +525,7 @@ class _BookTileState extends BasePageState<_BookTile> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(
-                              Icons.edit_note,
+                              Ui.edit_note,
                               size: 14,
                               color: Color(0xFFFF8A80),
                             ),

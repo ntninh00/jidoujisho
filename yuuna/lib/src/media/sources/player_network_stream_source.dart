@@ -23,7 +23,7 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
           uniqueKey: 'player_network_stream',
           sourceName: 'Network Stream',
           description: 'Stream videos from a direct URL.',
-          icon: Icons.podcasts,
+          icon: Ui.podcasts,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -61,7 +61,7 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
         child: JidoujishoIconButton(
           size: Theme.of(context).textTheme.titleLarge?.fontSize,
           tooltip: t.stream,
-          icon: Icons.link,
+          icon: Ui.link,
           onTap: () async {
             showStreamDialog(
               appModel: appModel,

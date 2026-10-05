@@ -235,7 +235,7 @@ class _DictionaryDialogPageState extends BasePageState {
                 ReaderTtuSource.defaultScrollingSpeed);
             FocusScope.of(context).unfocus();
           },
-          icon: Icons.undo,
+          icon: Ui.undo,
         ),
         labelText: t.volume_button_turning_speed,
       ),

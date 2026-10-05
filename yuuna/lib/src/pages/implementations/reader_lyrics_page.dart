@@ -90,7 +90,7 @@ class _ReaderLyricsPageState<ReaderLyricsPage> extends BaseSourcePageState {
   Widget buildNeedPermission() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.error,
+        icon: Ui.error,
         message: t.lyrics_permission_required,
       ),
     );
@@ -99,7 +99,7 @@ class _ReaderLyricsPageState<ReaderLyricsPage> extends BaseSourcePageState {
   Widget buildNoLyricsFound({required JidoujishoLyricsParameters parameters}) {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.music_off,
+        icon: Ui.music_off,
         message: parameters.artist.isEmpty
             ? '${t.no_lyrics_found}\n『${parameters.title}』'
             : '${t.no_lyrics_found}\n『${parameters.title} - ${parameters.artist}』',
@@ -110,7 +110,7 @@ class _ReaderLyricsPageState<ReaderLyricsPage> extends BaseSourcePageState {
   Widget buildNoCurrentMedia() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.lyrics,
+        icon: Ui.lyrics,
         message: t.no_current_media,
       ),
     );

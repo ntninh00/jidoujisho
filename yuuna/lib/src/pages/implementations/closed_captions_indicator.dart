@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:progress_indicators/progress_indicators.dart';
 import 'package:spaces/spaces.dart';
-import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to indicate which captions are included on metadata
 /// for a YouTube video.
@@ -119,12 +119,12 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-            icon: Icons.closed_caption,
+            icon: Ui.closed_caption,
             label: t.captions_query,
             loading: true,
             color: theme.unselectedWidgetColor),
         buildCaptionsRow(
-          icon: Icons.closed_caption,
+          icon: Ui.closed_caption,
           label: t.captions_query,
           color: Colors.transparent,
         ),
@@ -137,12 +137,12 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.error,
+          icon: Ui.error,
           label: t.captions_error,
           color: theme.unselectedWidgetColor,
         ),
         buildCaptionsRow(
-          icon: Icons.error,
+          icon: Ui.error,
           label: t.captions_error,
           color: Colors.transparent,
         ),
@@ -155,14 +155,14 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_target,
           color: appModel.isDarkMode
               ? Colors.green.shade200
               : Colors.green.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.closed_caption,
+          icon: Ui.closed_caption,
           label: t.captions_closed,
           color: appModel.isDarkMode
               ? Colors.green.shade200
@@ -177,13 +177,13 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_app,
           color:
               appModel.isDarkMode ? Colors.blue.shade200 : Colors.blue.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.closed_caption,
+          icon: Ui.closed_caption,
           label: t.captions_closed,
           color: appModel.isDarkMode
               ? Colors.green.shade200
@@ -198,14 +198,14 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_other,
           color: appModel.isDarkMode
               ? Colors.orange.shade200
               : Colors.orange.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.closed_caption,
+          icon: Ui.closed_caption,
           label: t.captions_closed,
           color: appModel.isDarkMode
               ? Colors.green.shade200
@@ -220,13 +220,13 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.subtitles_off,
+          icon: Ui.subtitles_off,
           label: t.captions_unavailable,
           color:
               appModel.isDarkMode ? Colors.red.shade200 : Colors.red.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.subtitles_off,
+          icon: Ui.subtitles_off,
           label: t.captions_unavailable,
           color: Colors.transparent,
         ),
@@ -239,14 +239,14 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_target,
           color: appModel.isDarkMode
               ? Colors.green.shade200
               : Colors.green.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.subtitles,
+          icon: Ui.subtitles,
           label: t.captions_auto,
           color: appModel.isDarkMode
               ? Colors.orange.shade200
@@ -261,13 +261,13 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_app,
           color:
               appModel.isDarkMode ? Colors.blue.shade200 : Colors.blue.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.subtitles,
+          icon: Ui.subtitles,
           label: t.captions_auto,
           color: appModel.isDarkMode
               ? Colors.orange.shade200
@@ -282,14 +282,14 @@ class _ClosedCaptionsIndicatorState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         buildCaptionsRow(
-          icon: Icons.language,
+          icon: Ui.language,
           label: t.captions_other,
           color: appModel.isDarkMode
               ? Colors.orange.shade200
               : Colors.orange.shade600,
         ),
         buildCaptionsRow(
-          icon: Icons.subtitles,
+          icon: Ui.subtitles,
           label: t.captions_auto,
           color: appModel.isDarkMode
               ? Colors.orange.shade200

@@ -92,7 +92,7 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
                         color: theme.unselectedWidgetColor.withOpacity(0.1),
                       ),
                       child: Icon(
-                        Icons.arrow_back,
+                        Ui.arrow_back,
                         color:
                             value ? null : theme.disabledColor.withOpacity(0.2),
                         size: 20,
@@ -131,7 +131,7 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
                         color: theme.unselectedWidgetColor.withOpacity(0.1),
                       ),
                       child: Icon(
-                        Icons.arrow_forward,
+                        Ui.arrow_forward,
                         color:
                             value ? null : theme.disabledColor.withOpacity(0.2),
                         size: 20,
@@ -170,7 +170,7 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
                         color: theme.unselectedWidgetColor.withOpacity(0.1),
                       ),
                       child: const Icon(
-                        Icons.language,
+                        Ui.language,
                         size: 20,
                       ),
                     ),
@@ -223,7 +223,7 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
                         color: theme.unselectedWidgetColor.withOpacity(0.1),
                       ),
                       child: Icon(
-                        Icons.bookmark_outline,
+                        Ui.bookmark_outline,
                         color: disabled
                             ? theme.disabledColor
                             : inReadingList

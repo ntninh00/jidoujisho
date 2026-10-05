@@ -7,6 +7,7 @@ import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/models.dart';
 import 'package:collection/collection.dart';
+import 'package:yuuna/utils.dart';
 
 /// Returns the formatted pitch accent diagram HTML of a [DictionaryHeading].
 class PitchAccentField extends Field {
@@ -16,7 +17,7 @@ class PitchAccentField extends Field {
           uniqueKey: key,
           label: 'Pitch Accent',
           description: 'Pre-fills text to export for pitch accent diagrams.',
-          icon: Icons.swap_vert,
+          icon: Ui.swap_vert,
         );
 
   /// Get the singleton instance of this field.

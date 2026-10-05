@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// An enhancement that can be used to crop the current image.
 class CropImageEnhancement extends ImageEnhancement {
@@ -17,7 +18,7 @@ class CropImageEnhancement extends ImageEnhancement {
           uniqueKey: key,
           label: 'Crop Image',
           description: 'Crop the current selected image.',
-          icon: Icons.crop,
+          icon: Ui.crop,
           field: ImageField.instance,
         );
 

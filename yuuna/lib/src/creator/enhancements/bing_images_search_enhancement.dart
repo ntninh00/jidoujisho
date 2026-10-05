@@ -10,6 +10,7 @@ import 'package:network_to_file_image/network_to_file_image.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/utils.dart';
 import 'package:html/parser.dart' as parser;
 import 'package:html/dom.dart' as dom;
 
@@ -23,7 +24,7 @@ class BingImagesSearchEnhancement extends ImageEnhancement {
           label: 'Bing Images Search',
           description:
               'Search Bing for images with the current image query or the word.',
-          icon: Icons.image_search,
+          icon: Ui.image_search,
           field: ImageField.instance,
         );
 

@@ -231,7 +231,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.dictionaries,
-        icon: Icons.auto_stories,
+        icon: Ui.auto_stories,
         onTap: appModel.showDictionaryMenu,
       ),
     );
@@ -245,7 +245,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       child: PopupMenuButton<VoidCallback>(
         tooltip: t.show_menu,
         icon: Icon(
-          Icons.more_vert,
+          Ui.more_vert,
           size: textTheme.titleLarge?.fontSize,
         ),
         onSelected: (action) => action(),
@@ -255,7 +255,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
             child: ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.manage_search),
+              leading: const Icon(Ui.manage_search),
               title: Text(t.clear_search_title),
             ),
           ),
@@ -264,7 +264,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
             child: ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.delete_sweep),
+              leading: const Icon(Ui.delete_sweep),
               title: Text(t.clear_dictionary_title),
             ),
           ),
@@ -315,7 +315,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.clear_search_title,
-        icon: Icons.manage_search,
+        icon: Ui.manage_search,
         onTap: showDeleteSearchHistoryPrompt,
       ),
     );
@@ -328,7 +328,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.dictionary_settings,
-        icon: Icons.settings,
+        icon: Ui.settings,
         onTap: () async {
           double oldFontSize = appModel.dictionaryFontSize;
 
@@ -512,7 +512,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   Widget buildEnterSearchTermPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search,
+        icon: Ui.search,
         message: t.enter_search_term,
       ),
     );
@@ -530,7 +530,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   Widget buildNoSearchResultsPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_search_results,
       ),
     );

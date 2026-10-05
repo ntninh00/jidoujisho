@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
 import 'package:collection/collection.dart';
+import 'package:yuuna/utils.dart';
 
 /// Used to return a formatted text from multiple dictionary entries.
 class MeaningField extends Field {
@@ -13,7 +13,7 @@ class MeaningField extends Field {
           uniqueKey: key,
           label: 'Meaning',
           description: 'All dictionary definitions of a term.',
-          icon: Icons.translate_rounded,
+          icon: Ui.translate_rounded,
         );
 
   /// Get the singleton instance of this field.

@@ -27,7 +27,7 @@ class ReaderMokuroSource extends ReaderMediaSource {
           sourceName: 'Mokuro',
           description:
               'Read manga volumes pre-processed as a single HTML file via Mokuro.',
-          icon: Icons.dashboard_outlined,
+          icon: Ui.dashboard_outlined,
           implementsSearch: false,
           implementsHistory: true,
           overridesAutoImage: true,
@@ -109,7 +109,7 @@ class ReaderMokuroSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.tweaks,
-        icon: Icons.tune,
+        icon: Ui.tune,
         onTap: () {
           showDialog(
             context: context,
@@ -129,7 +129,7 @@ class ReaderMokuroSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.catalogs,
-        icon: Icons.collections_bookmark,
+        icon: Ui.collections_bookmark,
         onTap: () async {
           showDialog(
             context: context,
@@ -150,7 +150,7 @@ class ReaderMokuroSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.open_url,
-        icon: Icons.add_link,
+        icon: Ui.add_link,
         onTap: () async {
           await showDialog(
             context: context,
@@ -187,7 +187,7 @@ class ReaderMokuroSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.pick_file,
-        icon: Icons.upload_file,
+        icon: Ui.upload_file,
         onTap: () async {
           launchFilePicker(
             context: context,

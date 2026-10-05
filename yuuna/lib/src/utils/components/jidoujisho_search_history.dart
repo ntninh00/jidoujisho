@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:spaces/spaces.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/src/utils/misc/ui_icons.dart';
 
 /// Used in a floating search bar body for showing search history items for
 /// a certain collection named [uniqueKey].
@@ -107,8 +108,8 @@ class _JidoujishoSearchHistoryState
               ),
               child: Icon(
                 widget.searchSuggestions.isNotEmpty
-                    ? Icons.search
-                    : Icons.youtube_searched_for_outlined,
+                    ? Ui.search
+                    : Ui.youtube_searched_for_outlined,
                 size: Theme.of(context).textTheme.titleMedium?.fontSize,
               ),
             ),

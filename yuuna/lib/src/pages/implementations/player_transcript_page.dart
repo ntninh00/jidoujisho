@@ -219,7 +219,7 @@ class _PlayerTranscriptPageState
             },
             textInputAction: TextInputAction.done,
             leadingActions: const [
-              Icon(Icons.search, size: 20),
+              Icon(Ui.search, size: 20),
             ],
             actions: [
               buildFindPrevious(),
@@ -237,7 +237,7 @@ class _PlayerTranscriptPageState
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.find_next,
-        icon: Icons.keyboard_arrow_down,
+        icon: Ui.keyboard_arrow_down,
         onTap: () => searchSubtitle(reversed: false),
       ),
     );
@@ -249,7 +249,7 @@ class _PlayerTranscriptPageState
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.find_previous,
-        icon: Icons.keyboard_arrow_up,
+        icon: Ui.keyboard_arrow_up,
         onTap: () => searchSubtitle(reversed: true),
       ),
     );
@@ -296,7 +296,7 @@ class _PlayerTranscriptPageState
       padding: EdgeInsets.zero,
       tooltip: t.display_settings,
       icon: Icon(
-        Icons.display_settings,
+        Ui.display_settings,
         color: theme.iconTheme.color,
         size: 24,
       ),
@@ -311,8 +311,8 @@ class _PlayerTranscriptPageState
       buildPopupItem(
         label: appModel.isTranscriptOpaque ? t.video_show : t.video_hide,
         icon: appModel.isTranscriptOpaque
-            ? Icons.visibility
-            : Icons.visibility_off_outlined,
+            ? Ui.visibility
+            : Ui.visibility_off_outlined,
         action: () {
           appModel.toggleTranscriptOpaque();
           widget.transcriptBackgroundNotifier.value =
@@ -324,8 +324,8 @@ class _PlayerTranscriptPageState
             ? t.subtitle_timing_hide
             : t.subtitle_timing_show,
         icon: appModel.subtitleTimingsShown
-            ? Icons.timer_off_outlined
-            : Icons.timer,
+            ? Ui.timer_off_outlined
+            : Ui.timer,
         action: () {
           int index = _selectedIndexNotifier.value ?? 0;
 
@@ -372,7 +372,7 @@ class _PlayerTranscriptPageState
         return JidoujishoIconButton(
           tooltip: t.search,
           enabledColor: value ? Colors.red : null,
-          icon: Icons.search,
+          icon: Ui.search,
           onTap: () async {
             bool newValue = !_searchNotifier.value;
 
@@ -398,7 +398,7 @@ class _PlayerTranscriptPageState
         return JidoujishoIconButton(
           enabledColor: appModel.isTranscriptPlayerMode ? Colors.red : null,
           tooltip: t.transcript_playback_mode,
-          icon: Icons.playlist_play,
+          icon: Ui.playlist_play,
           onTap: () async {
             appModel.toggleTranscriptPlayerMode();
             _playerModeNotifier.notifyListeners();
@@ -432,7 +432,7 @@ class _PlayerTranscriptPageState
             if (ended) {
               return JidoujishoIconButton(
                 tooltip: t.replay,
-                icon: Icons.replay,
+                icon: Ui.replay,
                 onTap: () async {
                   widget.autoPauseNotifier.value = null;
                   await widget.controller.stop();
@@ -446,7 +446,7 @@ class _PlayerTranscriptPageState
 
             return JidoujishoIconButton(
               tooltip: playing ? t.pause : t.play,
-              icon: playing ? Icons.pause : Icons.play_arrow,
+              icon: playing ? Ui.pause : Ui.play_arrow,
               onTap: () async {
                 if (playing) {
                   widget.controller.pause();
@@ -465,7 +465,7 @@ class _PlayerTranscriptPageState
   Widget buildBackButton() {
     return JidoujishoIconButton(
       tooltip: t.back,
-      icon: Icons.arrow_back,
+      icon: Ui.arrow_back,
       onTap: () async {
         Navigator.pop(context);
       },
@@ -511,7 +511,7 @@ class _PlayerTranscriptPageState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
-                Icons.subtitles_outlined,
+                Ui.subtitles_outlined,
                 size: 72,
               ),
               const Space.normal(),
@@ -539,7 +539,7 @@ class _PlayerTranscriptPageState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Icon(
-                Icons.subtitles_off_outlined,
+                Ui.subtitles_off_outlined,
                 size: 72,
               ),
               const Space.normal(),
@@ -787,7 +787,7 @@ class _PlayerTranscriptPageState
                   Row(
                     children: [
                       const Icon(
-                        Icons.textsms_outlined,
+                        Ui.textsms_outlined,
                         size: 12,
                         color: Colors.red,
                       ),
@@ -909,7 +909,7 @@ class _PlayerTranscriptPageState
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.seek,
-        icon: Icons.play_circle_fill,
+        icon: Ui.play_circle_fill,
         onTap: () async {
           if (appModel.isTranscriptPlayerMode && !widget.alignMode) {
             await widget.controller.pause();
@@ -938,7 +938,7 @@ class _PlayerTranscriptPageState
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.card_creator,
-        icon: Icons.note_add,
+        icon: Ui.note_add,
         onTap: () async {
           (appModel.currentMediaSource as PlayerMediaSource)
               .setTranscriptSubtitle(subtitle);
@@ -978,7 +978,7 @@ class _PlayerTranscriptPageState
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.player_align_subtitle_transcript,
-        icon: Icons.timer,
+        icon: Ui.timer,
         onTap: () async {
           if (widget.onTap != null) {
             await widget.onTap?.call(index);

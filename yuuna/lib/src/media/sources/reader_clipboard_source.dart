@@ -22,7 +22,7 @@ class ReaderClipboardSource extends ReaderMediaSource {
           description:
               'Allows text pasted from the clipboard to be displayed as '
               'selectable text.',
-          icon: Icons.paste,
+          icon: Ui.paste,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -67,7 +67,7 @@ class ReaderClipboardSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.paste,
-        icon: Icons.note_alt_outlined,
+        icon: Ui.note_alt_outlined,
         onTap: () async {
           ClipboardData? data = await Clipboard.getData('text/plain');
           ref.watch(clipboardProvider.notifier).state = data?.text ?? '';

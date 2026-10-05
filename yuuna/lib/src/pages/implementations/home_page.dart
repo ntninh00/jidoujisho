@@ -203,7 +203,7 @@ class _HomePageState extends BasePageState<HomePage>
   Widget buildResumeButton() {
     return JidoujishoIconButton(
       tooltip: t.resume_last_media,
-      icon: Icons.update,
+      icon: Ui.update,
       enabled: false,
       onTap: resumeAction,
     );
@@ -212,7 +212,7 @@ class _HomePageState extends BasePageState<HomePage>
   Widget buildCreatorButton() {
     return JidoujishoIconButton(
       tooltip: t.card_creator,
-      icon: Icons.note_add_outlined,
+      icon: Ui.note_add_outlined,
       onTap: () => appModel.openCreator(
         ref: ref,
         killOnPop: false,
@@ -226,7 +226,7 @@ class _HomePageState extends BasePageState<HomePage>
       padding: EdgeInsets.zero,
       tooltip: t.show_menu,
       icon: Icon(
-        Icons.more_vert,
+        Ui.more_vert,
         color: theme.iconTheme.color,
         size: 24,
       ),
@@ -319,45 +319,45 @@ class _HomePageState extends BasePageState<HomePage>
       buildPopupItem(
         label:
             appModel.isDarkMode ? t.options_theme_light : t.options_theme_dark,
-        icon: appModel.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+        icon: appModel.isDarkMode ? Ui.light_mode : Ui.dark_mode,
         action: appModel.toggleDarkMode,
       ),
       // if ((appModel.androidDeviceInfo.version.sdkInt ?? 0) >= 33)
       //   buildPopupItem(
       //     label: optionsPipMode,
-      //     icon: Icons.picture_in_picture,
+      //     icon: Ui.picture_in_picture,
       //     action: () {
       //       appModel.usePictureInPicture(ref: ref);
       //     },
       //   ),
       buildPopupItem(
         label: t.options_dictionaries,
-        icon: Icons.auto_stories_rounded,
+        icon: Ui.auto_stories_rounded,
         action: appModel.showDictionaryMenu,
       ),
       buildPopupItem(
         label: t.options_enhancements,
-        icon: Icons.auto_fix_high,
+        icon: Ui.auto_fix_high,
         action: appModel.openCreatorEnhancementsEditor,
       ),
       buildPopupItem(
         label: t.options_language,
-        icon: Icons.translate,
+        icon: Ui.translate,
         action: appModel.showLanguageMenu,
       ),
       buildPopupItem(
         label: t.options_profiles,
-        icon: Icons.switch_account,
+        icon: Ui.switch_account,
         action: appModel.showProfilesMenu,
       ),
       buildPopupItem(
         label: t.options_github,
-        icon: Icons.code,
+        icon: Ui.code,
         action: browseToGithub,
       ),
       buildPopupItem(
         label: t.options_attribution,
-        icon: Icons.info,
+        icon: Ui.info,
         action: navigateToLicensePage,
       ),
     ];

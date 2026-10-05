@@ -13,7 +13,7 @@ class PopFromStashEnhancement extends Enhancement {
           uniqueKey: key,
           label: 'Pop From Stash',
           description: 'Quickly pop the latest item in the Stash.',
-          icon: Icons.bookmark_remove,
+          icon: Ui.bookmark_remove,
         );
 
   /// Used to identify this enhancement and to allow a constant value for the

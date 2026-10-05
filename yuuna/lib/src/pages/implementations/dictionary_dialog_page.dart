@@ -334,13 +334,13 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
   }) {
     if (dictionary.isHidden(appModel.targetLanguage)) {
       return Icon(
-        Icons.visibility_off,
+        Ui.visibility_off,
         size: textTheme.titleLarge?.fontSize,
         color: theme.unselectedWidgetColor,
       );
     } else if (dictionary.isCollapsed(appModel.targetLanguage)) {
       return Icon(
-        Icons.close_fullscreen,
+        Ui.close_fullscreen,
         size: textTheme.titleLarge?.fontSize,
         color: theme.unselectedWidgetColor,
       );
@@ -433,7 +433,7 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
             width: 30,
             alignment: Alignment.center,
             child: Icon(
-              Icons.more_vert,
+              Ui.more_vert,
               color: theme.iconTheme.color,
               size: 24,
             ),
@@ -489,8 +489,8 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
             ? t.options_expand
             : t.options_collapse,
         icon: dictionary.isCollapsed(appModel.targetLanguage)
-            ? Icons.open_in_full
-            : Icons.close_fullscreen,
+            ? Ui.open_in_full
+            : Ui.close_fullscreen,
         action: () {
           appModel.toggleDictionaryCollapsed(dictionary);
           _notifiersByDictionary[dictionary]!.value =
@@ -504,8 +504,8 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
             ? t.options_show
             : t.options_hide,
         icon: dictionary.isCollapsed(appModel.targetLanguage)
-            ? Icons.visibility
-            : Icons.visibility_off,
+            ? Ui.visibility
+            : Ui.visibility_off,
         action: () {
           appModel.toggleDictionaryHidden(dictionary);
           _notifiersByDictionary[dictionary]!.value =
@@ -516,7 +516,7 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
       ),
       buildPopupItem(
         label: t.options_delete,
-        icon: Icons.delete,
+        icon: Ui.delete,
         action: () {
           showDictionaryDeleteDialog(dictionary);
         },

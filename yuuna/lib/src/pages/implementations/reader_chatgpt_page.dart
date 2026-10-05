@@ -119,7 +119,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
   Widget buildEmpty() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.chat_outlined,
+        icon: Ui.chat_outlined,
         message: t.no_messages,
       ),
     );
@@ -160,7 +160,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
                   ),
                 )
               : JidoujishoIconButton(
-                  icon: Icons.send,
+                  icon: Ui.send,
                   tooltip: t.send,
                   onTap: () => onSubmitted(_controller.text),
                 ),
@@ -324,7 +324,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
   Widget buildNoApiKey() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.login,
+        icon: Ui.login,
         message: t.missing_api_key,
       ),
     );
@@ -600,7 +600,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.sentence_picker,
-        icon: Icons.colorize,
+        icon: Ui.colorize,
         onTap: () async {
           appModel.openExampleSentenceDialog(
             exampleSentences: appModel.targetLanguage
@@ -640,7 +640,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
             Theme.of(context).appBarTheme.foregroundColor?.withOpacity(0.1),
         size: Spacing.of(context).spaces.semiBig,
         tooltip: t.card_creator,
-        icon: Icons.note_add,
+        icon: Ui.note_add,
         onTap: () async {
           await appModel.openCreator(
             creatorFieldValues: CreatorFieldValues(

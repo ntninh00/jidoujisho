@@ -214,7 +214,7 @@ class _ProfilesDialogPageState extends BasePageState<ProfilesDialogPage>
           type: MaterialType.transparency,
           child: ListTile(
             selected: appModel.lastSelectedMapping.label == mapping.label,
-            leading: const Icon(Icons.account_box),
+            leading: const Icon(Ui.account_box),
             title: Row(
               children: [
                 Expanded(
@@ -275,7 +275,7 @@ class _ProfilesDialogPageState extends BasePageState<ProfilesDialogPage>
             width: 30,
             alignment: Alignment.center,
             child: Icon(
-              Icons.more_vert,
+              Ui.more_vert,
               color: theme.iconTheme.color,
               size: 24,
             ),
@@ -332,14 +332,14 @@ class _ProfilesDialogPageState extends BasePageState<ProfilesDialogPage>
     return [
       buildPopupItem(
         label: t.options_edit,
-        icon: Icons.edit,
+        icon: Ui.edit,
         action: () async {
           await showMappingEditDialog(mapping);
         },
       ),
       buildPopupItem(
         label: t.options_copy,
-        icon: Icons.copy,
+        icon: Ui.copy,
         action: () async {
           AnkiMapping mappingClone =
               mapping.copyWith(label: t.copy_of_mapping(name: mapping.label));
@@ -352,7 +352,7 @@ class _ProfilesDialogPageState extends BasePageState<ProfilesDialogPage>
       if (AnkiMapping.standardProfileName != mapping.label)
         buildPopupItem(
           label: t.options_delete,
-          icon: Icons.delete,
+          icon: Ui.delete,
           action: () {
             showMappingDeleteDialog(mapping);
           },
@@ -614,7 +614,7 @@ class _ProfilesDialogPageState extends BasePageState<ProfilesDialogPage>
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.account_box),
+        prefixIcon: const Icon(Ui.account_box),
         labelText: t.mapping_name,
         hintText: t.mapping_name_hint,
       ),

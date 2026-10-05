@@ -17,7 +17,7 @@ class ReaderChatgptSource extends ReaderMediaSource {
           sourceName: 'ChatGPT',
           description:
               'Allows the user to interact with an AI language model with an official API key from OpenAI.',
-          icon: Icons.chat_outlined,
+          icon: Ui.chat_outlined,
           implementsSearch: false,
           implementsHistory: false,
         );
@@ -80,7 +80,7 @@ class ReaderChatgptSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.api_key,
-        icon: Icons.key,
+        icon: Ui.key,
         onTap: () async {
           await showDialog(
             context: context,
@@ -102,7 +102,7 @@ class ReaderChatgptSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.clear_message_title,
-        icon: Icons.clear_all,
+        icon: Ui.clear_all,
         onTap: () {
           showClearPrompt(
             appModel: appModel,

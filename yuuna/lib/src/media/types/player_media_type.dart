@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// Media type that encapsulates videos or music.
 class PlayerMediaType extends MediaType {
@@ -8,8 +9,8 @@ class PlayerMediaType extends MediaType {
   PlayerMediaType._privateConstructor()
       : super(
           uniqueKey: 'player_media_type',
-          icon: Icons.video_library,
-          outlinedIcon: Icons.video_library_outlined,
+          icon: Ui.video_library,
+          outlinedIcon: Ui.video_library_outlined,
         );
 
   /// Get the singleton instance of this media type.

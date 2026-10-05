@@ -77,7 +77,7 @@ class _QuickActionsPickerDialogPageState
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.electric_bolt,
+        icon: Ui.electric_bolt,
         message: t.no_more_available_quick_actions,
       ),
     );

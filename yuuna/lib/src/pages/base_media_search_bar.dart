@@ -150,7 +150,7 @@ abstract class BaseMediaSearchBarState<T extends BaseMediaSearchBar>
       child: JidoujishoIconButton(
         size: textTheme.titleLarge?.fontSize,
         tooltip: t.clear_search_title,
-        icon: Icons.manage_search,
+        icon: Ui.manage_search,
         onTap: showDeleteSearchHistoryPrompt,
       ),
     );
@@ -256,7 +256,7 @@ abstract class BaseMediaSearchBarState<T extends BaseMediaSearchBar>
   Widget buildEnterSearchTermPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search,
+        icon: Ui.search,
         message: t.enter_search_term,
       ),
     );
@@ -266,7 +266,7 @@ abstract class BaseMediaSearchBarState<T extends BaseMediaSearchBar>
   Widget buildNoSearchResultsPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_search_results,
       ),
     );

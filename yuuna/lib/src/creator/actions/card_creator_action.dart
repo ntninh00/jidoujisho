@@ -5,6 +5,7 @@ import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
+import 'package:yuuna/utils.dart';
 
 /// An enhancement used effectively as a shortcut for opening the Card Creator.
 class CardCreatorAction extends QuickAction {
@@ -16,7 +17,7 @@ class CardCreatorAction extends QuickAction {
           description:
               'Create a card with the selected dictionary entry parameters and'
               ' edit before export.',
-          icon: Icons.note_add,
+          icon: Ui.note_add,
           showInSingleDictionary: true,
         );
 

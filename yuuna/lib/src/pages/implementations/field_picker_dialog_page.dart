@@ -78,7 +78,7 @@ class _FieldPickerDialogPageState extends BasePageState<FieldPickerDialogPage> {
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.edit,
+        icon: Ui.edit,
         message: t.no_more_available_fields,
       ),
     );

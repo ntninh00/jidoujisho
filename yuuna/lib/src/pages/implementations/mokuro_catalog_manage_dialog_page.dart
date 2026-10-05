@@ -94,7 +94,7 @@ class _MokuroCatalogManageDialogPageState
         bottom: Spacing.of(context).spaces.normal,
       ),
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.bookmark,
+        icon: Ui.bookmark,
         message: t.no_catalogs_listed,
       ),
     );
@@ -157,7 +157,7 @@ class _MokuroCatalogManageDialogPageState
           type: MaterialType.transparency,
           child: ListTile(
             selected: _selectedOrder == catalog.order,
-            leading: const Icon(Icons.bookmark),
+            leading: const Icon(Ui.bookmark),
             title: Row(
               children: [
                 Expanded(
@@ -212,7 +212,7 @@ class _MokuroCatalogManageDialogPageState
               width: 30,
               alignment: Alignment.center,
               child: Icon(
-                Icons.more_vert,
+                Ui.more_vert,
                 color: theme.iconTheme.color,
                 size: 24,
               ),
@@ -266,7 +266,7 @@ class _MokuroCatalogManageDialogPageState
     return [
       buildPopupItem(
         label: t.options_edit,
-        icon: Icons.edit,
+        icon: Ui.edit,
         action: () async {
           await showDialog(
             context: context,
@@ -277,7 +277,7 @@ class _MokuroCatalogManageDialogPageState
       ),
       buildPopupItem(
         label: t.options_delete,
-        icon: Icons.delete,
+        icon: Ui.delete,
         action: () {
           showCatalogDeleteDialog(catalog);
         },

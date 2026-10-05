@@ -483,7 +483,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   const Icon(
-                                    Icons.undo_rounded,
+                                    Ui.undo_rounded,
                                     size: 18,
                                     color: Colors.white,
                                   ),

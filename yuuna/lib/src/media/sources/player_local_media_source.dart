@@ -23,7 +23,7 @@ class PlayerLocalMediaSource extends PlayerMediaSource {
           uniqueKey: 'player_local_media',
           sourceName: 'Local Media',
           description: 'Play videos sourced from local device storage.',
-          icon: Icons.storage,
+          icon: Ui.storage,
           implementsSearch: false,
           implementsHistory: true,
         );
@@ -70,7 +70,7 @@ class PlayerLocalMediaSource extends PlayerMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.pick_video_file,
-        icon: Icons.perm_media,
+        icon: Ui.perm_media,
         onTap: () => pickVideoFile(
           context: context,
           appModel: appModel,

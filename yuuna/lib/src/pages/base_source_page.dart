@@ -495,7 +495,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   Widget buildNoSearchResultsPlaceholderMessage() {
     return Center(
       child: JidoujishoPlaceholderMessage(
-        icon: Icons.search_off,
+        icon: Ui.search_off,
         message: t.no_search_results,
       ),
     );
