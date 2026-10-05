@@ -138,12 +138,12 @@ class _HomePageState extends BasePageState<HomePage>
     );
   }
 
+  /// Only the actions: the app's name and icon are not shown.
   PreferredSizeWidget? buildAppBar() {
     return AppBar(
-      leading: buildLeading(),
-      title: buildTitle(),
+      automaticallyImplyLeading: false,
+      toolbarHeight: 48,
       actions: buildActions(),
-      titleSpacing: 8,
     );
   }
 

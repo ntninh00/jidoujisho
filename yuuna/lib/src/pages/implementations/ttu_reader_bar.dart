@@ -4,7 +4,7 @@ import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
 /// The bar at the top of the Reader tab when ッツ Ebook Reader is the source:
-/// a labelled source switcher, Add, and one settings button.
+/// a labelled source switcher, Add, and one settings button, all one height.
 class TtuReaderBar extends BasePage {
   /// Create the bar.
   const TtuReaderBar({super.key});
@@ -16,35 +16,37 @@ class TtuReaderBar extends BasePage {
 class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
   ReaderTtuSource get source => ReaderTtuSource.instance;
 
+  static const double _height = 40;
+
   @override
   Widget build(BuildContext context) {
-    Color chipColor = appModel.isDarkMode
+    Color surface = appModel.isDarkMode
         ? const Color.fromARGB(255, 30, 30, 30)
         : const Color.fromARGB(255, 229, 229, 229);
-    Color red = theme.colorScheme.primary;
+    Color accent = theme.colorScheme.primary;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 4, 0),
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
       child: SizedBox(
-        height: 44,
+        height: _height,
         child: Row(
           children: [
             Flexible(
               child: Material(
-                color: chipColor,
-                borderRadius: BorderRadius.circular(22),
+                color: surface,
+                shape: const StadiumBorder(),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
                   onTap: () => showTtuSheet<void>(
                     context: context,
                     builder: (_) => const TtuSourcePickerSheet(),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 8, 0),
+                    padding: const EdgeInsets.fromLTRB(14, 0, 10, 0),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(source.icon, size: 20),
+                        Icon(source.icon, size: 18),
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
@@ -55,10 +57,10 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
                                 .copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
-                        const SizedBox(width: 2),
+                        const SizedBox(width: 4),
                         Icon(
                           Ui.expand_more,
-                          size: 20,
+                          size: 18,
                           color: theme.unselectedWidgetColor,
                         ),
                       ],
@@ -69,26 +71,26 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
             ),
             const Spacer(),
             Material(
-              color: red.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(20),
+              color: accent,
+              shape: const StadiumBorder(),
+              clipBehavior: Clip.antiAlias,
               child: InkWell(
-                borderRadius: BorderRadius.circular(20),
                 onTap: () => source.pickAndImport(
                   context: context,
                   appModel: appModelNoUpdate,
                   ref: ref,
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 8, 14, 8),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 16, 0),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Ui.add, size: 20, color: red),
-                      const SizedBox(width: 2),
+                      const Icon(Ui.add, size: 18, color: Colors.white),
+                      const SizedBox(width: 6),
                       Text(
                         t.ttu_add,
                         style: textTheme.bodyMedium!.copyWith(
-                          color: red,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -97,13 +99,25 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
                 ),
               ),
             ),
-            IconButton(
-              tooltip: t.ttu_reader_settings,
-              icon: const Icon(Ui.settings_outlined),
-              onPressed: () => source.showSettings(
-                context: context,
-                appModel: appModelNoUpdate,
-                ref: ref,
+            const SizedBox(width: 8),
+            Material(
+              color: surface,
+              shape: const CircleBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => source.showSettings(
+                  context: context,
+                  appModel: appModelNoUpdate,
+                  ref: ref,
+                ),
+                child: Tooltip(
+                  message: t.ttu_reader_settings,
+                  child: const SizedBox(
+                    width: _height,
+                    height: _height,
+                    child: Icon(Ui.settings_outlined, size: 20),
+                  ),
+                ),
               ),
             ),
           ],

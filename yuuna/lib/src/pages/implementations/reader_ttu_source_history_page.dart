@@ -214,8 +214,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                     key: ValueKey(books[index].key),
                     book: books[index],
                     memos: memosByBook[books[index].key] ?? const [],
-                    showLanguage:
-                        books[index].language != appModel.savedTargetLanguage,
+
                     onOpen: () => _open(books[index]),
                     onDetails: () => _showDetails(
                       books[index],
@@ -418,7 +417,6 @@ class _BookTile extends BasePage {
   const _BookTile({
     required this.book,
     required this.memos,
-    required this.showLanguage,
     required this.onOpen,
     required this.onDetails,
     required this.onMemos,
@@ -427,7 +425,6 @@ class _BookTile extends BasePage {
 
   final TtuBook book;
   final List<ReaderMemo> memos;
-  final bool showLanguage;
   final VoidCallback onOpen;
   final VoidCallback onDetails;
   final VoidCallback onMemos;
@@ -492,22 +489,7 @@ class _BookTileState extends BasePageState<_BookTile> {
                 ),
               ),
             ),
-            if (widget.showLanguage)
-              Positioned(
-                top: 6,
-                left: 6,
-                child: _Pill(
-                  child: Text(
-                    book.language.languageCode.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-              ),
+
             Material(
               type: MaterialType.transparency,
               child: InkWell(
