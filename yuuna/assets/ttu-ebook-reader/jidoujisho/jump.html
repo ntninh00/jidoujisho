@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ッツ Ebook Reader</title>
+<style>html,body{margin:0;height:100%;background:#000}</style>
+</head>
+<body>
+<script>
+/*
+ * Sets ッツ's saved position for a book, then opens the book. ッツ restores
+ * from exploredCharCount when no scroll offsets are stored, so the record is
+ * written without them. Used to open a memo and to go back afterwards.
+ *
+ * Query: id (ッツ book id), c (character position), p (progress, 0 to 1),
+ * title (optional, passed through to b.html).
+ */
+(function () {
+  var q = new URLSearchParams(location.search);
+  var id = Number(q.get('id'));
+  var chars = Math.max(0, Math.round(Number(q.get('c')) || 0));
+  var progress = Math.max(0, Math.min(1, Number(q.get('p')) || 0));
+  var title = q.get('title');
+  var target = '../b.html?id=' + encodeURIComponent(String(id)) +
+    (title ? '&?title=' + encodeURIComponent(title) : '');
+
+  function open() {
+    location.replace(target);
+  }
+
+  if (!isFinite(id)) {
+    open();
+    return;
+  }
+
+  var request = indexedDB.open('books');
+  request.onupgradeneeded = function () {
+    request.transaction.abort();
+  };
+  request.onerror = open;
+  request.onsuccess = function () {
+    var db = request.result;
+    try {
+      var tx = db.transaction('bookmark', 'readwrite');
+      tx.objectStore('bookmark').put({
+        dataId: id,
+        exploredCharCount: chars,
+        progress: progress,
+        lastBookmarkModified: Date.now(),
+      });
+      tx.oncomplete = function () {
+        db.close();
+        open();
+      };
+      tx.onerror = tx.onabort = function () {
+        db.close();
+        open();
+      };
+    } catch (e) {
+      db.close();
+      open();
+    }
+  };
+})();
+</script>
+</body>
+</html>

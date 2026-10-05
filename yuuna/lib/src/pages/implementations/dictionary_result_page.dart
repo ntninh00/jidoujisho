@@ -20,6 +20,7 @@ class DictionaryResultPage extends BasePage {
     this.updateHistory = true,
     this.spaceBeforeFirstResult = true,
     this.footerWidget,
+    this.shrinkWrap = false,
     super.key,
   });
 
@@ -53,6 +54,9 @@ class DictionaryResultPage extends BasePage {
   /// Optional footer for use for showing more.
   final Widget? footerWidget;
 
+  /// Size to the results instead of filling the space, as in the popup.
+  final bool shrinkWrap;
+
   @override
   BasePageState<DictionaryResultPage> createState() =>
       _DictionaryResultPageState();
@@ -74,14 +78,9 @@ class _DictionaryResultPageState extends BasePageState<DictionaryResultPage> {
   Widget build(BuildContext context) {
     AnkiMapping lastSelectedMapping = appModel.lastSelectedMapping;
 
-    Map<int, DictionaryHeading> headingsById = Map.fromEntries(
-      widget.result.headings.map(
-        (heading) => MapEntry(heading.id, heading),
-      ),
-    );
-
-    List<DictionaryHeading> headings =
-        widget.result.headingIds.map((id) => headingsById[id]!).toList();
+    /// Only the shown headings are fetched, by id, rather than every heading
+    /// linked to the stored result.
+    List<DictionaryHeading> headings = appModel.headingsOf(widget.result);
 
     List<Dictionary> dictionaries = appModel.dictionaries;
     Map<String, bool> dictionaryNamesByHidden = Map<String, bool>.fromEntries(
@@ -120,7 +119,7 @@ class _DictionaryResultPageState extends BasePageState<DictionaryResultPage> {
         child: Padding(
           padding: Spacing.of(context).insets.onlyRight.extraSmall,
           child: CustomScrollView(
-            cacheExtent: 999999999999999,
+            shrinkWrap: widget.shrinkWrap,
             controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),

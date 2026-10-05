@@ -2,6 +2,7 @@ export 'src/dictionary/dictionary.dart';
 export 'src/dictionary/dictionary_entry.dart';
 export 'src/dictionary/dictionary_utils.dart';
 export 'src/dictionary/dictionary_search_result.dart';
+export 'src/dictionary/dictionary_search_worker.dart';
 export 'src/dictionary/dictionary_pitch.dart';
 export 'src/dictionary/dictionary_frequency.dart';
 export 'src/dictionary/dictionary_heading.dart';

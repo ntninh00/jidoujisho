@@ -91,7 +91,9 @@ class DictionaryTermPage extends ConsumerWidget {
                     ? Color.fromRGBO(16, 16, 16, opacity)
                     : Color.fromRGBO(249, 249, 249, opacity)),
             elevation: 0,
-            shape: const RoundedRectangleBorder(),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
           ),
         ),
         SliverPadding(

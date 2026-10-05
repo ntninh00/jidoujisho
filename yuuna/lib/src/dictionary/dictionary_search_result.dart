@@ -37,4 +37,14 @@ class DictionarySearchResult {
   /// A single result may have multiple headings in the result, which in turn
   /// contain multiple dictionary entries.
   final IsarLinks<DictionaryHeading> headings = IsarLinks<DictionaryHeading>();
+
+  /// The headings of [headingIds] in order, fetched once for display. Not
+  /// stored.
+  @ignore
+  List<DictionaryHeading>? resolvedHeadings;
+
+  /// Completes with the stored id while the result is being written for
+  /// search history. Not stored.
+  @ignore
+  Future<int?>? pendingId;
 }

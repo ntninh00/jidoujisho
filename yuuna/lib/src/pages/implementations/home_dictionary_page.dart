@@ -100,7 +100,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       hint: t.search_ellipsis,
       controller: mediaType.floatingSearchBarController,
       builder: buildFloatingSearchBody,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(24),
       elevation: 0,
       backgroundColor: appModel.isDarkMode
           ? const Color.fromARGB(255, 30, 30, 30)
@@ -124,8 +124,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       ],
       actions: [
         buildDictionarySettingsButton(),
-        buildClearButton(),
-        buildSearchClearButton(),
+        buildMoreButton(),
         buildSearchButton(),
       ],
     );
@@ -143,6 +142,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   void searchAgain() {
     _result = null;
+    lastQuery = '';
     search(mediaType.floatingSearchBarController.query);
   }
 
@@ -161,6 +161,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   bool _showMore = false;
   String lastQuery = '';
 
+  /// Counts searches so a slow, older search never replaces a newer one.
+  int _searchSerial = 0;
+
   void search(
     String query, {
     int? overrideMaximumTerms,
@@ -171,7 +174,8 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       lastQuery = query;
     }
 
-    overrideMaximumTerms ??= appModel.maximumTerms;
+    int maximumTerms = overrideMaximumTerms ?? appModel.maximumTerms;
+    int serial = ++_searchSerial;
 
     if (mounted) {
       setState(() {
@@ -179,35 +183,47 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       });
     }
 
+    DictionarySearchResult? result;
     try {
-      _result = await appModel.searchDictionary(
+      result = await appModel.searchDictionary(
         searchTerm: query,
         searchWithWildcards: true,
-        overrideMaximumTerms: overrideMaximumTerms,
+        overrideMaximumTerms: maximumTerms,
+        channel: 'dictionary_tab',
       );
-    } finally {
-      if (_result != null) {
-        if (query == mediaType.floatingSearchBarController.query) {
-          if (mounted) {
-            setState(() {
-              _isSearching = false;
-              _showMore = _result!.headings.length < overrideMaximumTerms!;
-            });
-          }
-          Future.delayed(historyDelay, () async {
-            if (query == mediaType.floatingSearchBarController.query) {
-              appModel.addToSearchHistory(
-                historyKey: mediaType.uniqueKey,
-                searchTerm: mediaType.floatingSearchBarController.query,
-              );
-              if (_result!.headings.isNotEmpty) {
-                appModel.addToDictionaryHistory(result: _result!);
-              }
-            }
-          });
+    } catch (error) {
+      debugPrint('Dictionary search failed: $error');
+    }
+
+    /// The query changed while this search ran.
+    if (serial != _searchSerial || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSearching = false;
+      if (result != null) {
+        _result = result;
+        _showMore = result.headingIds.length < maximumTerms;
+      }
+    });
+
+    DictionarySearchResult? found = result;
+    if (found == null) {
+      return;
+    }
+    Future.delayed(historyDelay, () async {
+      if (serial == _searchSerial &&
+          query == mediaType.floatingSearchBarController.query) {
+        appModel.addToSearchHistory(
+          historyKey: mediaType.uniqueKey,
+          searchTerm: mediaType.floatingSearchBarController.query,
+        );
+        if (found.headingIds.isNotEmpty) {
+          appModel.addToDictionaryHistory(result: found);
         }
       }
-    }
+    });
   }
 
   Widget buildDictionaryButton() {
@@ -221,13 +237,38 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  Widget buildClearButton() {
+  /// Clearing history is rare and destructive, so both clear actions live in
+  /// one labelled menu instead of two unlabelled icons on the bar.
+  Widget buildMoreButton() {
     return FloatingSearchBarAction(
-      child: JidoujishoIconButton(
-        size: textTheme.titleLarge?.fontSize,
-        tooltip: t.clear_dictionary_title,
-        icon: Icons.delete_sweep,
-        onTap: showDeleteDictionaryHistoryPrompt,
+      showIfOpened: true,
+      child: PopupMenuButton<VoidCallback>(
+        tooltip: t.show_menu,
+        icon: Icon(
+          Icons.more_vert,
+          size: textTheme.titleLarge?.fontSize,
+        ),
+        onSelected: (action) => action(),
+        itemBuilder: (context) => [
+          PopupMenuItem<VoidCallback>(
+            value: showDeleteSearchHistoryPrompt,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.manage_search),
+              title: Text(t.clear_search_title),
+            ),
+          ),
+          PopupMenuItem<VoidCallback>(
+            value: showDeleteDictionaryHistoryPrompt,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.delete_sweep),
+              title: Text(t.clear_dictionary_title),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -401,14 +442,14 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       }
     }
     if (_isSearching) {
-      if (_result != null && _result!.headings.isNotEmpty) {
+      if (_result != null && _result!.headingIds.isNotEmpty) {
         return buildSearchResult();
       } else {
         return const SizedBox.shrink();
       }
     }
 
-    if (_result == null || _result!.headings.isEmpty) {
+    if (_result == null || _result!.headingIds.isEmpty) {
       return buildNoSearchResultsPlaceholderMessage();
     }
 

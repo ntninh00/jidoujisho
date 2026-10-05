@@ -60,7 +60,7 @@ abstract class BaseTabPageState<T extends BaseTabPage> extends BasePageState {
           hint: mediaSource.getLocalisedSourceName(appModel),
           controller: mediaType.floatingSearchBarController,
           builder: (_, __) => const SizedBox.shrink(),
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(24),
           elevation: 0,
           backgroundColor: appModel.isDarkMode
               ? const Color.fromARGB(255, 30, 30, 30)

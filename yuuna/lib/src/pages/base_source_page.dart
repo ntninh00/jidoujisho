@@ -57,7 +57,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   StreamSubscription<bool>? _creatorActiveStreamSubscription;
 
   /// Allows customisation of dictionary background.
-  double get dictionaryBackgroundOpacity => 0.95;
+  double get dictionaryBackgroundOpacity => 0.98;
 
   /// Allows customisation of opacity of dictionary entries.
   double get dictionaryEntryOpacity => 1;
@@ -68,6 +68,10 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       ValueNotifier<DictionarySearchResult?>(null);
 
   String? _lastSearchTerm;
+
+  /// Counts lookups. A search whose number is no longer current was replaced
+  /// by a newer lookup or a close, and its result is dropped.
+  int _searchSerial = 0;
 
   /// Notifies the progress bar whether or not to refresh.
   final ValueNotifier<bool> _isSearchingNotifier = ValueNotifier<bool>(false);
@@ -83,7 +87,6 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   /// use this and wrap their [build] function with a [WillPopScope].
   Future<bool> onWillPop() async {
     Widget alertDialog = AlertDialog(
-      shape: const RoundedRectangleBorder(),
       title: Text(t.exit_media_title),
       content: Text(t.exit_media_description),
       actions: <Widget>[
@@ -145,17 +148,24 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
 
     overrideMaximumTerms ??= appModel.maximumTerms;
 
-    late DictionarySearchResult dictionaryResult;
+    int serial = ++_searchSerial;
     _popupPositionNotifier.value = position;
 
     try {
       _isSearchingNotifier.value = true;
 
-      dictionaryResult = await appModel.searchDictionary(
+      DictionarySearchResult dictionaryResult = await appModel.searchDictionary(
         searchTerm: searchTerm,
         searchWithWildcards: false,
         overrideMaximumTerms: overrideMaximumTerms,
+        channel: 'popup',
       );
+
+      /// A newer lookup, or a close, happened while this one ran.
+      if (serial != _searchSerial) {
+        return;
+      }
+
       if (notShowMore && resultScrollController.hasClients) {
         resultScrollController
             .jumpTo(resultScrollController.initialScrollOffset);
@@ -164,15 +174,19 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       _lastSearchTerm = searchTerm;
 
       appModel.addToDictionaryHistory(result: dictionaryResult);
-      _showMore = dictionaryResult.headings.length < overrideMaximumTerms;
+      _showMore = dictionaryResult.headingIds.length < overrideMaximumTerms;
       _dictionaryResultNotifier.value = dictionaryResult;
     } finally {
-      _isSearchingNotifier.value = false;
+      if (serial == _searchSerial) {
+        _isSearchingNotifier.value = false;
+      }
     }
   }
 
   /// Hide the dictionary and dispose of the current result.
   void clearDictionaryResult() async {
+    _searchSerial++;
+    _isSearchingNotifier.value = false;
     _dictionaryResultNotifier.value = null;
     _popupPositionNotifier.value = null;
     _lastSearchTerm = null;
@@ -315,6 +329,8 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       color = JidoujishoColor.darken(color, 0.05);
     }
 
+    bool reduceMotion = MediaQuery.of(context).disableAnimations;
+
     return Dismissible(
       key: ValueKey(_dictionaryResultNotifier.value),
       onDismissed: (dismissDirection) {},
@@ -323,17 +339,42 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           onDictionaryDismiss();
         }
       },
-      dismissThresholds: const {DismissDirection.horizontal: 0.05},
-      movementDuration: const Duration(milliseconds: 20),
-      child: Container(
-        padding: Spacing.of(context).insets.all.semiSmall,
-        margin: Spacing.of(context).insets.all.normal,
-        color: color.withOpacity(dictionaryBackgroundOpacity),
-        child: Stack(
-          children: [
-            buildSearchResult(),
-            buildDictionaryLoading(),
-          ],
+      dismissThresholds: const {DismissDirection.horizontal: 0.25},
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration:
+            reduceMotion ? Duration.zero : const Duration(milliseconds: 140),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) => Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - value) * 8),
+            child: child,
+          ),
+        ),
+        child: Container(
+          margin: Spacing.of(context).insets.all.normal,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: color.withOpacity(dictionaryBackgroundOpacity),
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black38,
+                blurRadius: 18,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: Spacing.of(context).insets.all.semiSmall,
+            child: Stack(
+              children: [
+                buildSearchResult(),
+                Positioned.fill(child: buildDictionaryLoading()),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -351,22 +392,14 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       builder: (context, value, child) {
         return Visibility(
           visible: value,
-          child: SizedBox(
-            height: double.infinity,
-            width: double.infinity,
-            child: Card(
-              color: Colors.transparent,
-              elevation: 0,
-              shape: const RoundedRectangleBorder(),
-              child: Column(
-                children: [
-                  const LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                    minHeight: 2.75,
-                  ),
-                  Expanded(child: Container())
-                ],
+          child: const Align(
+            alignment: Alignment.topCenter,
+            child: ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(2)),
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                minHeight: 2.75,
               ),
             ),
           ),
@@ -384,26 +417,16 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       valueListenable: _dictionaryResultNotifier,
       builder: (_, __, ___) {
         if (_dictionaryResultNotifier.value == null) {
-          return SizedBox(
-            height: double.infinity,
-            width: double.infinity,
-            child: Card(
-              color: appModel.overrideDictionaryColor
-                      ?.withOpacity(dictionaryEntryOpacity) ??
-                  (Theme.of(context).brightness == Brightness.dark
-                      ? Color.fromRGBO(16, 16, 16, dictionaryEntryOpacity)
-                      : Color.fromRGBO(249, 249, 249, dictionaryEntryOpacity)),
-              elevation: 0,
-              shape: const RoundedRectangleBorder(),
-              child: Column(
-                children: [Container()],
-              ),
-            ),
-          );
+          /// First lookup still running: a short card instead of half the
+          /// screen, so the popup does not jump in size.
+          return const SizedBox(height: 120, width: double.infinity);
         }
 
-        if (_dictionaryResultNotifier.value!.headings.isEmpty) {
-          return buildNoSearchResultsPlaceholderMessage();
+        if (_dictionaryResultNotifier.value!.headingIds.isEmpty) {
+          return SizedBox(
+            height: 140,
+            child: buildNoSearchResultsPlaceholderMessage(),
+          );
         }
 
         return DictionaryResultPage(
@@ -416,6 +439,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           result: _dictionaryResultNotifier.value!,
           spaceBeforeFirstResult: false,
           footerWidget: footerWidget,
+          shrinkWrap: true,
         );
       },
     );

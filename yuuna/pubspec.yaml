@@ -7,6 +7,7 @@ environment:
   flutter: "^3.13.5"
 
 dependencies:
+  archive: ^3.3.7
   async_zip: ^0.1.0
   audio_service: ^0.18.9
   audio_session: ^0.1.13
@@ -155,6 +156,7 @@ dependency_overrides:
   http: ^1.0.0
   logging: 1.1.1
   record_mp3_plus: ^1.2.0
+  stack_trace: ^1.11.1 # flutter_test pins an older version
   wakelock_windows:
     git:
       url: https://github.com/diegotori/wakelock
@@ -166,6 +168,8 @@ dev_dependencies:
   dart_mappable_builder: ^4.0.0-dev.2
   dependency_validator: ^3.0.0
   flutter_lints: ^2.0.1
+  flutter_test:
+    sdk: flutter
   isar_generator: ^3.1.0+1
   
 flutter_icons:
@@ -198,6 +202,7 @@ flutter:
     - assets/ttu-ebook-reader/b/
     - assets/ttu-ebook-reader/fonts/
     - assets/ttu-ebook-reader/icons/
+    - assets/ttu-ebook-reader/jidoujisho/
     - assets/ttu-ebook-reader/manage/
     - assets/ttu-ebook-reader/settings/
 

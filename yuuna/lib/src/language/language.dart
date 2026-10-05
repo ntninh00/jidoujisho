@@ -73,9 +73,8 @@ abstract class Language {
   final String helloWorld;
 
   /// Overrides the base search function and implements search specific to
-  /// a language.
-  final Future<int?> Function(DictionarySearchParams params)
-      prepareSearchResults;
+  /// a language. Runs on the dictionary search worker isolate.
+  final DictionarySearchFunction prepareSearchResults;
 
   /// A standard format that dictionaries of this language can be found in.
   /// This is only to set this as the default last selected format on first
@@ -331,12 +330,13 @@ abstract class Language {
     if (isSpaceDelimited) {
       RegExp regex = RegExp('[ ]');
 
-      int numberOfWords = result?.headings
-              .firstWhereOrNull((e) => e.id == result.headingIds.first)
-              ?.term
-              .splitWithDelim(regex)
-              .length ??
-          1;
+      List<DictionaryHeading>? resolved = result?.resolvedHeadings;
+      DictionaryHeading? first = resolved != null && resolved.isNotEmpty
+          ? resolved.first
+          : result?.headings.firstWhereOrNull(
+              (e) => e.id == result.headingIds.first,
+            );
+      int numberOfWords = first?.term.splitWithDelim(regex).length ?? 1;
       List<String> searchTermWords = searchTerm.splitWithDelim(regex);
       return searchTermWords.sublist(0, numberOfWords).join().length;
     } else {
@@ -409,7 +409,8 @@ abstract class Language {
   }
 }
 
-/// Top-level function for use in compute. See [Language] for details.
-Future<int?> prepareSearchResultsStandard(DictionarySearchParams params) {
+/// Top-level function run on the search worker. See [Language] for details.
+Future<DictionarySearchOutcome?> prepareSearchResultsStandard(
+    DictionarySearchParams params) {
   throw UnimplementedError();
 }

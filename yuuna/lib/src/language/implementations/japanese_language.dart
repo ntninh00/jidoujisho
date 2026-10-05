@@ -280,7 +280,7 @@ class JapaneseLanguage extends Language {
 /// Credits to Matthew Chan for their port of the Yomichan parser to Dart.
 /// Top-level function for use in compute. See [Language] for details.
 /// Credits to Matthew Chan for their port of the Yomichan parser to Dart.
-Future<int?> prepareSearchResultsJapaneseLanguage(
+Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
     DictionarySearchParams params) async {
   int bestLength = 0;
   String searchTerm = params.searchTerm.trim();
@@ -299,11 +299,13 @@ Future<int?> prepareSearchResultsJapaneseLanguage(
     return null;
   }
 
-  final Isar database = await Isar.open(
-    globalSchemas,
-    directory: params.directoryPath,
-    maxSizeMiB: 8192,
-  );
+  /// The search worker keeps the database open between searches.
+  final Isar database = Isar.getInstance() ??
+      await Isar.open(
+        globalSchemas,
+        directory: params.directoryPath,
+        maxSizeMiB: 8192,
+      );
 
   Map<int, DictionaryHeading> uniqueHeadingsById = {};
 
@@ -608,21 +610,8 @@ Future<int?> prepareSearchResultsJapaneseLanguage(
     return null;
   }
 
-  DictionarySearchResult unsortedResult = DictionarySearchResult(
-    searchTerm: searchTerm,
-    bestLength: bestLength,
-  );
-
-  late int resultId;
-  unsortedResult.headings.addAll(headings);
-
-  database.writeTxnSync(() async {
-    database.dictionarySearchResults.deleteBySearchTermSync(searchTerm);
-    resultId = database.dictionarySearchResults.putSync(unsortedResult);
-  });
-
-  preloadResultSync(resultId);
-
+  /// Links load on first use while sorting, so nothing has to be written
+  /// before the result can be shown.
   List<Dictionary> dictionaries = database.dictionarys.where().findAllSync();
 
   headings.sort((a, b) {
@@ -711,33 +700,11 @@ Future<int?> prepareSearchResultsJapaneseLanguage(
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 
-  List<int> headingIds = headings.map((e) => e.id).toList();
-
-  DictionarySearchResult result = DictionarySearchResult(
-    id: resultId,
+  return DictionarySearchOutcome(
     searchTerm: searchTerm,
     bestLength: bestLength,
-    headingIds: headingIds,
+    headingIds: headings.map((e) => e.id).toList(),
   );
-
-  database.writeTxnSync(() async {
-    result.headings.addAll(headings);
-    resultId =
-        database.dictionarySearchResults.putSync(result, saveLinks: false);
-
-    int countInSameHistory = database.dictionarySearchResults.countSync();
-
-    if (params.maximumDictionarySearchResults < countInSameHistory) {
-      int surplus = countInSameHistory - params.maximumDictionarySearchResults;
-      database.dictionarySearchResults
-          .where()
-          .limit(surplus)
-          .build()
-          .deleteAllSync();
-    }
-  });
-
-  return resultId;
 }
 
 /// Rules for word deinflection.

@@ -47,6 +47,8 @@ export 'src/pages/implementations/websocket_dialog_page.dart';
 export 'src/pages/implementations/reader_websocket_page.dart';
 export 'src/pages/implementations/immersion_kit_sentences_dialog_page.dart';
 export 'src/pages/implementations/ttu_settings_dialog_page.dart';
+export 'src/pages/implementations/ttu_reader_bar.dart';
+export 'src/pages/implementations/ttu_sheets.dart';
 export 'src/pages/implementations/dictionary_settings_dialog_page.dart';
 export 'src/pages/implementations/reader_clipboard_page.dart';
 export 'src/pages/implementations/audio_recorder_page.dart';

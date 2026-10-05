@@ -55,14 +55,17 @@ class EnglishLanguage extends Language {
 }
 
 /// Top-level function for use in compute. See [Language] for details.
-Future<int?> prepareSearchResultsEnglishLanguage(
+Future<DictionarySearchOutcome?> prepareSearchResultsEnglishLanguage(
     DictionarySearchParams params) async {
   final Lemmatizer lemmatizer = Lemmatizer();
-  final Isar database = await Isar.open(
-    globalSchemas,
-    directory: params.directoryPath,
-    maxSizeMiB: 8192,
-  );
+
+  /// The search worker keeps the database open between searches.
+  final Isar database = Isar.getInstance() ??
+      await Isar.open(
+        globalSchemas,
+        directory: params.directoryPath,
+        maxSizeMiB: 8192,
+      );
 
   int bestLength = 0;
   String searchTerm = params.searchTerm.toLowerCase().trim();
@@ -317,45 +320,12 @@ Future<int?> prepareSearchResultsEnglishLanguage(
     return null;
   }
 
-  DictionarySearchResult unsortedResult = DictionarySearchResult(
-    searchTerm: searchTerm,
-    bestLength: bestLength,
-  );
-  unsortedResult.headings.addAll(headings);
-
-  late int resultId;
-  database.writeTxnSync(() async {
-    database.dictionarySearchResults.deleteBySearchTermSync(searchTerm);
-    resultId = database.dictionarySearchResults.putSync(unsortedResult);
-  });
-
-  preloadResultSync(resultId);
-
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
-  List<int> headingIds = headings.map((e) => e.id).toList();
 
-  DictionarySearchResult result = DictionarySearchResult(
-    id: resultId,
+  return DictionarySearchOutcome(
     searchTerm: searchTerm,
     bestLength: bestLength,
-    headingIds: headingIds,
+    headingIds: headings.map((e) => e.id).toList(),
   );
-
-  database.writeTxnSync(() async {
-    resultId = database.dictionarySearchResults.putSync(result);
-
-    int countInSameHistory = database.dictionarySearchResults.countSync();
-
-    if (params.maximumDictionarySearchResults < countInSameHistory) {
-      int surplus = countInSameHistory - params.maximumDictionarySearchResults;
-      database.dictionarySearchResults
-          .where()
-          .limit(surplus)
-          .build()
-          .deleteAllSync();
-    }
-  });
-
-  return resultId;
 }

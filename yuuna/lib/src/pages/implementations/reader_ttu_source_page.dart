@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
+import 'dart:ui' show FontFeature;
 
 import 'package:document_file_save_plus/document_file_save_plus.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:local_assets_server/local_assets_server.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:spaces/spaces.dart';
 import 'package:yuuna/creator.dart';
+import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
@@ -27,30 +30,88 @@ class ReaderTtuSourcePage extends BaseSourcePage {
   BaseSourcePageState createState() => _ReaderTtuSourcePageState();
 }
 
+/// What the loading screen says while ッツ opens a book.
+enum _MaskKind { opening, jumping, returning }
+
 class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     with WidgetsBindingObserver {
   /// The media source pertaining to this page.
   ReaderTtuSource get mediaSource => ReaderTtuSource.instance;
-  bool _controllerInitialised = false;
-  late InAppWebViewController _controller;
+  InAppWebViewController? _controller;
 
-  DateTime? lastMessageTime;
   Orientation? lastOrientation;
-
-  Duration get consoleMessageDebounce => const Duration(milliseconds: 50);
 
   final FocusNode _focusNode = FocusNode();
   bool _isRecursiveSearching = false;
+
+  /// The launch request, if the page was opened for a book.
+  TtuLaunch? _launch;
+
+  /// The language of the copy of ッツ this page shows.
+  late final Language _language;
+
+  /// Scripts are ready and the book's language is set up for lookups.
+  bool _ready = false;
+  String? _readerScript;
+  String? _settingsScript;
+
+  /// Loading screen shown over the WebView until the book is on screen.
+  final ValueNotifier<bool> _maskVisible = ValueNotifier(false);
+  bool _maskBuilt = false;
+  _MaskKind _maskKind = _MaskKind.opening;
+  double? _maskProgress;
+
+  /// Offers the position before a jump for a few seconds.
+  final ValueNotifier<TtuPosition?> _backChip = ValueNotifier(null);
+  Timer? _backChipTimer;
+
+  bool _flashPending = false;
+  bool _chipPending = false;
+  bool _leaving = false;
+  int _lookupSerial = 0;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _launch = mediaSource.takePendingLaunch();
+    String url = widget.item?.mediaIdentifier ?? '';
+    _language = mediaSource.languageForUrl(url) ??
+        (_launch?.book.language ?? JapaneseLanguage.instance);
+
+    TtuLaunch? launch = _launch;
+    if (launch != null) {
+      _maskVisible.value = true;
+      _maskBuilt = true;
+      _maskKind = launch.target == null ? _MaskKind.opening : _MaskKind.jumping;
+      _maskProgress = launch.target?.progress ?? launch.book.progress;
+      _flashPending = launch.excerpt != null && launch.target != null;
+      _chipPending = launch.returnTo != null;
+    }
+
+    _prepare();
+  }
+
+  Future<void> _prepare() async {
+    _readerScript = await TtuLibrary.readerScript;
+    _settingsScript = mediaSource.settingsScriptFor(
+      _language,
+      darkMode: appModelNoUpdate.isDarkMode,
+    );
+    await appModelNoUpdate.setSessionLanguage(_language);
+    if (mounted) {
+      setState(() => _ready = true);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _backChipTimer?.cancel();
+    _maskVisible.dispose();
+    _backChip.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -87,8 +148,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// Hide the dictionary and dispose of the current result.
   @override
   void clearDictionaryResult() async {
+    _lookupSerial++;
     super.clearDictionaryResult();
-    unselectWebViewTextSelection(_controller);
+    unselectWebViewTextSelection();
   }
 
   @override
@@ -97,11 +159,82 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _focusNode.requestFocus();
   }
 
+  /// Leaving a book saves the reading position and goes straight back to the
+  /// shelf, without asking.
+  @override
+  Future<bool> onWillPop() async {
+    if (isDictionaryShown) {
+      clearDictionaryResult();
+      mediaSource.clearCurrentSentence();
+      return false;
+    }
+    if (_leaving) {
+      return false;
+    }
+    _leaving = true;
+
+    TtuPosition? saved;
+    if (mediaSource.autoSavePosition) {
+      saved = await _savePosition()
+          .timeout(const Duration(milliseconds: 1500), onTimeout: () => null);
+    }
+
+    await onSourcePagePop();
+    if (!mounted) {
+      return false;
+    }
+    await appModel.closeMedia(
+      ref: ref,
+      mediaSource: mediaSource,
+      item: widget.item,
+    );
+
+    if (saved != null) {
+      Fluttertoast.showToast(
+        msg: t.ttu_saved_place(position: ttuPercent(saved.progress)),
+      );
+    }
+    return true;
+  }
+
+  /// Presses ッツ's own bookmark key and reads back the saved position.
+  Future<TtuPosition?> _savePosition() async {
+    InAppWebViewController? controller = _controller;
+    if (controller == null || !_isBookPage(await controller.getUrl())) {
+      return null;
+    }
+    try {
+      CallAsyncJavaScriptResult? result = await controller.callAsyncJavaScript(
+        functionBody:
+            'return window.__jdj ? await window.__jdj.savePosition() : null;',
+      );
+      Object? value = result?.value;
+      if (value is! Map) {
+        return null;
+      }
+      return TtuPosition(
+        characters: ((value['exploredCharCount'] as num?) ?? 0).toInt(),
+        progress: ((value['progress'] as num?) ?? 0).toDouble(),
+      );
+    } catch (error) {
+      debugPrint('Could not save position: $error');
+      return null;
+    }
+  }
+
+  bool _isBookPage(Uri? uri) {
+    String path = uri?.path ?? '';
+    return path.endsWith('/b.html') || path.endsWith('/b');
+  }
+
+  bool get _openedForBook =>
+      widget.item?.mediaIdentifier.contains('/b.html') ?? false;
+
   @override
   Widget build(BuildContext context) {
     Orientation orientation = MediaQuery.of(context).orientation;
     if (orientation != lastOrientation) {
-      if (_controllerInitialised) {
+      if (_controller != null) {
         clearDictionaryResult();
       }
       lastOrientation = orientation;
@@ -122,23 +255,27 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       onKey: (data, event) {
         if (ModalRoute.of(context)?.isCurrent ?? false) {
           if (mediaSource.volumePageTurningEnabled) {
+            InAppWebViewController? controller = _controller;
+            if (controller == null) {
+              return KeyEventResult.ignored;
+            }
+
             if (isDictionaryShown) {
               clearDictionaryResult();
-              unselectWebViewTextSelection(_controller);
               mediaSource.clearCurrentSentence();
 
               return KeyEventResult.handled;
             }
 
             if (event.isKeyPressed(LogicalKeyboardKey.audioVolumeUp)) {
-              unselectWebViewTextSelection(_controller);
-              _controller.evaluateJavascript(source: leftArrowSimulateJs);
+              unselectWebViewTextSelection();
+              controller.evaluateJavascript(source: leftArrowSimulateJs);
 
               return KeyEventResult.handled;
             }
             if (event.isKeyPressed(LogicalKeyboardKey.audioVolumeDown)) {
-              unselectWebViewTextSelection(_controller);
-              _controller.evaluateJavascript(source: rightArrowSimulateJs);
+              unselectWebViewTextSelection();
+              controller.evaluateJavascript(source: rightArrowSimulateJs);
 
               return KeyEventResult.handled;
             }
@@ -163,6 +300,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
               children: <Widget>[
                 buildBody(),
                 buildDictionary(),
+                if (_maskBuilt) buildMask(),
+                buildBackChip(),
               ],
             ),
           ),
@@ -172,8 +311,12 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   }
 
   Widget buildBody() {
+    if (!_ready) {
+      return const SizedBox.expand();
+    }
+
     AsyncValue<LocalAssetsServer> server =
-        ref.watch(ttuServerProvider(appModel.targetLanguage));
+        ref.watch(ttuServerProvider(_language));
 
     return server.when(
       data: buildReaderArea,
@@ -182,14 +325,251 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         error: error,
         stack: stack,
         refresh: () {
-          ref.invalidate(ttuServerProvider(appModel.targetLanguage));
+          ref.invalidate(ttuServerProvider(_language));
         },
       ),
     );
   }
 
+  /// The colours of the page ッツ is about to show, so the loading screen
+  /// matches it.
+  List<Color> get _pageColors {
+    String theme = mediaSource.effectiveThemeFor(
+      _language,
+      darkMode: appModel.isDarkMode,
+    );
+    List<int> colors =
+        TtuPagePreset.themeColors[theme] ?? TtuPagePreset.themeColors['dark']!;
+    return [Color(colors[0]), Color(colors[1])];
+  }
+
+  /// Covers the WebView while ッツ loads, saying where the book will open.
+  Widget buildMask() {
+    List<Color> colors = _pageColors;
+    Color foreground = colors[1];
+    Color muted = foreground.withOpacity(0.5);
+    TtuLaunch? launch = _launch;
+    String? memo = _maskKind == _MaskKind.jumping ? launch?.memo : null;
+    String? excerpt = _maskKind == _MaskKind.jumping ? launch?.excerpt : null;
+    String kicker = switch (_maskKind) {
+      _MaskKind.opening => t.ttu_opening,
+      _MaskKind.jumping => t.ttu_jumping_to,
+      _MaskKind.returning => t.ttu_returning_to,
+    };
+    double? progress = _maskProgress;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: _maskVisible,
+      builder: (context, visible, child) => IgnorePointer(
+        ignoring: !visible,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: MediaQuery.of(context).disableAnimations
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          onEnd: () {
+            if (!_maskVisible.value && mounted) {
+              setState(() => _maskBuilt = false);
+            }
+          },
+          child: child,
+        ),
+      ),
+      child: ColoredBox(
+        color: colors[0],
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(36),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  kicker.toUpperCase(),
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 12,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+                if (progress != null)
+                  Text(
+                    ttuPercent(progress),
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 44,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                if (launch != null)
+                  Text(
+                    launch.book.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 13),
+                  ),
+                if (memo != null && memo.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    memo,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: foreground,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (excerpt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    ttuQuote(_language, excerpt),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted, fontSize: 14, height: 1.6),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: 96,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      backgroundColor: muted.withOpacity(0.25),
+                      valueColor:
+                          AlwaysStoppedAnimation(theme.colorScheme.primary),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A chip offering the position from before a jump, for six seconds.
+  Widget buildBackChip() {
+    return ValueListenableBuilder<TtuPosition?>(
+      valueListenable: _backChip,
+      builder: (context, back, _) {
+        bool reduceMotion = MediaQuery.of(context).disableAnimations;
+        return AnimatedSwitcher(
+          duration:
+              reduceMotion ? Duration.zero : const Duration(milliseconds: 200),
+          child: back == null
+              ? const SizedBox.shrink()
+              : Align(
+                  key: const ValueKey('back-chip'),
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 56),
+                    child: Material(
+                      color: const Color(0xFF303030),
+                      shape: const StadiumBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      elevation: 4,
+                      child: InkWell(
+                        onTap: () => _goBack(back),
+                        child: Stack(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 9, 16, 9),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.undo_rounded,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    t.ttu_back_to(
+                                        position: ttuPercent(back.progress)),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: TweenAnimationBuilder<double>(
+                                tween: Tween(begin: 1, end: 0),
+                                duration: const Duration(seconds: 6),
+                                builder: (context, value, _) => Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FractionallySizedBox(
+                                    widthFactor: value,
+                                    child: Container(
+                                      height: 2,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+        );
+      },
+    );
+  }
+
+  void _showBackChip(TtuPosition back) {
+    _backChip.value = back;
+    _backChipTimer?.cancel();
+    _backChipTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted) {
+        _backChip.value = null;
+      }
+    });
+  }
+
+  /// Goes back to where the reader was before jumping to a memo.
+  void _goBack(TtuPosition back) {
+    TtuLaunch? launch = _launch;
+    InAppWebViewController? controller = _controller;
+    if (launch == null || controller == null) {
+      return;
+    }
+    _backChipTimer?.cancel();
+    _backChip.value = null;
+    mediaSource.returnPositions.remove(launch.book.key);
+    setState(() {
+      _maskKind = _MaskKind.returning;
+      _maskProgress = back.progress;
+      _maskBuilt = true;
+    });
+    _maskVisible.value = true;
+    _flashPending = false;
+    _chipPending = false;
+    controller.loadUrl(
+      urlRequest: URLRequest(
+        url: WebUri(TtuLaunch.jumpUrl(book: launch.book, position: back)),
+      ),
+    );
+  }
+
   void setDictionaryColors() async {
-    String currentTheme = (await _controller.evaluateJavascript(
+    InAppWebViewController? controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    String currentTheme = (await controller.evaluateJavascript(
             source: 'window.localStorage.getItem("theme")'))
         .toString();
     switch (currentTheme) {
@@ -237,23 +617,6 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     }
   }
 
-  String sanitizeWebViewTextSelection(String? text) {
-    if (text == null) {
-      return '';
-    }
-
-    text = text.replaceAll('\\n', '\n');
-    text = text.trim();
-    return text;
-  }
-
-  Future<String> getWebViewTextSelection(
-      InAppWebViewController webViewController) async {
-    String? selectedText = await webViewController.getSelectedText();
-    selectedText = sanitizeWebViewTextSelection(selectedText);
-    return selectedText;
-  }
-
   CacheMode get cacheMode {
     if (mediaSource.currentTtuInternalVersion ==
         ReaderTtuSource.ttuInternalVersion) {
@@ -275,13 +638,18 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   }
 
   Widget buildReaderArea(LocalAssetsServer server) {
+    String initialUrl = _launch?.initialUrl ??
+        widget.item?.mediaIdentifier ??
+        'http://localhost:${server.boundPort}/manage.html';
+
     return InAppWebView(
-      initialUrlRequest: URLRequest(
-        url: WebUri(
-          widget.item?.mediaIdentifier ??
-              'http://localhost:${server.boundPort}/manage.html',
+      initialUrlRequest: URLRequest(url: WebUri(initialUrl)),
+      initialUserScripts: UnmodifiableListView<UserScript>([
+        UserScript(
+          source: _settingsScript ?? '',
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         ),
-      ),
+      ]),
       onPermissionRequest: (controller, origin) async {
         return PermissionResponse(
           action: PermissionResponseAction.GRANT,
@@ -305,10 +673,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         supportMultipleWindows: true,
       ),
       contextMenu: contextMenu,
-      onConsoleMessage: onConsoleMessage,
       onWebViewCreated: (controller) {
         _controller = controller;
-        _controllerInitialised = true;
 
         controller.addJavaScriptHandler(
           handlerName: 'blobToBase64Handler',
@@ -319,6 +685,17 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
             }
           },
         );
+
+        controller.addJavaScriptHandler(
+          handlerName: 'jidoujisho',
+          callback: (arguments) {
+            Object? message = arguments.isEmpty ? null : arguments.first;
+            if (message is Map && message['type'] == 'lookup') {
+              onLookup(Map<String, dynamic>.from(message));
+            }
+            return null;
+          },
+        );
       },
       onCreateWindow: (controller, createWindowRequest) async {
         showDialog(
@@ -327,6 +704,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
             return AlertDialog(
               insetPadding: Spacing.of(context).insets.all.big,
               contentPadding: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
               content: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height * (3 / 4),
@@ -371,22 +749,89 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         );
       },
       onLoadStop: (controller, uri) async {
+        await _injectReaderScript(controller);
         if (mediaSource.adaptTtuTheme) {
           setDictionaryColors();
         }
-
-        await controller.evaluateJavascript(source: javascriptToExecute);
+        await _onPageLoaded(controller, uri);
         Future.delayed(const Duration(seconds: 1), _focusNode.requestFocus);
       },
       onTitleChanged: (controller, title) async {
-        await controller.evaluateJavascript(source: javascriptToExecute);
-
+        await _injectReaderScript(controller);
         if (mediaSource.adaptTtuTheme) {
           setDictionaryColors();
         }
       },
+      onUpdateVisitedHistory: (controller, url, isReload) {
+        _onNavigated(url);
+      },
       onDownloadStartRequest: onDownloadStartRequest,
     );
+  }
+
+  /// The bridge script guards itself, so running it on every load and title
+  /// change adds no second listener.
+  Future<void> _injectReaderScript(InAppWebViewController controller) async {
+    String? script = _readerScript;
+    if (script != null) {
+      await controller.evaluateJavascript(source: script);
+    }
+  }
+
+  /// Once a book is on screen: hide the loading screen, flash the memo's
+  /// quoted line, and offer the way back.
+  Future<void> _onPageLoaded(
+      InAppWebViewController controller, Uri? uri) async {
+    if (!_isBookPage(uri)) {
+      if (!(uri?.path.endsWith('jump.html') ?? false)) {
+        _maskVisible.value = false;
+      }
+      return;
+    }
+
+    for (int i = 0; i < 30; i++) {
+      Object? ready = await controller.evaluateJavascript(
+        source: "(function(){var c=document.querySelector('.book-content'); "
+            'return !!(c && c.textContent && c.textContent.length > 0);})()',
+      );
+      if (ready == true || !mounted) {
+        break;
+      }
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    if (!mounted) {
+      return;
+    }
+    await Future.delayed(const Duration(milliseconds: 250));
+    _maskVisible.value = false;
+
+    TtuLaunch? launch = _launch;
+    String? excerpt = launch?.excerpt;
+    if (_flashPending && excerpt != null) {
+      _flashPending = false;
+      controller.evaluateJavascript(
+        source: 'window.__jdj && window.__jdj.flash(${jsonEncode(excerpt)});',
+      );
+    }
+    TtuPosition? back = launch?.returnTo;
+    if (_chipPending && back != null) {
+      _chipPending = false;
+      _showBackChip(back);
+    }
+  }
+
+  /// ッツ's own exit arrow opens its library page inside the book's WebView.
+  /// When the page was opened for a book, go back to the app's shelf instead.
+  void _onNavigated(WebUri? url) {
+    String path = url?.path ?? '';
+    bool toLibrary = path.endsWith('/manage') || path.endsWith('/manage.html');
+    if (toLibrary && _openedForBook && !_leaving && mounted) {
+      onWillPop().then((leave) {
+        if (leave && mounted) {
+          Navigator.pop(context);
+        }
+      });
+    }
   }
 
   String _suggestedFilename = '';
@@ -403,169 +848,145 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
             'blobUrlPlaceholder', request.url.toString()));
   }
 
-  Future<void> selectTextOnwards({
-    required int cursorX,
-    required int cursorY,
-    required int offsetIndex,
+  /// Highlights [length] characters from [start] of the tapped paragraph.
+  /// The empty context menu stops Android's selection toolbar from appearing.
+  Future<void> _highlight({
+    required int start,
     required int length,
-    required int whitespaceOffset,
-    required bool isSpaceDelimited,
+    required bool wordMode,
   }) async {
-    await _controller.setContextMenu(emptyContextMenu);
-    await _controller.evaluateJavascript(
+    InAppWebViewController? controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    await controller.setContextMenu(emptyContextMenu);
+    await controller.evaluateJavascript(
       source:
-          'selectTextForTextLength($cursorX, $cursorY, $offsetIndex, $length, $whitespaceOffset, $isSpaceDelimited);',
+          'window.__jdj && window.__jdj.highlight($start, $length, $wordMode);',
     );
-    await _controller.setContextMenu(contextMenu);
+    await controller.setContextMenu(contextMenu);
   }
 
-  void onConsoleMessage(
-    InAppWebViewController controller,
-    ConsoleMessage message,
-  ) async {
-    DateTime now = DateTime.now();
-    if (lastMessageTime != null &&
-        now.difference(lastMessageTime!) < consoleMessageDebounce) {
+  /// Handles a tap in the book. An index of -1 means the tap was not on a
+  /// character, which closes the popup.
+  void onLookup(Map<String, dynamic> message) async {
+    if (!_ready || !mounted) {
       return;
     }
 
-    lastMessageTime = now;
+    FocusScope.of(context).unfocus();
+    _focusNode.requestFocus();
 
-    late Map<String, dynamic> messageJson;
+    int index = (message['index'] as num?)?.toInt() ?? -1;
+    String text = (message['text'] as String?) ?? '';
+    int x = (message['x'] as num?)?.toInt() ?? 0;
+    int y = (message['y'] as num?)?.toInt() ?? 0;
+
+    if (text.isEmpty || index < 0) {
+      clearDictionaryResult();
+      mediaSource.clearCurrentSentence();
+      return;
+    }
+
+    int serial = ++_lookupSerial;
+
+    late JidoujishoPopupPosition position;
+    Size size = MediaQuery.of(context).size;
+    if (MediaQuery.of(context).orientation == Orientation.portrait) {
+      position = y < size.height / 2
+          ? JidoujishoPopupPosition.bottomHalf
+          : JidoujishoPopupPosition.topHalf;
+    } else {
+      position = x < size.width / 2
+          ? JidoujishoPopupPosition.rightHalf
+          : JidoujishoPopupPosition.leftHalf;
+    }
+
+    text = text.replaceAll('\\n', '\n');
+
     try {
-      messageJson = jsonDecode(message.message);
-    } catch (e) {
-      JsonEncoder encoder = const JsonEncoder.withIndent('  ');
-      debugPrint(encoder.convert(message.toJson()));
+      /// If we cut off at a lone surrogate, offset the index back by 1. The
+      /// selection meant to select the index before
+      RegExp loneSurrogate = RegExp(
+        '[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]',
+      );
+      if (index != 0 && text.substring(index).startsWith(loneSurrogate)) {
+        index = index - 1;
+      }
 
-      return;
-    }
+      bool isSpaceDelimited = appModel.targetLanguage.isSpaceDelimited;
 
-    switch (messageJson['jidoujisho-message-type']) {
-      case 'lookup':
-        FocusScope.of(context).unfocus();
-        _focusNode.requestFocus();
+      String searchTerm = appModel.targetLanguage.getSearchTermFromIndex(
+        text: text,
+        index: index,
+      );
+      int whitespaceOffset = searchTerm.length - searchTerm.trimLeft().length;
 
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
-        int index = messageJson['index'];
-        String text = messageJson['text'];
-        int x = messageJson['x'];
-        int y = messageJson['y'];
-
-        late JidoujishoPopupPosition position;
-        if (MediaQuery.of(context).orientation == Orientation.portrait) {
-          if (y < MediaQuery.of(context).size.height / 2) {
-            position = JidoujishoPopupPosition.bottomHalf;
-          } else {
-            position = JidoujishoPopupPosition.topHalf;
-          }
-        } else {
-          if (x < MediaQuery.of(context).size.width / 2) {
-            position = JidoujishoPopupPosition.rightHalf;
-          } else {
-            position = JidoujishoPopupPosition.leftHalf;
-          }
-        }
-
-        text = text.replaceAll('\\n', '\n');
-
-        if (text.isEmpty || index == -1) {
-          clearDictionaryResult();
-          mediaSource.clearCurrentSentence();
-          return;
-        }
-
-        try {
-          /// If we cut off at a lone surrogate, offset the index back by 1. The
-          /// selection meant to select the index before
-          RegExp loneSurrogate = RegExp(
-            '[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]',
-          );
-          if (index != 0 && text.substring(index).startsWith(loneSurrogate)) {
-            index = index - 1;
-          }
-
-          bool isSpaceDelimited = appModel.targetLanguage.isSpaceDelimited;
-
-          String searchTerm = appModel.targetLanguage.getSearchTermFromIndex(
-            text: text,
-            index: index,
-          );
-          int whitespaceOffset =
-              searchTerm.length - searchTerm.trimLeft().length;
-
-          int offsetIndex = appModel.targetLanguage
-                  .getStartingIndex(text: text, index: index) +
+      int offsetIndex =
+          appModel.targetLanguage.getStartingIndex(text: text, index: index) +
               whitespaceOffset;
 
-          int length = appModel.targetLanguage.getGuessHighlightLength(
-            searchTerm: searchTerm,
+      int length = appModel.targetLanguage.getGuessHighlightLength(
+        searchTerm: searchTerm,
+      );
+
+      /// Start the search first; the highlight follows alongside it.
+      Future<void> search = searchDictionaryResult(
+        searchTerm: searchTerm,
+        position: position,
+      );
+      if (mediaSource.highlightOnTap) {
+        unawaited(_highlight(
+          start: offsetIndex,
+          length: length,
+          wordMode: isSpaceDelimited,
+        ));
+      }
+      await search;
+
+      /// Another tap, or a close, happened while searching.
+      if (serial != _lookupSerial || !mounted) {
+        return;
+      }
+
+      length = appModel.targetLanguage.getFinalHighlightLength(
+        result: currentResult,
+        searchTerm: searchTerm,
+      );
+
+      if (mediaSource.highlightOnTap) {
+        if (dictionaryPopupShown) {
+          await _highlight(
+            start: offsetIndex,
+            length: length,
+            wordMode: isSpaceDelimited,
           );
-
-          if (mediaSource.highlightOnTap) {
-            await selectTextOnwards(
-              cursorX: x,
-              cursorY: y,
-              offsetIndex: offsetIndex,
-              length: length,
-              whitespaceOffset: whitespaceOffset,
-              isSpaceDelimited: isSpaceDelimited,
-            );
-          }
-
-          searchDictionaryResult(
-            searchTerm: searchTerm,
-            position: position,
-          ).then((_) async {
-            length = appModel.targetLanguage.getFinalHighlightLength(
-              result: currentResult,
-              searchTerm: searchTerm,
-            );
-
-            if (mediaSource.highlightOnTap) {
-              await selectTextOnwards(
-                cursorX: x,
-                cursorY: y,
-                offsetIndex: offsetIndex,
-                length: length,
-                whitespaceOffset: whitespaceOffset,
-                isSpaceDelimited: isSpaceDelimited,
-              );
-
-              if (!dictionaryPopupShown) {
-                unselectWebViewTextSelection(_controller);
-              }
-            }
-
-            JidoujishoTextSelection selection =
-                appModel.targetLanguage.getSentenceFromParagraph(
-              paragraph: text,
-              index: index,
-              startOffset: offsetIndex,
-              endOffset: offsetIndex + length,
-            );
-
-            mediaSource.setCurrentSentence(
-              selection: selection,
-            );
-          });
-        } catch (e) {
-          clearDictionaryResult();
+        } else {
+          unselectWebViewTextSelection();
         }
+      }
 
-        break;
+      JidoujishoTextSelection selection =
+          appModel.targetLanguage.getSentenceFromParagraph(
+        paragraph: text,
+        index: index,
+        startOffset: offsetIndex,
+        endOffset: offsetIndex + length,
+      );
+
+      mediaSource.setCurrentSentence(
+        selection: selection,
+      );
+    } catch (e) {
+      clearDictionaryResult();
     }
   }
 
-  Future<void> unselectWebViewTextSelection(
-      InAppWebViewController webViewController) async {
-    String source = '''
-if (!window.getSelection().isCollapsed) {
-  window.getSelection().removeAllRanges();
-}
-''';
-    await webViewController.evaluateJavascript(source: source);
+  Future<void> unselectWebViewTextSelection() async {
+    await _controller?.evaluateJavascript(
+      source: 'window.__jdj ? window.__jdj.clearSelection() : '
+          'window.getSelection().removeAllRanges();',
+    );
   }
 
   /// Get the default context menu for sources that make use of embedded web
@@ -576,6 +997,7 @@ if (!window.getSelection().isCollapsed) {
         ),
         menuItems: [
           searchMenuItem(),
+          memoMenuItem(),
           stashMenuItem(),
           copyMenuItem(),
           shareMenuItem(),
@@ -632,11 +1054,19 @@ if (!window.getSelection().isCollapsed) {
     );
   }
 
+  ContextMenuItem memoMenuItem() {
+    return ContextMenuItem(
+      id: 6,
+      title: t.ttu_memo,
+      action: memoMenuAction,
+    );
+  }
+
   void searchMenuAction() async {
     String searchTerm = await getSelectedText();
     _isRecursiveSearching = true;
 
-    await unselectWebViewTextSelection(_controller);
+    await unselectWebViewTextSelection();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await Future.delayed(const Duration(milliseconds: 5), () {});
     await appModel.openRecursiveDictionarySearch(
@@ -653,13 +1083,87 @@ if (!window.getSelection().isCollapsed) {
   void stashMenuAction() async {
     String searchTerm = await getSelectedText();
     appModel.addToStash(terms: [searchTerm]);
-    await unselectWebViewTextSelection(_controller);
+    await unselectWebViewTextSelection();
+  }
+
+  /// The book on screen, as far as the page knows it.
+  Future<TtuBook?> _currentBook() async {
+    TtuLaunch? launch = _launch;
+    if (launch != null) {
+      return launch.book;
+    }
+    Uri? uri = await _controller?.getUrl();
+    int? id = int.tryParse(uri?.queryParameters['id'] ?? '');
+    if (id == null) {
+      return null;
+    }
+    return TtuBook(
+      language: _language,
+      port: mediaSource.getPortForLanguage(_language),
+      id: id,
+      title: widget.item?.title ?? '',
+      characters: 0,
+      lastBookOpen: 0,
+      lastBookModified: 0,
+      exploredCharCount: 0,
+      progress: 0,
+      coverPath: null,
+    );
+  }
+
+  /// Saves a memo at the selected text, with ッツ's position of the page.
+  void memoMenuAction() async {
+    String excerpt = await getSelectedText();
+    TtuBook? book = await _currentBook();
+    if (excerpt.isEmpty || book == null) {
+      return;
+    }
+
+    TtuPosition? position = await _savePosition();
+    await unselectWebViewTextSelection();
+    if (!mounted) {
+      return;
+    }
+    if (position == null) {
+      return;
+    }
+
+    _isRecursiveSearching = true;
+    String? text = await showTtuMemoEditor(
+      context: context,
+      book: book,
+      excerpt: excerpt,
+      progress: position.progress,
+      characters: position.characters,
+    );
+    _isRecursiveSearching = false;
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _focusNode.requestFocus();
+
+    if (text == null) {
+      return;
+    }
+
+    await appModel.putReaderMemo(
+      ReaderMemo(
+        bookKey: book.key,
+        bookTitle: book.title,
+        exploredCharCount: position.characters,
+        progress: position.progress,
+        memo: text,
+        excerpt: excerpt,
+        createdAt: DateTime.now(),
+      ),
+    );
+    Fluttertoast.showToast(
+      msg: t.ttu_memo_saved(position: ttuPercent(position.progress)),
+    );
   }
 
   void creatorMenuAction() async {
     String text = (await getSelectedText()).replaceAll('\\n', '\n');
 
-    await unselectWebViewTextSelection(_controller);
+    await unselectWebViewTextSelection();
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await Future.delayed(const Duration(milliseconds: 5), () {});
 
@@ -686,17 +1190,17 @@ if (!window.getSelection().isCollapsed) {
   void copyMenuAction() async {
     String searchTerm = await getSelectedText();
     Clipboard.setData(ClipboardData(text: searchTerm));
-    await unselectWebViewTextSelection(_controller);
+    await unselectWebViewTextSelection();
   }
 
   void shareMenuAction() async {
     String searchTerm = await getSelectedText();
     Share.share(searchTerm);
-    await unselectWebViewTextSelection(_controller);
+    await unselectWebViewTextSelection();
   }
 
   Future<String> getSelectedText() async {
-    return (await _controller.getSelectedText() ?? '')
+    return (await _controller?.getSelectedText() ?? '')
         .replaceAll('\\n', '\n')
         .trim();
   }
@@ -725,368 +1229,17 @@ xhr.onload = function(e) {
 xhr.send();
 ''';
 
-  /// This is executed upon page load and change.
-  /// More accurate readability courtesy of
-  /// https://github.com/birchill/10ten-ja-reader/blob/fbbbde5c429f1467a7b5a938e9d67597d7bd5ffa/src/content/get-text.ts#L314
-  String javascriptToExecute = """
-/*jshint esversion: 6 */
-
-function tapToSelect(e) {
-  if (getSelectionText()) {
-    console.log(JSON.stringify({
-				"index": -1,
-				"text": getSelectionText(),
-				"jidoujisho-message-type": "lookup",
-        "x": e.clientX,
-        "y": e.clientY,
-        "isCreator": "no",
-			}));
-  }
-
-  var result = document.caretRangeFromPoint(e.clientX, e.clientY);
-
-  if (e.target.classList.contains('book-content')) {
-    console.log(JSON.stringify({
-      "index": -1,
-      "text": getSelectionText(),
-      "jidoujisho-message-type": "lookup",
-      "x": e.clientX,
-      "y": e.clientY,
-      "isCreator": "no",
-    }));
-    return;
-  }
-
-  var selectedElement = result.startContainer;
-  var paragraph = result.startContainer;
-  var offsetNode = result.startContainer;
-  var offset = result.startOffset;
-
-  var adjustIndex = false;
-
-  if (!!offsetNode && offsetNode.nodeType === Node.TEXT_NODE && offset) {
-      const range = new Range();
-      range.setStart(offsetNode, offset - 1);
-      range.setEnd(offsetNode, offset);
-
-      const bbox = range.getBoundingClientRect();
-      if (bbox.left <= e.x && bbox.right >= e.x &&
-          bbox.top <= e.y && bbox.bottom >= e.y) {
-          
-          result.startOffset = result.startOffset - 1;
-          adjustIndex = true;
-      }
-    }
-  
-  
-  while (paragraph && paragraph.nodeName !== 'P') {
-    paragraph = paragraph.parentNode;
-  }
-  if (paragraph === null) {
-    paragraph = result.startContainer.parentNode;
-  }
-  var noFuriganaText = [];
-  var noFuriganaNodes = [];
-  var selectedFound = false;
-  var index = 0;
-  for (var value of paragraph.childNodes.values()) {
-    if (value.nodeName === "#text") {
-      noFuriganaText.push(value.textContent);
-      noFuriganaNodes.push(value);
-      if (selectedFound === false) {
-        if (selectedElement !== value) {
-          index = index + value.textContent.length;
-        } else {
-          index = index + result.startOffset;
-          selectedFound = true;
-        }
-      }
-    } else {
-      for (var node of value.childNodes.values()) {
-        if (node.nodeName === "#text") {
-          noFuriganaText.push(node.textContent);
-          noFuriganaNodes.push(node);
-          if (selectedFound === false) {
-            if (selectedElement !== node) {
-              index = index + node.textContent.length;
-            } else {
-              index = index + result.startOffset;
-              selectedFound = true;
-            }
-          }
-        } else if (node.firstChild.nodeName === "#text" && node.nodeName !== "RT" && node.nodeName !== "RP") {
-          noFuriganaText.push(node.firstChild.textContent);
-          noFuriganaNodes.push(node.firstChild);
-          if (selectedFound === false) {
-            if (selectedElement !== node.firstChild) {
-              index = index + node.firstChild.textContent.length;
-            } else {
-              index = index + result.startOffset;
-              selectedFound = true;
-            }
-          }
-        }
-      }
-    }
-  }
-  var text = noFuriganaText.join("");
-  var offset = index;
-  if (adjustIndex) {
-    index = index - 1;
-  }
-  
-
-  var character = text[index];
-  if (character) {
-    console.log(JSON.stringify({
-      "index": index,
-      "text": text,
-      "jidoujisho-message-type": "lookup",
-      "x": e.clientX,
-      "y": e.clientY,
-    }));
-    console.log(character);
-  } else {
-    console.log(JSON.stringify({
-      "index": -1,
-      "text": getSelectionText(),
-      "jidoujisho-message-type": "lookup",
-      "x": e.clientX,
-      "y": e.clientY,
-      "isCreator": "no",
-    }));
-  }
-}
-function getSelectionText() {
-    function getRangeSelectedNodes(range) {
-      var node = range.startContainer;
-      var endNode = range.endContainer;
-      if (node == endNode) return [node];
-      var rangeNodes = [];
-      while (node && node != endNode) rangeNodes.push(node = nextNode(node));
-      node = range.startContainer;
-      while (node && node != range.commonAncestorContainer) {
-        rangeNodes.unshift(node);
-        node = node.parentNode;
-      }
-      return rangeNodes;
-      function nextNode(node) {
-        if (node.hasChildNodes()) return node.firstChild;
-        else {
-          while (node && !node.nextSibling) node = node.parentNode;
-          if (!node) return null;
-          return node.nextSibling;
-        }
-      }
-    }
-    var txt = "";
-    var nodesInRange;
-    var selection;
-    if (window.getSelection) {
-      selection = window.getSelection();
-      nodesInRange = getRangeSelectedNodes(selection.getRangeAt(0));
-      nodes = nodesInRange.filter((node) => node.nodeName == "#text" && node.parentElement.nodeName !== "RT" && node.parentElement.nodeName !== "RP" && node.parentElement.parentElement.nodeName !== "RT" && node.parentElement.parentElement.nodeName !== "RP");
-      if (selection.anchorNode === selection.focusNode) {
-          txt = txt.concat(selection.anchorNode.textContent.substring(selection.baseOffset, selection.extentOffset));
-      } else {
-          for (var i = 0; i < nodes.length; i++) {
-              var node = nodes[i];
-              if (i === 0) {
-                  txt = txt.concat(node.textContent.substring(selection.getRangeAt(0).startOffset));
-              } else if (i === nodes.length - 1) {
-                  txt = txt.concat(node.textContent.substring(0, selection.getRangeAt(0).endOffset));
-              } else {
-                  txt = txt.concat(node.textContent);
-              }
-          }
-      }
-    } else if (window.document.getSelection) {
-      selection = window.document.getSelection();
-      nodesInRange = getRangeSelectedNodes(selection.getRangeAt(0));
-      nodes = nodesInRange.filter((node) => node.nodeName == "#text" && node.parentElement.nodeName !== "RT" && node.parentElement.nodeName !== "RP" && node.parentElement.parentElement.nodeName !== "RT" && node.parentElement.parentElement.nodeName !== "RP");
-      if (selection.anchorNode === selection.focusNode) {
-          txt = txt.concat(selection.anchorNode.textContent.substring(selection.baseOffset, selection.extentOffset));
-      } else {
-          for (var i = 0; i < nodes.length; i++) {
-              var node = nodes[i];
-              if (i === 0) {
-                  txt = txt.concat(node.textContent.substring(selection.getRangeAt(0).startOffset));
-              } else if (i === nodes.length - 1) {
-                  txt = txt.concat(node.textContent.substring(0, selection.getRangeAt(0).endOffset));
-              } else {
-                  txt = txt.concat(node.textContent);
-              }
-          }
-      }
-    } else if (window.document.selection) {
-      txt = window.document.selection.createRange().text;
-    }
-    return txt;
-};
-var reader = document.getElementsByClassName('book-content');
-if (reader.length != 0) {
-  reader[0].addEventListener('click', tapToSelect, true);
-}
-document.head.insertAdjacentHTML('beforebegin', `
-<style>
-rt {
-  -webkit-touch-callout:none; /* iOS Safari */
-  -webkit-user-select:none;   /* Chrome/Safari/Opera */
-  -khtml-user-select:none;    /* Konqueror */
-  -moz-user-select:none;      /* Firefox */
-  -ms-user-select:none;       /* Internet Explorer/Edge */
-  user-select:none;           /* Non-prefixed version */
-}
-rp {
-  -webkit-touch-callout:none; /* iOS Safari */
-  -webkit-user-select:none;   /* Chrome/Safari/Opera */
-  -khtml-user-select:none;    /* Konqueror */
-  -moz-user-select:none;      /* Firefox */
-  -ms-user-select:none;       /* Internet Explorer/Edge */
-  user-select:none;           /* Non-prefixed version */
-}
-
-::selection {
-  color: white;
-  background: rgba(255, 0, 0, 0.6);
-}
-</style>
-`);
-
-
-function selectTextForTextLength(x, y, index, length, whitespaceOffset, isSpaceDelimited) {
-  var result = document.caretRangeFromPoint(x, y);
-
-  var selectedElement = result.startContainer;
-  var paragraph = result.startContainer;
-  var offsetNode = result.startContainer;
-  var offset = result.startOffset;
-
-  var adjustIndex = false;
-
-  if (!!offsetNode && offsetNode.nodeType === Node.TEXT_NODE && offset) {
-      const range = new Range();
-      range.setStart(offsetNode, offset - 1);
-      range.setEnd(offsetNode, offset);
-
-      const bbox = range.getBoundingClientRect();
-      if (bbox.left <= x && bbox.right >= x &&
-          bbox.top <= y && bbox.bottom >= y) {
-          if (length == 1) {
-            const range = new Range();
-            range.setStart(offsetNode, result.startOffset - 1);
-            range.setEnd(offsetNode, result.startOffset);
-
-            var selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            return;
-          }
-
-          result.startOffset = result.startOffset - 1;
-          adjustIndex = true;
-      }
-  }
-
-  if (length == 1) {
-    const range = new Range();
-    range.setStart(offsetNode, result.startOffset);
-    range.setEnd(offsetNode, result.startOffset + 1);
-
-    var selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    return;
-  }
-
-  while (paragraph && paragraph.nodeName !== 'P') {
-    paragraph = paragraph.parentNode;
-  }
-  if (paragraph === null) {
-    paragraph = result.startContainer.parentNode;
-  }
-  var noFuriganaText = [];
-  var lastNode;
-
-  var endOffset = 0;
-  var done = false;
-
-  for (var value of paragraph.childNodes.values()) {
-    if (done) {
-      console.log(noFuriganaText.join());
-      break;
-    }
-    
-    if (value.nodeName === "#text") {
-      endOffset = 0;
-      lastNode = value;
-      for (var i = 0; i < value.textContent.length; i++) {
-        noFuriganaText.push(value.textContent[i]);
-        endOffset = endOffset + 1;
-        if (noFuriganaText.length >= length + index) {
-          done = true;
-          break;
-        }
-      }
-    } else {
-      for (var node of value.childNodes.values()) {
-        if (done) {
-          break;
-        }
-
-        if (node.nodeName === "#text") {
-          endOffset = 0;
-          lastNode = node;
-
-          for (var i = 0; i < node.textContent.length; i++) {
-            noFuriganaText.push(node.textContent[i]);
-            endOffset = endOffset + 1;
-            if (noFuriganaText.length >= length + index) {
-              done = true;
-              break;
-            }
-          }
-        } else if (node.firstChild.nodeName === "#text" && node.nodeName !== "RT" && node.nodeName !== "RP") {
-          endOffset = 0;
-          lastNode = node.firstChild;
-          for (var i = 0; i < node.firstChild.textContent.length; i++) {
-            noFuriganaText.push(node.firstChild.textContent[i]);
-            endOffset = endOffset + 1;
-            if (noFuriganaText.length >= length + index) {
-              done = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const range = new Range();
-  range.setStart(offsetNode, result.startOffset - adjustIndex + whitespaceOffset);
-  if (isSpaceDelimited) {
-    range.expand("word");
-  } else {
-    range.setEnd(lastNode, endOffset);
-  }
-  
-  var selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
-}
-""";
-
   String get leftArrowSimulateJs => '''
     var evt = document.createEvent('MouseEvents');
-    evt.initEvent('wheel', true, true); 
+    evt.initEvent('wheel', true, true);
     evt.deltaY = +0.001 * ${mediaSource.volumePageTurningSpeed * (mediaSource.volumePageTurningInverted ? -1 : 1)};
-    document.body.dispatchEvent(evt); 
+    document.body.dispatchEvent(evt);
     ''';
 
   String get rightArrowSimulateJs => '''
     var evt = document.createEvent('MouseEvents');
-    evt.initEvent('wheel', true, true); 
+    evt.initEvent('wheel', true, true);
     evt.deltaY = -0.001 * ${mediaSource.volumePageTurningSpeed * (mediaSource.volumePageTurningInverted ? -1 : 1)};
-    document.body.dispatchEvent(evt); 
+    document.body.dispatchEvent(evt);
     ''';
 }

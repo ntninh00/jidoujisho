@@ -121,8 +121,9 @@ class MediaItem {
   operator ==(Object other) =>
       other is MediaItem && other.uniqueKey == uniqueKey;
 
+  /// Consistent with equality, which compares [uniqueKey].
   @override
-  int get hashCode => toJson().hashCode;
+  int get hashCode => uniqueKey.hashCode;
 
   @override
   String toString() {

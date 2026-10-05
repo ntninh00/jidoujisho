@@ -40,8 +40,18 @@ class _DictionaryHistoryPageState extends BasePageState<DictionaryHistoryPage> {
     List<DictionarySearchResult> historyResults =
         appModel.dictionaryHistory.reversed.toList();
 
+    /// Read once for the whole list rather than once per item.
+    List<Dictionary> dictionaries = appModel.dictionaries;
+    _DictionaryNames names = _DictionaryNames(
+      hidden: Map<String, bool>.fromEntries(dictionaries
+          .map((e) => MapEntry(e.name, e.isHidden(appModel.targetLanguage)))),
+      collapsed: Map<String, bool>.fromEntries(dictionaries.map(
+          (e) => MapEntry(e.name, e.isCollapsed(appModel.targetLanguage)))),
+      order: Map<String, int>.fromEntries(
+          dictionaries.map((e) => MapEntry(e.name, e.order))),
+    );
+
     return CustomScrollView(
-      cacheExtent: 999999999999999,
       controller: DictionaryMediaType.instance.scrollController,
       physics: const AlwaysScrollableScrollPhysics(
         parent: BouncingScrollPhysics(),
@@ -56,12 +66,26 @@ class _DictionaryHistoryPageState extends BasePageState<DictionaryHistoryPage> {
                 onStash: widget.onStash,
                 onShare: widget.onShare,
                 lastSelectedMapping: lastSelectedMapping,
+                names: names,
               ),
             )
             .toList(),
       ],
     );
   }
+}
+
+/// Dictionary settings for the current language, shared by every history item.
+class _DictionaryNames {
+  const _DictionaryNames({
+    required this.hidden,
+    required this.collapsed,
+    required this.order,
+  });
+
+  final Map<String, bool> hidden;
+  final Map<String, bool> collapsed;
+  final Map<String, int> order;
 }
 
 class _DictionaryHistoryScrollableItem extends BasePage {
@@ -71,7 +95,11 @@ class _DictionaryHistoryScrollableItem extends BasePage {
     required this.onSearch,
     required this.onShare,
     required this.lastSelectedMapping,
+    required this.names,
   });
+
+  /// Dictionary settings shared by the list.
+  final _DictionaryNames names;
 
   /// The result pertaining to this item.
   final DictionarySearchResult result;
@@ -104,24 +132,11 @@ class _DictionaryHistoryScrollableItemState
     super.build(context);
 
     DictionarySearchResult result = widget.result;
-    Map<int, DictionaryHeading> headingsById = Map.fromEntries(
-      result.headings.map(
-        (heading) => MapEntry(heading.id, heading),
-      ),
-    );
+    List<DictionaryHeading> headings = appModel.headingsOf(result);
 
-    List<DictionaryHeading> headings =
-        result.headingIds.map((id) => headingsById[id]).nonNulls.toList();
-
-    List<Dictionary> dictionaries = appModel.dictionaries;
-    Map<String, bool> dictionaryNamesByHidden = Map<String, bool>.fromEntries(
-        dictionaries
-            .map((e) => MapEntry(e.name, e.isHidden(appModel.targetLanguage))));
-    Map<String, bool> dictionaryNamesByCollapsed =
-        Map<String, bool>.fromEntries(dictionaries.map(
-            (e) => MapEntry(e.name, e.isCollapsed(appModel.targetLanguage))));
-    Map<String, int> dictionaryNamesByOrder = Map<String, int>.fromEntries(
-        dictionaries.map((e) => MapEntry(e.name, e.order)));
+    Map<String, bool> dictionaryNamesByHidden = widget.names.hidden;
+    Map<String, bool> dictionaryNamesByCollapsed = widget.names.collapsed;
+    Map<String, int> dictionaryNamesByOrder = widget.names.order;
 
     final Map<DictionaryHeading, Map<Dictionary, ExpandableController>>
         expandableControllersByHeading = {};

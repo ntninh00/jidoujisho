@@ -212,7 +212,7 @@ class _RecursiveDictionaryPageState
           if (mounted) {
             setState(() {
               _isSearching = false;
-              _showMore = _result!.headings.length < overrideMaximumTerms!;
+              _showMore = _result!.headingIds.length < overrideMaximumTerms!;
             });
           }
           Future.delayed(historyDelay, () async {
@@ -222,7 +222,7 @@ class _RecursiveDictionaryPageState
                 searchTerm: _controller.query,
               );
             }
-            if (_result!.headings.isNotEmpty) {
+            if (_result!.headingIds.isNotEmpty) {
               appModel.addToDictionaryHistory(result: _result!);
             }
           });
@@ -423,7 +423,7 @@ class _RecursiveDictionaryPageState
     }
     if (_isSearching) {
       if (_result != null) {
-        if (_result!.headings.isNotEmpty) {
+        if (_result!.headingIds.isNotEmpty) {
           return buildSearchResult();
         } else {
           return buildNoSearchResultsPlaceholderMessage();
@@ -432,7 +432,7 @@ class _RecursiveDictionaryPageState
         return const SizedBox.shrink();
       }
     }
-    if (_result == null || _result!.headings.isEmpty) {
+    if (_result == null || _result!.headingIds.isEmpty) {
       return buildNoSearchResultsPlaceholderMessage();
     }
 

@@ -82,6 +82,44 @@ void preloadResultSync(int id) {
   }
 }
 
+/// Stores what a search found so it can appear in search history, linking
+/// only the headings that are shown. Older results beyond
+/// [maximumStoredResults] are removed. Returns the id of the stored result.
+int persistSearchOutcome({
+  required Isar database,
+  required DictionarySearchOutcome outcome,
+  required int maximumStoredResults,
+}) {
+  List<DictionaryHeading> headings = database.dictionaryHeadings
+      .getAllSync(outcome.headingIds)
+      .whereType<DictionaryHeading>()
+      .toList();
+
+  DictionarySearchResult result = DictionarySearchResult(
+    searchTerm: outcome.searchTerm,
+    bestLength: outcome.bestLength,
+    headingIds: outcome.headingIds,
+  );
+
+  late int resultId;
+  database.writeTxnSync(() {
+    database.dictionarySearchResults.deleteBySearchTermSync(outcome.searchTerm);
+    result.headings.addAll(headings);
+    resultId = database.dictionarySearchResults.putSync(result);
+
+    int count = database.dictionarySearchResults.countSync();
+    if (count > maximumStoredResults) {
+      database.dictionarySearchResults
+          .where()
+          .limit(count - maximumStoredResults)
+          .build()
+          .deleteAllSync();
+    }
+  });
+
+  return resultId;
+}
+
 /// Add a [DictionarySearchResult] to the dictionary history. If the maximum value
 /// is exceed, the dictionary history is cut down to the newest values.
 Future<void> updateDictionaryHistoryHelper(

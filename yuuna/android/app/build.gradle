@@ -48,6 +48,14 @@ android {
         targetSdkVersion 32
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
+
+        // Set JDJ_DEV_BUILD=true to build an app that installs beside the
+        // released one, with its own data and its own ッツ ports.
+        def devBuild = System.getenv('JDJ_DEV_BUILD') == 'true'
+        if (devBuild) {
+            applicationIdSuffix '.dev'
+        }
+        manifestPlaceholders += [appLabel: devBuild ? 'jidoujisho (dev)' : 'jidoujisho']
     }
 
     buildTypes {

@@ -1,14 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_logs/flutter_logs.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_assets_server/local_assets_server.dart';
-import 'package:material_floating_search_bar/material_floating_search_bar.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path/path.dart' as path;
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
@@ -21,13 +21,33 @@ final ttuServerProvider =
   return ReaderTtuSource.instance.serveLocalAssets(language);
 });
 
-/// A global [Provider] for getting ッツ Ebook Reader books from IndexedDB.
-final ttuBooksProvider =
-    FutureProvider.family<List<MediaItem>, Language>((ref, language) {
-  return ReaderTtuSource.instance.getBooksHistory(
-    appModel: ref.watch(appProvider),
-    language: language,
+/// Every book in ッツ Ebook Reader across languages, most recently opened
+/// first. Books are read from each language's copy of ッツ.
+final ttuShelfProvider = FutureProvider<List<TtuBook>>((ref) async {
+  AppModel appModel = ref.read(appProvider);
+  ReaderTtuSource source = ReaderTtuSource.instance;
+  source.shelfErrors.clear();
+
+  List<List<TtuBook>> perLanguage = await Future.wait(
+    source.shelfLanguages.map((language) async {
+      try {
+        await ref.watch(ttuServerProvider(language).future);
+        return await TtuLibrary.listBooks(
+          language: language,
+          port: source.getPortForLanguage(language),
+          coverDirectory: appModel.thumbnailsDirectory,
+        );
+      } catch (error, stack) {
+        debugPrint('ッツ shelf for ${language.languageCode}: $error\n$stack');
+        source.shelfErrors[language] = error;
+        return <TtuBook>[];
+      }
+    }),
   );
+
+  List<TtuBook> books = perLanguage.expand((books) => books).toList()
+    ..sort((a, b) => b.lastBookOpen.compareTo(a.lastBookOpen));
+  return books;
 });
 
 /// A media source that allows the user to read from ッツ Ebook Reader.
@@ -53,41 +73,70 @@ class ReaderTtuSource extends ReaderMediaSource {
   /// Default scrolling speed when in continuous page turning mode.
   static int get defaultScrollingSpeed => 100;
 
+  /// Builds installed beside the main app use other ports, so both can run
+  /// without fighting over the local server.
+  int _portOffset = 0;
+
+  @override
+  Future<void> prepareResources() async {
+    PackageInfo info = await PackageInfo.fromPlatform();
+    if (info.packageName.endsWith('.dev')) {
+      _portOffset = 100;
+    }
+  }
+
+  /// Languages that have their own copy of ッツ, and so their own books.
+  List<Language> get shelfLanguages => [
+        JapaneseLanguage.instance,
+        EnglishLanguage.instance,
+      ];
+
+  /// The language whose copy of ッツ serves [url], if any.
+  Language? languageForUrl(String url) {
+    int? port = Uri.tryParse(url)?.port;
+    return shelfLanguages
+        .firstWhereOrNull((language) => getPortForLanguage(language) == port);
+  }
+
+  /// Errors from the last read of the shelf, per language.
+  final Map<Language, Object> shelfErrors = {};
+
+  /// Positions to offer as a way back after jumping to a memo, per book.
+  final Map<String, TtuPosition> returnPositions = {};
+
+  /// Books being added, by name, while ッツ imports them.
+  final ValueNotifier<List<String>> importing = ValueNotifier(const []);
+
+  /// Books deleted this session. Hidden from the shelf straight away.
+  final ValueNotifier<Set<String>> removedBooks = ValueNotifier(const {});
+
+  final Map<String, Timer> _pendingDeletes = {};
+
+  TtuLaunch? _pendingLaunch;
+
+  /// Takes what the reader should do when it opens, if anything.
+  TtuLaunch? takePendingLaunch() {
+    TtuLaunch? launch = _pendingLaunch;
+    _pendingLaunch = null;
+    return launch;
+  }
+
   @override
   Future<void> onSourceExit({
     required AppModel appModel,
     required WidgetRef ref,
   }) async {
-    ref.invalidate(ttuBooksProvider(appModel.targetLanguage));
-    // await exportBackup(appModel: appModel);
+    ref.invalidate(ttuShelfProvider);
   }
 
-  /// Import persisted backup data back to IndexedDB if it exists.
-  Future<void> importBackup({
-    required InAppWebViewController controller,
-    required Language language,
-    required String data,
-  }) async {
-    FlutterLogs.logInfo(
-      mediaType.uniqueKey,
-      uniqueKey,
-      'Restored IndexedDB.',
-    );
-  }
-
-  /// Get the IndexedDB backup key for a language
-  String getIndexedDBKey(Language language) {
-    return 'idb_${getPortForLanguage(language)}';
-  }
-
-  /// Get the port for the current language. This port should ideally not conflict but should remain the same for
-  /// caching purposes.
+  /// Get the port for a language. Each language has its own copy of ッツ,
+  /// with its own books and settings.
   int getPortForLanguage(Language language) {
     /// Language Customizable
     if (language is JapaneseLanguage) {
-      return 52059;
+      return 52059 + _portOffset;
     } else if (language is EnglishLanguage) {
-      return 52060;
+      return 52060 + _portOffset;
     }
 
     throw UnimplementedError();
@@ -131,248 +180,308 @@ class ReaderTtuSource extends ReaderMediaSource {
   }
 
   @override
-  List<Widget> getActions({
-    required BuildContext context,
-    required WidgetRef ref,
-    required AppModel appModel,
-  }) {
-    return [
-      buildTweaksButton(
-        context: context,
-        ref: ref,
-        appModel: appModel,
-      ),
-      buildSettingsButton(
-        context: context,
-        ref: ref,
-        appModel: appModel,
-      ),
-      buildLaunchButton(
-        context: context,
-        ref: ref,
-        appModel: appModel,
-      ),
-    ];
+  Widget? buildBar() {
+    return const TtuReaderBar();
   }
-
-  /// Allows user to close the floating search bar of a media type tab page
-  /// when open.
-  Widget buildLaunchButton({
-    required BuildContext context,
-    required WidgetRef ref,
-    required AppModel appModel,
-  }) {
-    return FloatingSearchBarAction(
-      showIfOpened: true,
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.manager,
-        icon: Icons.local_library_outlined,
-        onTap: () {
-          appModel.openMedia(
-            ref: ref,
-            mediaSource: this,
-          );
-        },
-      ),
-    );
-  }
-
-  /// Allows user to close the floating search bar of a media type tab page
-  /// when open.
-  Widget buildSettingsButton({
-    required BuildContext context,
-    required WidgetRef ref,
-    required AppModel appModel,
-  }) {
-    int port = getPortForLanguage(appModel.targetLanguage);
-
-    return FloatingSearchBarAction(
-      showIfOpened: true,
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.settings,
-        icon: Icons.settings,
-        onTap: () {
-          appModel.openMedia(
-            ref: ref,
-            mediaSource: this,
-            item: MediaItem(
-              mediaIdentifier: 'http://localhost:$port/settings.html',
-              title: '',
-              mediaTypeIdentifier: ReaderTtuSource.instance.mediaType.uniqueKey,
-              mediaSourceIdentifier: ReaderTtuSource.instance.uniqueKey,
-              position: 0,
-              duration: 1,
-              canDelete: false,
-              canEdit: true,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  /// Tweaks bar action.
-  Widget buildTweaksButton(
-      {required BuildContext context,
-      required WidgetRef ref,
-      required AppModel appModel}) {
-    return FloatingSearchBarAction(
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.tweaks,
-        icon: Icons.tune,
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => const TtuSettingsDialogPage(),
-          );
-        },
-      ),
-    );
-  }
-
-  /// Shows when the clear button is pressed.
-  void showClearPrompt(
-      {required BuildContext context,
-      required WidgetRef ref,
-      required AppModel appModel}) async {}
 
   @override
   BasePage buildHistoryPage({MediaItem? item}) {
     return const ReaderTtuSourceHistoryPage();
   }
 
-  /// Fetch JSON for all books in IndexedDB.
-  Future<List<MediaItem>> getBooksHistory({
+  /// Opens [book]: at [memo] if given, or at [returnTo] to go back after a
+  /// jump, or else where ッツ last saved.
+  Future<void> openBook({
     required AppModel appModel,
-    required Language language,
-    bool recursive = false,
+    required WidgetRef ref,
+    required TtuBook book,
+    ReaderMemo? memo,
+    TtuPosition? returnTo,
   }) async {
-    int port = getPortForLanguage(appModel.targetLanguage);
+    TtuPosition? target;
+    TtuPosition? back;
 
-    List<MediaItem>? items;
-
-    HeadlessInAppWebView webView = HeadlessInAppWebView(
-      initialUrlRequest: URLRequest(
-        url: WebUri('http://localhost:$port/'),
-      ),
-      onLoadStop: (controller, url) async {
-        controller.evaluateJavascript(source: getHistoryJs);
-      },
-      onConsoleMessage: (controller, message) async {
-        try {
-          Map<String, dynamic> messageJson = jsonDecode(message.message);
-
-          if (messageJson['messageType'] != null) {
-            switch (messageJson['messageType']) {
-              case 'history':
-                try {
-                  items = getItemsFromJson(messageJson, port);
-                } catch (error, stack) {
-                  items = [];
-                  debugPrint('$error');
-                  debugPrint('$stack');
-                }
-                break;
-              case 'empty':
-                if (!appModel.targetLanguage.preferVerticalReading) {
-                  await controller.evaluateJavascript(
-                      source:
-                          'javascript:window.localStorage.setItem("writingMode", "horizontal-tb")');
-                  await controller.evaluateJavascript(
-                      source:
-                          'javascript:window.localStorage.setItem("fontSize", 16)');
-                } else {
-                  await controller.evaluateJavascript(
-                      source:
-                          'javascript:window.localStorage.setItem("fontSize", 24)');
-                }
-
-                items = [];
-                break;
-              case 'error':
-                items = [];
-                break;
-            }
-          }
-        } on FormatException catch (_) {}
-      },
-    );
-
-    try {
-      await webView.run();
-      while (items == null) {
-        await Future.delayed(const Duration(milliseconds: 500));
+    if (memo != null) {
+      target = TtuPosition(
+        characters: memo.exploredCharCount,
+        progress: memo.progress,
+      );
+      if ((book.exploredCharCount - memo.exploredCharCount).abs() > 200) {
+        back = TtuPosition(
+          characters: book.exploredCharCount,
+          progress: book.progress,
+        );
+        returnPositions[book.key] = back;
       }
-    } finally {
-      await webView.dispose();
+    } else if (returnTo != null) {
+      target = returnTo;
+      returnPositions.remove(book.key);
     }
 
-    return items!;
+    _pendingLaunch = TtuLaunch(
+      book: book,
+      target: target,
+      excerpt: memo?.excerpt,
+      memo: memo?.memo,
+      returnTo: back,
+    );
+
+    await appModel.openMedia(
+      ref: ref,
+      mediaSource: this,
+      item: book.toMediaItem(),
+    );
   }
 
-  /// Fetch the list of history items given JSON from IndexedDB.
-  List<MediaItem> getItemsFromJson(Map<String, dynamic> json, int port) {
-    List<Map<String, dynamic>> bookmarks =
-        List<Map<String, dynamic>>.from(jsonDecode(json['bookmark']));
-    List<Map<String, dynamic>> datas =
-        List<Map<String, dynamic>>.from(jsonDecode(json['data']));
-    Map<int, Map<String, dynamic>> bookmarksById =
-        Map<int, Map<String, dynamic>>.fromEntries(
-            bookmarks.map((e) => MapEntry(e['dataId'] as int, e)));
+  /// Opens one of ッツ's own pages, such as `manage.html` for backup and sync.
+  Future<void> openTtuPage({
+    required AppModel appModel,
+    required WidgetRef ref,
+    required Language language,
+    required String page,
+  }) async {
+    _pendingLaunch = null;
+    int port = getPortForLanguage(language);
+    await appModel.openMedia(
+      ref: ref,
+      mediaSource: this,
+      item: MediaItem(
+        mediaIdentifier: 'http://localhost:$port/$page',
+        title: '',
+        mediaTypeIdentifier: mediaType.uniqueKey,
+        mediaSourceIdentifier: uniqueKey,
+        position: 0,
+        duration: 1,
+        canDelete: false,
+        canEdit: true,
+      ),
+    );
+  }
 
-    List<MapEntry<int, MediaItem>> itemsById = datas.mapIndexed((index, data) {
-      int position = 0;
-      int duration = 1;
+  /// Shows the reader settings sheet.
+  Future<void> showSettings({
+    required BuildContext context,
+    required AppModel appModel,
+    required WidgetRef ref,
+  }) {
+    List<TtuBook> books = ref.read(ttuShelfProvider).valueOrNull ?? const [];
+    List<Language> languages = shelfLanguages
+        .where((language) => books.any((book) => book.language == language))
+        .toList();
+    if (languages.isEmpty) {
+      languages = [
+        if (shelfLanguages.contains(appModel.targetLanguage))
+          appModel.targetLanguage
+        else
+          JapaneseLanguage.instance,
+      ];
+    }
 
-      Map<String, dynamic>? bookmark = bookmarksById[data['id']];
+    return showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuReaderSettingsSheet(
+        languages: languages,
+        onOpenTtuPage: (language, page) => openTtuPage(
+          appModel: appModel,
+          ref: ref,
+          language: language,
+          page: page,
+        ),
+      ),
+    );
+  }
 
-      if (bookmark != null) {
-        position = bookmark['exploredCharCount'] as int;
-        double progress = double.parse(bookmark['progress'].toString());
-        if (progress == 0) {
-          duration = 1;
-        } else {
-          duration = position ~/ progress;
-        }
+  /// Lets the user pick EPUB or HTMLZ files and adds them.
+  Future<void> pickAndImport({
+    required BuildContext context,
+    required AppModel appModel,
+    required WidgetRef ref,
+  }) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+    );
+    if (result == null) {
+      return;
+    }
+
+    List<File> files = [];
+    for (PlatformFile picked in result.files) {
+      String? filePath = picked.path;
+      if (filePath == null) {
+        continue;
       }
+      String extension = path.extension(filePath).toLowerCase();
+      if (extension == '.epub' || extension == '.htmlz') {
+        files.add(File(filePath));
+      } else {
+        Fluttertoast.showToast(msg: t.ttu_unsupported_file(name: picked.name));
+      }
+    }
 
-      String id = data['id'].toString();
-      String title = data['title'] as String? ?? ' ';
-      String? base64Image;
+    if (files.isNotEmpty) {
+      await importFiles(appModel: appModel, ref: ref, files: files);
+    }
+  }
+
+  /// Adds books through ッツ's own importer, each into the copy of ッツ for its
+  /// language.
+  Future<void> importFiles({
+    required AppModel appModel,
+    required WidgetRef ref,
+    required List<File> files,
+  }) async {
+    importing.value = [
+      ...importing.value,
+      ...files.map((file) => path.basenameWithoutExtension(file.path)),
+    ];
+
+    Language fallback = shelfLanguages.contains(appModel.targetLanguage)
+        ? appModel.targetLanguage
+        : JapaneseLanguage.instance;
+
+    Map<Language, List<File>> byLanguage = {};
+    for (File file in files) {
+      String? code = await TtuLibrary.detectLanguageCode(file.path);
+      Language language = shelfLanguages
+              .firstWhereOrNull((language) => language.languageCode == code) ??
+          fallback;
+      byLanguage.putIfAbsent(language, () => []).add(file);
+    }
+
+    int added = 0;
+    List<String> failures = [];
+    for (MapEntry<Language, List<File>> entry in byLanguage.entries) {
       try {
-        Uri.parse(data['coverImage']);
-        base64Image = data['coverImage'];
-      } catch (e) {
-        base64Image = null;
+        await ref.read(ttuServerProvider(entry.key).future);
+        List<int> ids = await TtuLibrary.importFiles(
+          port: getPortForLanguage(entry.key),
+          files: entry.value,
+        );
+        added += ids.length;
+      } catch (error) {
+        failures.add('$error');
       }
+    }
 
-      return MapEntry(
-        index,
-        MediaItem(
-          mediaIdentifier: 'http://localhost:$port/b.html?id=$id&?title=$title',
-          title: title,
-          base64Image: base64Image,
-          mediaTypeIdentifier: ReaderTtuSource.instance.mediaType.uniqueKey,
-          mediaSourceIdentifier: ReaderTtuSource.instance.uniqueKey,
-          position: position,
-          duration: duration,
-          canDelete: false,
-          canEdit: true,
+    importing.value = const [];
+    ref.invalidate(ttuShelfProvider);
+
+    if (failures.isNotEmpty) {
+      Fluttertoast.showToast(
+        msg: t.ttu_import_failed(reason: failures.first),
+        toastLength: Toast.LENGTH_LONG,
+      );
+    } else if (added == 1 && files.length == 1) {
+      Fluttertoast.showToast(
+        msg: t.ttu_added_book(
+          name: path.basenameWithoutExtension(files.first.path),
         ),
       );
-    }).toList();
+    } else if (added > 0) {
+      Fluttertoast.showToast(msg: t.ttu_added_books(n: added));
+    }
+  }
 
-    List<int> lastOpens = datas.mapIndexed((index, data) {
-      return data['lastBookOpen'] as int? ?? 0;
-    }).toList();
+  /// Hides [book] now and deletes it after a few seconds unless
+  /// [undoDelete] is called first. [onDeleted] runs once it is gone.
+  void scheduleDelete({
+    required AppModel appModel,
+    required TtuBook book,
+    required VoidCallback onDeleted,
+  }) {
+    removedBooks.value = {...removedBooks.value, book.key};
+    _pendingDeletes[book.key]?.cancel();
+    _pendingDeletes[book.key] = Timer(const Duration(seconds: 5), () async {
+      _pendingDeletes.remove(book.key);
+      try {
+        await TtuLibrary.deleteBooks(port: book.port, ids: [book.id]);
+        await appModel.deleteReaderMemosOfBook(book.key);
+        await clearOverrideValues(appModel: appModel, item: book.toMediaItem());
+        String? coverPath = book.coverPath;
+        if (coverPath != null && File(coverPath).existsSync()) {
+          File(coverPath).deleteSync();
+        }
+        returnPositions.remove(book.key);
+      } catch (error) {
+        debugPrint('Could not delete ${book.title}: $error');
+        removedBooks.value = {...removedBooks.value}..remove(book.key);
+      }
+      onDeleted();
+    });
+  }
 
-    itemsById.sort((a, b) => lastOpens[b.key].compareTo(lastOpens[a.key]));
-    List<MediaItem> itemsByLastOpened = itemsById.map((e) => e.value).toList();
+  /// Keeps a book that [scheduleDelete] was about to delete.
+  void undoDelete(TtuBook book) {
+    _pendingDeletes.remove(book.key)?.cancel();
+    removedBooks.value = {...removedBooks.value}..remove(book.key);
+  }
 
-    return itemsByLastOpened;
+  /// Page settings for books in [language].
+  TtuPagePreset presetFor(Language language) {
+    String code = language.languageCode;
+    bool vertical = language.preferVerticalReading;
+    return TtuPagePreset(
+      theme:
+          getPreference<String?>(key: 'page_${code}_theme', defaultValue: null),
+      fontSize: getPreference<int>(
+        key: 'page_${code}_font_size',
+        defaultValue: vertical ? 24 : 18,
+      ),
+      vertical: getPreference<bool>(
+        key: 'page_${code}_vertical',
+        defaultValue: vertical,
+      ),
+      paginated: getPreference<bool>(
+        key: 'page_${code}_paginated',
+        defaultValue: true,
+      ),
+      furigana: getPreference<bool>(
+        key: 'page_${code}_furigana',
+        defaultValue: true,
+      ),
+    );
+  }
+
+  /// Saves page settings for books in [language].
+  Future<void> savePreset(Language language, TtuPagePreset preset) async {
+    String code = language.languageCode;
+    await setPreference<String?>(
+        key: 'page_${code}_theme', value: preset.theme);
+    await setPreference<int>(
+        key: 'page_${code}_font_size', value: preset.fontSize);
+    await setPreference<bool>(
+        key: 'page_${code}_vertical', value: preset.vertical);
+    await setPreference<bool>(
+        key: 'page_${code}_paginated', value: preset.paginated);
+    await setPreference<bool>(
+        key: 'page_${code}_furigana', value: preset.furigana);
+  }
+
+  /// Script that applies the page settings for [language] before ッツ loads.
+  /// Without a chosen theme, the page follows the app: dark or light.
+  String settingsScriptFor(Language language, {required bool darkMode}) {
+    TtuPagePreset preset = presetFor(language);
+    preset.theme ??= darkMode ? 'dark' : 'light';
+    return preset.toScript(autoBookmark: autoSavePosition);
+  }
+
+  /// The ッツ theme books in [language] open with.
+  String effectiveThemeFor(Language language, {required bool darkMode}) {
+    return presetFor(language).theme ?? (darkMode ? 'dark' : 'light');
+  }
+
+  /// Whether ッツ saves the reading position by itself while reading, and the
+  /// app saves it on leaving a book.
+  bool get autoSavePosition {
+    return getPreference<bool>(key: 'auto_save_position', defaultValue: true);
+  }
+
+  /// Toggles saving the reading position automatically.
+  void toggleAutoSavePosition() async {
+    await setPreference<bool>(
+      key: 'auto_save_position',
+      value: !autoSavePosition,
+    );
   }
 
   /// Whether or not using the volume buttons in the Reader should turn the
@@ -463,222 +572,12 @@ class ReaderTtuSource extends ReaderMediaSource {
     );
   }
 
-  /// Used to fetch JSON for all books in IndexedDB.
-  static const String getHistoryJs = '''
-indexedDB.databases().then((databases) => {
-  if (databases.length > 0) {
-    var bookmarkJson = JSON.stringify([]);
-    var dataJson = JSON.stringify([]);
-    var lastItemJson = JSON.stringify([]);
-
-    var blobToBase64 = function(blob) {
-      return new Promise(resolve => {
-        let reader = new FileReader();
-        reader.onload = function() {
-          let dataUrl = reader.result;
-          resolve(dataUrl);
-        };
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    function getAllFromIDBStore(storeName) {
-      return new Promise(
-        function(resolve, reject) {
-          var dbRequest = indexedDB.open("books");
-
-          dbRequest.onerror = function(event) {
-            reject(Error("Error opening DB"));
-          };
-
-          dbRequest.onupgradeneeded = function(event) {
-            reject(Error('Not found'));
-          };
-
-          dbRequest.onsuccess = function(event) {
-            var database = event.target.result;
-
-            try {
-              var transaction = database.transaction([storeName], 'readwrite');
-              var objectStore;
-              try {
-                objectStore = transaction.objectStore(storeName);
-              } catch (e) {
-                reject(Error('Error getting objects'));
-              }
-
-              var objectRequest = objectStore.getAll();
-
-              objectRequest.onerror = function(event) {
-                reject(Error('Error getting objects'));
-              };
-
-              objectRequest.onsuccess = function(event) {
-                if (objectRequest.result) resolve(objectRequest.result);
-                else reject(Error('Objects not found'));
-              }; 
-            } catch (e) {
-              console.log(JSON.stringify({messageType: "error", error: e.name}));
-              reject(Error('Error getting objects'));
-            }
-          };
-        }
-      );
-    }
-
-    async function getTtuData() {
-      try {
-        items = await getAllFromIDBStore("data");
-        await Promise.all(items.map(async (item) => {
-          try {
-            item["coverImage"] = await blobToBase64(item["coverImage"]);
-          } catch (e) {}
-        }));
-        
-        dataJson = JSON.stringify(items);
-      } catch (e) {
-        dataJson = JSON.stringify([]);
-      }
-
-      try {
-        bookmarkJson = JSON.stringify(await getAllFromIDBStore("bookmark"));
-      } catch (e) {
-        bookmarkJson = JSON.stringify([]);
-      }
-      
-      try {
-        lastItemJson = JSON.stringify(await getAllFromIDBStore("lastItem"));
-      } catch (e) {
-        lastItemJson = JSON.stringify([]);
-      }
-
-      console.log(JSON.stringify({messageType: "history", lastItem: lastItemJson, bookmark: bookmarkJson, data: dataJson}));
-    }
-
-    try {
-      getTtuData();
-    } catch (e) {
-      console.log(JSON.stringify({messageType: "history", lastItem: lastItemJson, bookmark: bookmarkJson, data: dataJson}));
-    }
-  } else {
-  
-    console.log(JSON.stringify({messageType: "empty"}));
-    
-  }
-});
-''';
-
-  /// Used to fetch JSON for all books in IndexedDB.
-  static const String get = '''
-indexedDB.databases().then((databases) => {
-  if (databases.length > 0) {
-    var bookmarkJson = JSON.stringify([]);
-    var dataJson = JSON.stringify([]);
-    var lastItemJson = JSON.stringify([]);
-
-    var blobToBase64 = function(blob) {
-      return new Promise(resolve => {
-        let reader = new FileReader();
-        reader.onload = function() {
-          let dataUrl = reader.result;
-          resolve(dataUrl);
-        };
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    function getAllFromIDBStore(storeName) {
-      return new Promise(
-        function(resolve, reject) {
-          var dbRequest = indexedDB.open("books");
-
-          dbRequest.onerror = function(event) {
-            reject(Error("Error opening DB"));
-          };
-
-          dbRequest.onupgradeneeded = function(event) {
-            reject(Error('Not found'));
-          };
-
-          dbRequest.onsuccess = function(event) {
-            var database = event.target.result;
-
-            try {
-              var transaction = database.transaction([storeName], 'readwrite');
-              var objectStore;
-              try {
-                objectStore = transaction.objectStore(storeName);
-              } catch (e) {
-                reject(Error('Error getting objects'));
-              }
-
-              var objectRequest = objectStore.getAll();
-
-              objectRequest.onerror = function(event) {
-                reject(Error('Error getting objects'));
-              };
-
-              objectRequest.onsuccess = function(event) {
-                if (objectRequest.result) resolve(objectRequest.result);
-                else reject(Error('Objects not found'));
-              }; 
-            } catch (e) {
-              console.log(JSON.stringify({messageType: "error", error: e.name}));
-              reject(Error('Error getting objects'));
-            }
-          };
-        }
-      );
-    }
-
-    async function getTtuData() {
-      try {
-        items = await getAllFromIDBStore("data");
-        await Promise.all(items.map(async (item) => {
-          try {
-            item["coverImage"] = await blobToBase64(item["coverImage"]);
-          } catch (e) {}
-        }));
-        
-        dataJson = JSON.stringify(items);
-      } catch (e) {
-        dataJson = JSON.stringify([]);
-      }
-
-      try {
-        bookmarkJson = JSON.stringify(await getAllFromIDBStore("bookmark"));
-      } catch (e) {
-        bookmarkJson = JSON.stringify([]);
-      }
-      
-      try {
-        lastItemJson = JSON.stringify(await getAllFromIDBStore("lastItem"));
-      } catch (e) {
-        lastItemJson = JSON.stringify([]);
-      }
-
-      console.log(JSON.stringify({messageType: "history", lastItem: lastItemJson, bookmark: bookmarkJson, data: dataJson}));
-    }
-
-    try {
-      getTtuData();
-    } catch (e) {
-      console.log(JSON.stringify({messageType: "history", lastItem: lastItemJson, bookmark: bookmarkJson, data: dataJson}));
-    }
-  } else {
-  
-    console.log(JSON.stringify({messageType: "empty"}));
-    
-  }
-});
-''';
-
   /// This ensures that the internal version included with the app always uses
   /// the cache and is consistent. If this version changes and the current stored
   /// last version mismatches, a load from network is forced. The app will then
   /// update its new last version, and all new loads will be from the cache
   /// unless there is a new app version loaded with a different internal version.
-  static const ttuInternalVersion = 2;
+  static const ttuInternalVersion = 3;
 
   /// Used to check for the current version.
   int? get currentTtuInternalVersion {

@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:audio_service/audio_service.dart' as ag;
-import 'package:cancelable_compute/cancelable_compute.dart' as cancelable;
 import 'package:collection/collection.dart';
 import 'package:clipboard/clipboard.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -50,6 +50,7 @@ final List<CollectionSchema> globalSchemas = [
   DictionaryTagSchema,
   DictionarySearchResultSchema,
   MediaItemSchema,
+  ReaderMemoSchema,
   AnkiMappingSchema,
   SearchHistoryItemSchema,
   MessageItemSchema,
@@ -342,6 +343,35 @@ class AppModel with ChangeNotifier {
     });
   }
 
+  /// Every reader memo, oldest first.
+  List<ReaderMemo> get readerMemos =>
+      _database.readerMemos.where().findAllSync();
+
+  /// Fires whenever reader memos change, and once straight away.
+  Stream<void> watchReaderMemos() =>
+      _database.readerMemos.watchLazy(fireImmediately: true);
+
+  /// Adds or updates a reader memo.
+  Future<void> putReaderMemo(ReaderMemo memo) async {
+    await _database.writeTxn(() async {
+      await _database.readerMemos.put(memo);
+    });
+  }
+
+  /// Deletes a reader memo.
+  Future<void> deleteReaderMemo(ReaderMemo memo) async {
+    await _database.writeTxn(() async {
+      await _database.readerMemos.delete(memo.id);
+    });
+  }
+
+  /// Deletes every memo of a book.
+  Future<void> deleteReaderMemosOfBook(String bookKey) async {
+    await _database.writeTxn(() async {
+      await _database.readerMemos.where().bookKeyEqualTo(bookKey).deleteAll();
+    });
+  }
+
   /// Returns all dictionary history results. Oldest is first.
   List<DictionarySearchResult> get dictionaryHistory =>
       _database.dictionarySearchResults
@@ -400,12 +430,13 @@ class AppModel with ChangeNotifier {
   /// Blocks creator from processing initial media while player controller is not ready.
   bool blockCreatorInitialMedia = false;
 
-  /// Get the app-wide text style.
+  /// Get the app-wide text style. Follows the saved target language, not the
+  /// language of the book that is open.
   TextStyle get textStyle => TextStyle(
-        fontFamily: targetLanguage.defaultFontFamily,
+        fontFamily: savedTargetLanguage.defaultFontFamily,
         fontFeatures: const [FontFeature('liga', 0)],
-        locale: targetLanguage.locale,
-        textBaseline: targetLanguage.textBaseline,
+        locale: savedTargetLanguage.locale,
+        textBaseline: savedTargetLanguage.textBaseline,
       );
 
   /// This override is a workaround required to theme the app-wide [TextTheme]
@@ -462,11 +493,27 @@ class AppModel with ChangeNotifier {
         ),
         popupMenuTheme: const PopupMenuThemeData(
           color: Colors.white,
-          shape: RoundedRectangleBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14)),
+          ),
         ),
         dialogTheme: const DialogTheme(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
         ),
         cardColor: Colors.white,
         textButtonTheme: TextButtonThemeData(
@@ -544,11 +591,27 @@ class AppModel with ChangeNotifier {
         ),
         popupMenuTheme: const PopupMenuThemeData(
           color: Color.fromARGB(255, 30, 30, 30),
-          shape: RoundedRectangleBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(14)),
+          ),
         ),
         dialogTheme: const DialogTheme(
           backgroundColor: Color.fromARGB(255, 30, 30, 30),
-          shape: RoundedRectangleBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
+          ),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: Color.fromARGB(255, 30, 30, 30),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
         ),
         cardColor: const Color.fromARGB(255, 30, 30, 30),
         textButtonTheme: TextButtonThemeData(
@@ -1260,11 +1323,36 @@ class AppModel with ChangeNotifier {
 
   /// Get the target language from persisted preferences.
   Language get targetLanguage {
+    Language? session = _sessionLanguage;
+    if (session != null) {
+      return session;
+    }
+
+    return savedTargetLanguage;
+  }
+
+  /// The target language chosen in the app's settings, ignoring any language
+  /// set for the media that is open. See [setSessionLanguage].
+  Language get savedTargetLanguage {
     String defaultLocaleTag = languages.values.first.locale.toLanguageTag();
     String localeTag =
         _preferences.get('target_language', defaultValue: defaultLocaleTag);
 
     return languages[localeTag]!;
+  }
+
+  Language? _sessionLanguage;
+
+  /// Uses [language] for lookups while media in that language is open, for
+  /// example an English book while the app is set to Japanese. Pass null to
+  /// go back to the saved target language. Prepares the language first.
+  Future<void> setSessionLanguage(Language? language) async {
+    if (language == null || language == savedTargetLanguage) {
+      _sessionLanguage = null;
+      return;
+    }
+    await language.initialise();
+    _sessionLanguage = language;
   }
 
   /// Get the last selected deck from persisted preferences.
@@ -1341,7 +1429,7 @@ class AppModel with ChangeNotifier {
 
   /// Persist a new app locale in preferences.
   Future<void> setAppLocale(String localeTag) async {
-    await _preferences.put('appf_locale', localeTag);
+    await _preferences.put('app_locale', localeTag);
     notifyListeners();
   }
 
@@ -1691,9 +1779,13 @@ class AppModel with ChangeNotifier {
     });
   }
 
-  /// Used for caching search results. Cleared when a dictionary is added or
-  /// deleted.
-  final Map<String, DictionarySearchResult> _dictionarySearchCache = {};
+  /// Recent search results, newest last. Cleared when a dictionary is added or
+  /// deleted. Searches that found nothing are kept too.
+  final LinkedHashMap<String, DictionarySearchResult> _dictionarySearchCache =
+      LinkedHashMap();
+
+  /// How many results [_dictionarySearchCache] keeps.
+  static const int _dictionarySearchCacheSize = 256;
 
   /// Used when a dictionary is added or removed as those results may now be
   /// wrong.
@@ -1701,23 +1793,49 @@ class AppModel with ChangeNotifier {
     _dictionarySearchCache.clear();
   }
 
-  /// Whether or not the app is currently searching.
-  cancelable.ComputeOperation? _searchOperation;
+  /// One port for the search parameters, instead of one per search.
+  late final ReceivePort _searchLogPort = ReceivePort()
+    ..listen((message) => debugPrint(message.toString()));
 
-  /// Gets the raw unprocessed entries straight from a dictionary database
-  /// given a search term. This will be processed later for user viewing.
+  /// Headings of [result] in display order. Fetched by id once, then kept on
+  /// the result.
+  List<DictionaryHeading> headingsOf(DictionarySearchResult result) {
+    return result.resolvedHeadings ??= _database.dictionaryHeadings
+        .getAllSync(result.headingIds)
+        .whereType<DictionaryHeading>()
+        .toList();
+  }
+
+  /// Searches the dictionaries on the search worker. Returns as soon as the
+  /// headings are known; the result is stored for history afterwards, see
+  /// [DictionarySearchResult.pendingId].
+  ///
+  /// Searches with the same [channel], such as rapid taps in the reader,
+  /// replace each other while waiting. A replaced search returns an empty
+  /// result that callers ignore because a newer search is on its way.
   Future<DictionarySearchResult> searchDictionary({
     required String searchTerm,
     required bool searchWithWildcards,
     int? overrideMaximumTerms,
     bool useCache = true,
+    String? channel,
   }) async {
-    if (_dictionarySearchCache['$searchTerm/$overrideMaximumTerms'] != null &&
-        useCache) {
-      return _dictionarySearchCache['$searchTerm/$overrideMaximumTerms']!;
+    searchTerm = searchTerm.replaceAll('\n', ' ');
+
+    /// Only the start of a long term is ever searched, so key the cache by
+    /// that and the same word hits the cache wherever it appears.
+    String cacheTerm =
+        searchTerm.length > 40 ? searchTerm.substring(0, 40) : searchTerm;
+    Language language = targetLanguage;
+    String cacheKey = '${language.languageCode}/$searchWithWildcards/'
+        '${overrideMaximumTerms ?? maximumTerms}/$cacheTerm';
+
+    DictionarySearchResult? cached = _dictionarySearchCache.remove(cacheKey);
+    if (cached != null && useCache) {
+      _dictionarySearchCache[cacheKey] = cached;
+      return cached;
     }
 
-    searchTerm = searchTerm.replaceAll('\n', ' ');
     searchTerm = _removeEmoji.clean(searchTerm, ' ', false);
 
     /// Strip lone surrogates that may crash the search.
@@ -1726,11 +1844,6 @@ class AppModel with ChangeNotifier {
     );
     searchTerm = searchTerm.replaceAll(loneSurrogate, ' ');
 
-    ReceivePort receivePort = ReceivePort();
-    receivePort.listen((message) {
-      debugPrint(message.toString());
-    });
-
     DictionarySearchParams params = DictionarySearchParams(
       searchTerm: searchTerm,
       directoryPath: _databaseDirectory.path,
@@ -1738,34 +1851,47 @@ class AppModel with ChangeNotifier {
       maximumDictionaryTermsInResult: overrideMaximumTerms ?? maximumTerms,
       searchWithWildcards: searchWithWildcards,
       enabledDictionaryIds: [],
-      sendPort: receivePort.sendPort,
+      sendPort: _searchLogPort.sendPort,
     );
 
     if (params.searchTerm.trim().isEmpty) {
       return DictionarySearchResult(searchTerm: searchTerm);
     }
 
-    /// Searching also persists the result in the database. This is useful for
-    /// dictionary search history, as well as allowing a result to be linked
-    /// to the actual data, rather than duplicating that data within the
-    /// database, which is not ideal for storage purposes.
-    _searchOperation =
-        cancelable.compute(targetLanguage.prepareSearchResults, params);
-    int? id = await _searchOperation?.value;
+    DictionarySearchReply? reply = await DictionarySearchWorker.instance.search(
+      function: language.prepareSearchResults,
+      params: params,
+      channel: channel,
+    );
 
-    if (id == null) {
+    /// A newer search on the same channel replaced this one.
+    if (reply == null) {
       return DictionarySearchResult(searchTerm: searchTerm);
     }
 
-    DictionarySearchResult? result =
-        _database.dictionarySearchResults.getSync(id);
+    DictionarySearchOutcome? outcome = reply.outcome;
+    DictionarySearchResult result = outcome == null
+        ? DictionarySearchResult(searchTerm: searchTerm)
+        : DictionarySearchResult(
+            searchTerm: outcome.searchTerm,
+            bestLength: outcome.bestLength,
+            headingIds: outcome.headingIds,
+          );
 
-    if (result != null && result.headingIds.isNotEmpty) {
-      _dictionarySearchCache['$searchTerm/$overrideMaximumTerms'] = result;
-      return result;
-    } else {
-      return DictionarySearchResult(searchTerm: searchTerm);
+    if (outcome != null) {
+      headingsOf(result);
+      result.pendingId = reply.persisted.then((id) {
+        result.id = id;
+        return id;
+      });
     }
+
+    _dictionarySearchCache[cacheKey] = result;
+    while (_dictionarySearchCache.length > _dictionarySearchCacheSize) {
+      _dictionarySearchCache.remove(_dictionarySearchCache.keys.first);
+    }
+
+    return result;
   }
 
   /// Check if a mapping with a certain name with a different order already
@@ -2037,20 +2163,37 @@ class AppModel with ChangeNotifier {
 
   /// Given a value and a model name, checks if there are cards that have a
   /// first field with a matching value.
-  Future<bool> checkForDuplicates(String key) async {
-    try {
-      final result = await methodChannel.invokeMethod(
-        'checkForDuplicates',
-        <String, dynamic>{
-          'models': duplicateCheckModels,
-          'key': key,
-        },
-      );
-      return result;
-    } catch (e) {
-      return false;
+  Future<bool> checkForDuplicates(String key) {
+    /// Several quick actions ask about the same term when a result shows, so
+    /// share one AnkiDroid query per term for a few seconds.
+    DateTime now = DateTime.now();
+    MapEntry<DateTime, Future<bool>>? recent = _duplicateChecks[key];
+    if (recent != null && now.difference(recent.key).inSeconds < 3) {
+      return recent.value;
     }
+    if (_duplicateChecks.length > 64) {
+      _duplicateChecks.clear();
+    }
+
+    Future<bool> check = () async {
+      try {
+        final result = await methodChannel.invokeMethod(
+          'checkForDuplicates',
+          <String, dynamic>{
+            'models': duplicateCheckModels,
+            'key': key,
+          },
+        );
+        return result == true;
+      } catch (e) {
+        return false;
+      }
+    }();
+    _duplicateChecks[key] = MapEntry(now, check);
+    return check;
   }
+
+  final Map<String, MapEntry<DateTime, Future<bool>>> _duplicateChecks = {};
 
   /// Add a note with certain [creatorFieldValues] and a [mapping] of fields to
   /// a model to a given [deck].
@@ -2142,6 +2285,8 @@ class AppModel with ChangeNotifier {
         gravity: ToastGravity.BOTTOM,
       );
 
+      /// A new card changes which terms count as duplicates.
+      _duplicateChecks.clear();
       onSuccess.call();
     } on PlatformException {
       debugPrint('Failed to add note');
@@ -2511,6 +2656,7 @@ class AppModel with ChangeNotifier {
     _currentMediaItem = null;
     _overrideDictionaryColor = null;
     _overrideDictionaryTheme = null;
+    _sessionLanguage = null;
     blockCreatorInitialMedia = false;
     isProcessingEmbeddedSubtitles = false;
     await Wakelock.disable();
@@ -3541,18 +3687,24 @@ class AppModel with ChangeNotifier {
       }
     }
 
-    if (result.headings.isEmpty || result.searchTerm.isEmpty) {
+    if (result.headingIds.isEmpty || result.searchTerm.isEmpty) {
+      return;
+    }
+
+    /// A fresh result is still being stored; wait for its id.
+    int? id = result.id ?? await result.pendingId;
+    if (id == null) {
       return;
     }
 
     _dictionaryHistory.deleteAll(_dictionaryHistory
         .toMap()
         .entries
-        .where((e) => e.value == result.id)
+        .where((e) => e.value == id)
         .map((e) => e.key)
         .toList());
 
-    await _dictionaryHistory.add(result.id!);
+    await _dictionaryHistory.add(id);
 
     int countInSameHistory = _dictionaryHistory.length;
 

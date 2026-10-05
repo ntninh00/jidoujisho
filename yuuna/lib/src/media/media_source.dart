@@ -475,8 +475,9 @@ abstract class MediaSource {
     throw UnimplementedError();
   }
 
-  /// Used to override the search bar if needed by a source that implements search.
-  BaseMediaSearchBar? buildBar() {
+  /// Used to override the search bar if needed by a source, for example one
+  /// that implements search or needs its own actions.
+  Widget? buildBar() {
     return null;
   }
 

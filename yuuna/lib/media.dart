@@ -1,4 +1,5 @@
 export 'src/media/media_item.dart';
+export 'src/media/reader_memo.dart';
 export 'src/media/media_source.dart';
 export 'src/media/media_type.dart';
 
@@ -16,6 +17,7 @@ export 'src/media/sources/player_network_stream_source.dart';
 export 'src/media/sources/player_youtube_source.dart';
 export 'src/media/sources/player_youtube_source_util.dart';
 export 'src/media/sources/reader_ttu_source.dart';
+export 'src/media/sources/ttu_library.dart';
 export 'src/media/sources/reader_browser_source.dart';
 export 'src/media/sources/reader_lyrics_source.dart';
 export 'src/media/sources/reader_clipboard_source.dart';

@@ -34,7 +34,7 @@ abstract class BaseMediaSearchBarState<T extends BaseMediaSearchBar>
       onSubmitted: onSubmitted,
       onQueryChanged: onQueryChanged,
       builder: buildFloatingSearchBody,
-      borderRadius: BorderRadius.zero,
+      borderRadius: BorderRadius.circular(24),
       elevation: 0,
       backgroundColor: appModel.isDarkMode
           ? const Color.fromARGB(255, 30, 30, 30)
