@@ -1038,10 +1038,54 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         ),
         menuItems: [
           copyMenuItem(),
+          searchMenuItem(),
           memoMenuItem(),
           addWordMenuItem(),
         ],
       );
+
+  ContextMenuItem searchMenuItem() {
+    return ContextMenuItem(
+      id: 1,
+      title: t.search,
+      action: searchMenuAction,
+    );
+  }
+
+  /// Looks the selected text up as one phrase, which a tap cannot do. The
+  /// popup opens on the other half of the screen from the selection.
+  void searchMenuAction() async {
+    String phrase = await getSelectedText();
+    if (phrase.isEmpty || !mounted) {
+      return;
+    }
+    Object? middle = await _controller?.evaluateJavascript(
+      source: '(function () { var s = getSelection();'
+          ' if (!s.rangeCount) { return null; }'
+          ' var r = s.getRangeAt(0).getBoundingClientRect();'
+          ' return [r.left + r.width / 2, r.top + r.height / 2,'
+          ' innerWidth, innerHeight]; })()',
+    );
+    if (!mounted) {
+      return;
+    }
+    JidoujishoPopupPosition position = JidoujishoPopupPosition.bottomHalf;
+    if (middle is List && middle.length == 4) {
+      List<double> values =
+          middle.map((value) => (value as num).toDouble()).toList();
+      bool portrait =
+          MediaQuery.of(context).orientation == Orientation.portrait;
+      position = portrait
+          ? (values[1] < values[3] / 2
+              ? JidoujishoPopupPosition.bottomHalf
+              : JidoujishoPopupPosition.topHalf)
+          : (values[0] < values[2] / 2
+              ? JidoujishoPopupPosition.rightHalf
+              : JidoujishoPopupPosition.leftHalf);
+    }
+    _lookupSerial++;
+    await searchDictionaryResult(searchTerm: phrase, position: position);
+  }
 
   ContextMenuItem copyMenuItem() {
     return ContextMenuItem(

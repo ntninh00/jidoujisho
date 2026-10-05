@@ -347,12 +347,98 @@
     if (word || flashState) {
       redraw();
     }
+    if (selectionShown) {
+      queueSelection();
+    }
   }, { capture: true, passive: true });
   window.addEventListener('resize', function () {
     if (word || flashState) {
       redraw();
     }
+    if (selectionShown) {
+      queueSelection();
+    }
   }, { passive: true });
+
+  /* ---------- rounded text selection ---------- */
+
+  /*
+   * A long-press selection is drawn the same way as the lookup highlight:
+   * the browser's own selection colour is made transparent and rounded
+   * boxes are drawn behind the selected text. The selection handles stay.
+   */
+  var SELECTION_FILL = 'rgba(255,0,0,0.42)';
+  var selectionShown = false;
+  var selectionQueued = false;
+
+  /* One range per selected text node, furigana left out. Walks only from the
+   * start of the selection to its end. */
+  function selectedPieces(range) {
+    var root = range.commonAncestorContainer;
+    if (root.nodeType === Node.TEXT_NODE) {
+      return isAnnotation(root) ? [] : [range];
+    }
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (n) {
+        return isAnnotation(n) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    var start = range.startContainer;
+    if (start.nodeType !== Node.TEXT_NODE) {
+      start = start.childNodes[range.startOffset] || start;
+    }
+    walker.currentNode = start;
+    var node = start.nodeType === Node.TEXT_NODE && !isAnnotation(start) ? start : walker.nextNode();
+    var pieces = [];
+    while (node) {
+      if (range.comparePoint(node, 0) > 0) {
+        break;
+      }
+      if (range.intersectsNode(node)) {
+        var r = document.createRange();
+        r.setStart(node, node === range.startContainer ? range.startOffset : 0);
+        r.setEnd(node, node === range.endContainer ? range.endOffset : node.textContent.length);
+        if (!r.collapsed) {
+          pieces.push(r);
+        }
+      }
+      node = walker.nextNode();
+    }
+    return pieces;
+  }
+
+  function drawSelection() {
+    selectionQueued = false;
+    var target = document.getElementById('jdj-selection-layer');
+    var selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      if (target) {
+        target.innerHTML = '';
+      }
+      selectionShown = false;
+      return;
+    }
+    if (!canDrawBehind()) {
+      document.documentElement.classList.remove('jdj-round-selection');
+      return;
+    }
+    document.documentElement.classList.add('jdj-round-selection');
+    var pieces = [];
+    for (var i = 0; i < selection.rangeCount; i++) {
+      pieces = pieces.concat(selectedPieces(selection.getRangeAt(i)));
+    }
+    drawBoxes(layer('jdj-selection-layer', -1), pieces, SELECTION_FILL, bookIsVertical());
+    selectionShown = true;
+  }
+
+  function queueSelection() {
+    if (!selectionQueued) {
+      selectionQueued = true;
+      requestAnimationFrame(drawSelection);
+    }
+  }
+
+  document.addEventListener('selectionchange', queueSelection);
 
   /* Highlights [start, start + length) of the last tapped paragraph. */
   jdj.highlight = function (start, length, wordMode) {
@@ -687,10 +773,12 @@
     return run();
   };
 
-  /* Selection colours and unselectable furigana, as before. */
+  /* Unselectable furigana, and selection colours: drawn as rounded boxes
+   * where possible, the browser's own square selection otherwise. */
   var style = document.createElement('style');
   style.textContent =
     'rt,rp{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
-    '::selection{color:white;background:rgba(255,0,0,0.6)}';
+    '::selection{color:white;background:rgba(255,0,0,0.6)}' +
+    'html.jdj-round-selection ::selection{color:inherit;background:transparent}';
   (document.head || document.documentElement).appendChild(style);
 })();
