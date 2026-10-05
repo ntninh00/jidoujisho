@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 538
+/// Strings: 539
 ///
-/// Built on 2026-10-05 at 20:43 UTC
+/// Built on 2026-10-05 at 23:06 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -682,6 +682,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get file_access_info => 'Needed to open videos and manga from folders on your phone. Photos, videos and audio is enough to play videos; All files also finds subtitle files next to them. Books and dictionaries never need this.';
 	String get file_access_info_short => 'Needed to open videos and manga from folders on your phone. Books and dictionaries never need this.';
 	String get file_access_denied => 'Files can\'t be opened without access. You can allow it in Android settings.';
+	String ttu_language_changed({required Object language}) => 'Words in this book are now looked up in ${language}';
 }
 
 // Path: retrying_in
@@ -1258,6 +1259,7 @@ extension on _StringsEn {
 			case 'file_access_info': return 'Needed to open videos and manga from folders on your phone. Photos, videos and audio is enough to play videos; All files also finds subtitle files next to them. Books and dictionaries never need this.';
 			case 'file_access_info_short': return 'Needed to open videos and manga from folders on your phone. Books and dictionaries never need this.';
 			case 'file_access_denied': return 'Files can\'t be opened without access. You can allow it in Android settings.';
+			case 'ttu_language_changed': return ({required Object language}) => 'Words in this book are now looked up in ${language}';
 			default: return null;
 		}
 	}

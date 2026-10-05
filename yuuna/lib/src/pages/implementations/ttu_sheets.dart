@@ -972,11 +972,15 @@ class TtuBookDetailsSheet extends BasePage {
     required this.onMemos,
     required this.onEdit,
     required this.onDelete,
+    this.onLanguage,
     super.key,
   });
 
   /// The book shown.
   final TtuBook book;
+
+  /// Changes the language the book's words are looked up in.
+  final ValueChanged<Language>? onLanguage;
 
   /// How many memos the book has.
   final int memoCount;
@@ -999,13 +1003,57 @@ class TtuBookDetailsSheet extends BasePage {
 }
 
 class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
+  late Language _language = widget.book.language;
+
+  /// Switches to the next shelf language. With two languages, a tap swaps.
+  void _nextLanguage() {
+    List<Language> languages = ReaderTtuSource.instance.shelfLanguages;
+    Language next =
+        languages[(languages.indexOf(_language) + 1) % languages.length];
+    setState(() => _language = next);
+    widget.onLanguage?.call(next);
+  }
+
   Widget _stat({
     required String label,
     required String value,
     required String detail,
     double? meter,
+    VoidCallback? onTap,
   }) {
     Color muted = theme.unselectedWidgetColor;
+    Widget tile = _statBody(
+      label: label,
+      value: value,
+      detail: detail,
+      meter: meter,
+      muted: muted,
+      trailing: onTap == null
+          ? null
+          : Icon(Ui.translate, size: 18, color: theme.colorScheme.primary),
+    );
+    if (onTap == null) {
+      return tile;
+    }
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(ttuCardRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(ttuCardRadius),
+        onTap: onTap,
+        child: tile,
+      ),
+    );
+  }
+
+  Widget _statBody({
+    required String label,
+    required String value,
+    required String detail,
+    required Color muted,
+    double? meter,
+    Widget? trailing,
+  }) {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
@@ -1017,11 +1065,19 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label, style: textTheme.labelSmall!.copyWith(color: muted)),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleMedium!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              if (trailing != null) trailing,
+            ],
           ),
           if (meter == null)
             Text(
@@ -1151,8 +1207,9 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               ),
               _stat(
                 label: t.ttu_language,
-                value: book.language.languageName,
+                value: _language.languageName,
                 detail: '',
+                onTap: widget.onLanguage == null ? null : _nextLanguage,
               ),
             ],
           ),

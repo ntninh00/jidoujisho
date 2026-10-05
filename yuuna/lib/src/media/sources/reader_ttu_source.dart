@@ -45,7 +45,10 @@ final ttuShelfProvider = FutureProvider<List<TtuBook>>((ref) async {
     }),
   );
 
-  List<TtuBook> books = perLanguage.expand((books) => books).toList()
+  List<TtuBook> books = perLanguage.expand((books) => books).map((book) {
+    Language? chosen = source.chosenLanguageFor(book.key);
+    return chosen == null ? book : book.withLanguage(chosen);
+  }).toList()
     ..sort((a, b) => b.lastBookOpen.compareTo(a.lastBookOpen));
   return books;
 });
@@ -91,11 +94,45 @@ class ReaderTtuSource extends ReaderMediaSource {
         EnglishLanguage.instance,
       ];
 
-  /// The language whose copy of ッツ serves [url], if any.
+  /// The language words are looked up in for the page at [url]: the one the
+  /// user chose for the book, or else that of the copy of ッツ serving it.
   Language? languageForUrl(String url) {
-    int? port = Uri.tryParse(url)?.port;
+    Uri? uri = Uri.tryParse(url);
+    int? port = uri?.port;
+    String? id = uri?.queryParameters['id'];
+    if (port != null && id != null) {
+      Language? chosen = chosenLanguageFor('$port/$id');
+      if (chosen != null) {
+        return chosen;
+      }
+    }
     return shelfLanguages
         .firstWhereOrNull((language) => getPortForLanguage(language) == port);
+  }
+
+  /// The language the user chose for the book with [bookKey], if they
+  /// changed it from the one it was added with.
+  Language? chosenLanguageFor(String bookKey) {
+    String? code = getPreference<String?>(
+      key: 'book_language_$bookKey',
+      defaultValue: null,
+    );
+    if (code == null) {
+      return null;
+    }
+    return shelfLanguages
+        .firstWhereOrNull((language) => language.languageCode == code);
+  }
+
+  /// Looks words in [book] up in [language] from now on. The book stays in
+  /// the copy of ッツ it was added to; only the language changes.
+  Future<void> setBookLanguage(TtuBook book, Language language) async {
+    Language? stored = shelfLanguages.firstWhereOrNull(
+        (candidate) => getPortForLanguage(candidate) == book.port);
+    await setPreference<String?>(
+      key: 'book_language_${book.key}',
+      value: language == stored ? null : language.languageCode,
+    );
   }
 
   /// Errors from the last read of the shelf, per language.
@@ -396,6 +433,10 @@ class ReaderTtuSource extends ReaderMediaSource {
       try {
         await TtuLibrary.deleteBooks(port: book.port, ids: [book.id]);
         await appModel.deleteReaderMemosOfBook(book.key);
+        await setPreference<String?>(
+          key: 'book_language_${book.key}',
+          value: null,
+        );
         await clearOverrideValues(appModel: appModel, item: book.toMediaItem());
         String? coverPath = book.coverPath;
         if (coverPath != null && File(coverPath).existsSync()) {

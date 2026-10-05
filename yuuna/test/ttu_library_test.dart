@@ -1,9 +1,68 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:archive/archive_io.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
 
+/// Writes a small EPUB with [opfMetadata] in its package file and
+/// [paragraph] repeated through one chapter.
+String writeEpub(String opfMetadata, String paragraph) {
+  Archive archive = Archive();
+  void add(String name, String text) {
+    List<int> bytes = utf8.encode(text);
+    archive.addFile(ArchiveFile(name, bytes.length, bytes));
+  }
+
+  add('mimetype', 'application/epub+zip');
+  add('META-INF/container.xml',
+      '<container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>');
+  add('OEBPS/content.opf',
+      '<package><metadata xmlns:dc="http://purl.org/dc/elements/1.1/">$opfMetadata</metadata></package>');
+  add('OEBPS/ch1.xhtml',
+      '<html><body>${List.filled(40, '<p>$paragraph</p>').join()}</body></html>');
+  String path =
+      '${Directory.systemTemp.createTempSync('jdj_epub_').path}/book.epub';
+  File(path).writeAsBytesSync(ZipEncoder().encode(archive)!);
+  return path;
+}
+
 void main() {
+  const String english =
+      'Data is at the center of many challenges in system design today.';
+  const String japanese = '吾輩は猫である。名前はまだ無い。どこで生れたかとんと見当がつかぬ。';
+
+  test('three-letter language codes such as eng are understood', () async {
+    String path = writeEpub(
+        '<dc:language id="pub-language">eng</dc:language>', english);
+    expect(await TtuLibrary.detectLanguageCode(path), 'en');
+  });
+
+  test('a book without a language tag is told by its text', () async {
+    expect(await TtuLibrary.detectLanguageCode(writeEpub('', english)), 'en');
+    expect(await TtuLibrary.detectLanguageCode(writeEpub('', japanese)), 'ja');
+  });
+
+  test('Japanese text wins over a wrong tag', () async {
+    String path = writeEpub('<dc:language>en</dc:language>', japanese);
+    expect(await TtuLibrary.detectLanguageCode(path), 'ja');
+  });
+
+  test('a declared language other than Japanese is kept for Latin text',
+      () async {
+    String path = writeEpub('<opf:language>fr-FR</opf:language>', english);
+    expect(await TtuLibrary.detectLanguageCode(path), 'fr');
+  });
+
+  test('the book from the user, if present, reads as English', () async {
+    File file = File(Platform.environment['JDJ_SAMPLE_EPUB'] ?? '');
+    if (!file.existsSync()) {
+      return;
+    }
+    expect(await TtuLibrary.detectLanguageCode(file.path), 'en');
+  });
   TtuBook book() => TtuBook(
         language: JapaneseLanguage.instance,
         port: 52159,

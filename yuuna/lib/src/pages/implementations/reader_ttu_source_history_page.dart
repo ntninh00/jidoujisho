@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
@@ -90,6 +91,15 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
         onDelete: () {
           Navigator.pop(sheetContext);
           _delete(book);
+        },
+        onLanguage: (language) async {
+          await mediaSource.setBookLanguage(book, language);
+          Fluttertoast.showToast(
+            msg: t.ttu_language_changed(language: language.languageName),
+          );
+          if (mounted) {
+            ref.invalidate(ttuShelfProvider);
+          }
         },
       ),
     );

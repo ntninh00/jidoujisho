@@ -28,7 +28,8 @@ class TtuBook {
     required this.coverPath,
   });
 
-  /// The language whose copy of ッツ stores this book.
+  /// The language words in this book are looked up in. This is the language
+  /// of the copy of ッツ that stores it, unless the user chose another.
   final Language language;
 
   /// Port of the local ッツ server for [language].
@@ -60,6 +61,22 @@ class TtuBook {
 
   /// Identifies the book across both languages.
   String get key => '$port/$id';
+
+  /// The same book, looked up in [language].
+  TtuBook withLanguage(Language language) {
+    return TtuBook(
+      language: language,
+      port: port,
+      id: id,
+      title: title,
+      characters: characters,
+      lastBookOpen: lastBookOpen,
+      lastBookModified: lastBookModified,
+      exploredCharCount: exploredCharCount,
+      progress: progress,
+      coverPath: coverPath,
+    );
+  }
 
   /// Characters in the book, worked out from the position when ッツ did not
   /// record a count.
@@ -529,27 +546,36 @@ Future<String?> _detectLanguageCode(String filePath) async {
         container.content as List<int>,
         allowMalformed: true,
       );
-      String? opfPath = RegExp('full-path="([^"]+)"').firstMatch(xml)?.group(1);
+      String? opfPath =
+          RegExp('full-path=["\']([^"\']+)["\']').firstMatch(xml)?.group(1);
       if (opfPath != null) {
         opf = archive.findFile(opfPath);
       }
     }
     opf ??= archive.files
         .firstWhereOrNull((file) => file.name.toLowerCase().endsWith('.opf'));
-    if (opf == null) {
-      return null;
-    }
 
-    String text = utf8.decode(opf.content as List<int>, allowMalformed: true);
-    String? code =
-        RegExp('<dc:language[^>]*>\\s*([A-Za-z-]+)').firstMatch(text)?.group(1);
-    if (code != null) {
-      return code.toLowerCase().split('-').first;
+    String metadata = opf == null
+        ? ''
+        : utf8.decode(opf.content as List<int>, allowMalformed: true);
+    String? declared = _declaredLanguage(metadata);
+    String? script = _scriptOfText(archive);
+
+    /// The text decides when it is clear: some books are tagged with the
+    /// wrong language, or with none.
+    if (script == 'ja') {
+      return 'ja';
+    }
+    if (script == 'latin') {
+      return declared != null && declared != 'ja' ? declared : 'en';
+    }
+    if (declared != null) {
+      return declared;
     }
 
     String title =
-        RegExp('<dc:title[^>]*>([^<]*)').firstMatch(text)?.group(1) ?? '';
-    if (RegExp('[぀-ヿ一-鿿]').hasMatch(title)) {
+        RegExp('<dc:title[^>]*>([^<]*)').firstMatch(metadata)?.group(1) ?? '';
+    if (RegExp('[\u3040-\u30ff\u4e00-\u9fff]').hasMatch(title)) {
       return 'ja';
     }
     return null;
@@ -558,4 +584,82 @@ Future<String?> _detectLanguageCode(String filePath) async {
   } finally {
     await input?.close();
   }
+}
+
+/// Three-letter codes some publishers use, such as O'Reilly's `eng`.
+const Map<String, String> _threeLetterCodes = {
+  'eng': 'en',
+  'jpn': 'ja',
+  'fre': 'fr',
+  'fra': 'fr',
+  'ger': 'de',
+  'deu': 'de',
+  'spa': 'es',
+  'chi': 'zh',
+  'zho': 'zh',
+  'kor': 'ko',
+};
+
+/// The language the package metadata declares, as a two-letter code. Reads
+/// `<dc:language>` with any or no prefix, then `dcterms:language`.
+String? _declaredLanguage(String metadata) {
+  List<RegExp> patterns = [
+    RegExp(r'<(?:[\w-]+:)?language\b[^>]*>\s*([A-Za-z]{2,3})\b',
+        caseSensitive: false),
+    RegExp('property=["\']dcterms:language["\'][^>]*>\\s*([A-Za-z]{2,3})\\b',
+        caseSensitive: false),
+  ];
+  for (RegExp pattern in patterns) {
+    for (RegExpMatch match in pattern.allMatches(metadata)) {
+      String code = match.group(1)!.toLowerCase();
+      code = _threeLetterCodes[code] ?? code;
+      if (code.length == 2 && code != 'un') {
+        return code;
+      }
+    }
+  }
+  return null;
+}
+
+/// Whether the book's text is mostly Japanese or mostly Latin letters, from
+/// its three largest pages. Null when there is too little text to tell, as
+/// in a picture book.
+String? _scriptOfText(Archive archive) {
+  List<ArchiveFile> pages = archive.files.where((file) {
+    String name = file.name.toLowerCase();
+    return file.isFile &&
+        (name.endsWith('.xhtml') ||
+            name.endsWith('.html') ||
+            name.endsWith('.htm'));
+  }).toList()
+    ..sort((a, b) => b.size.compareTo(a.size));
+
+  int japanese = 0;
+  int latin = 0;
+  RegExp tags = RegExp('<[^>]*>');
+  RegExp japaneseCharacters = RegExp('[\u3040-\u30ff\u4e00-\u9fff]');
+  RegExp latinLetters = RegExp('[A-Za-z]');
+  for (ArchiveFile page in pages.take(3)) {
+    List<int> bytes = page.content as List<int>;
+    String html = utf8.decode(
+      bytes.length > 200000 ? bytes.sublist(0, 200000) : bytes,
+      allowMalformed: true,
+    );
+    String text = html
+        .replaceAll(RegExp(r'<(script|style)[^>]*>.*?</\1>', dotAll: true), '')
+        .replaceAll(tags, ' ');
+    japanese += japaneseCharacters.allMatches(text).length;
+    latin += latinLetters.allMatches(text).length;
+  }
+
+  if (japanese + latin < 200) {
+    return null;
+  }
+
+  /// One Japanese character carries about as much as a short Latin word, so
+  /// a quarter of the letters is plenty to call a book Japanese.
+  if (japanese / (japanese + latin) > 0.25) {
+    return 'ja';
+  }
+  return 'latin';
 }

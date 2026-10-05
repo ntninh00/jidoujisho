@@ -570,5 +570,6 @@
     "file_access_not_now": "Not now",
     "file_access_info": "Needed to open videos and manga from folders on your phone. Photos, videos and audio is enough to play videos; All files also finds subtitle files next to them. Books and dictionaries never need this.",
     "file_access_info_short": "Needed to open videos and manga from folders on your phone. Books and dictionaries never need this.",
-    "file_access_denied": "Files can't be opened without access. You can allow it in Android settings."
+    "file_access_denied": "Files can't be opened without access. You can allow it in Android settings.",
+    "ttu_language_changed": "Words in this book are now looked up in $language"
 }
