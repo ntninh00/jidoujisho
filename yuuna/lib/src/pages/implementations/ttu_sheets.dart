@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' show FontFeature;
 
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart' as intl;
@@ -1840,6 +1842,12 @@ class _TtuReaderSettingsSheetState
                   _toggle(source.toggleExtendPageBeyondNavigationBar),
             ),
           _switch(
+            title: t.ttu_memos_on_page,
+            info: t.ttu_memos_on_page_info,
+            value: source.showMemosOnPage,
+            onChanged: (_) => _toggle(source.toggleShowMemosOnPage),
+          ),
+          _switch(
             title: t.ttu_keep_screen_on,
             value: source.keepScreenOn,
             onChanged: (_) => _toggle(source.toggleKeepScreenOn),
@@ -2096,3 +2104,150 @@ final ttuMemosProvider = StreamProvider<List<ReaderMemo>>((ref) {
   AppModel appModel = ref.read(appProvider);
   return appModel.watchReaderMemos().map((_) => appModel.readerMemos);
 });
+
+/// Text with its web addresses as links that open in the browser.
+class TtuLinkedText extends StatefulWidget {
+  /// Show [text] with links.
+  const TtuLinkedText({
+    required this.text,
+    required this.style,
+    super.key,
+  });
+
+  /// The text, which may hold web addresses.
+  final String text;
+
+  /// Style for the plain text.
+  final TextStyle style;
+
+  @override
+  State<TtuLinkedText> createState() => _TtuLinkedTextState();
+}
+
+class _TtuLinkedTextState extends State<TtuLinkedText> {
+  static final RegExp _link = RegExp(r'(https?://[^\s]+|www\.[^\s]+)');
+  final List<TapGestureRecognizer> _recognizers = [];
+
+  @override
+  void dispose() {
+    for (TapGestureRecognizer recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    for (TapGestureRecognizer recognizer in _recognizers) {
+      recognizer.dispose();
+    }
+    _recognizers.clear();
+
+    TextStyle linkStyle = widget.style.copyWith(
+      color: Theme.of(context).colorScheme.primary,
+      decoration: TextDecoration.underline,
+    );
+    List<InlineSpan> spans = [];
+    int start = 0;
+    for (RegExpMatch match in _link.allMatches(widget.text)) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: widget.text.substring(start, match.start)));
+      }
+      String link = match.group(0)!.replaceAll(RegExp(r'[.,;:!?)\]」』]+$'), '');
+      TapGestureRecognizer recognizer = TapGestureRecognizer()
+        ..onTap = () => launchUrl(
+              Uri.parse(link.startsWith('http') ? link : 'https://$link'),
+              mode: LaunchMode.externalApplication,
+            );
+      _recognizers.add(recognizer);
+      spans.add(TextSpan(text: link, style: linkStyle, recognizer: recognizer));
+      start = match.start + link.length;
+    }
+    if (start < widget.text.length) {
+      spans.add(TextSpan(text: widget.text.substring(start)));
+    }
+    return Text.rich(TextSpan(style: widget.style, children: spans));
+  }
+}
+
+/// One memo in full, opened from its note on the page.
+class TtuMemoViewSheet extends StatelessWidget {
+  /// Show [memo] from [book].
+  const TtuMemoViewSheet({
+    required this.memo,
+    required this.book,
+    required this.onEdit,
+    super.key,
+  });
+
+  /// The memo shown.
+  final ReaderMemo memo;
+
+  /// The book it belongs to.
+  final TtuBook book;
+
+  /// Opens the memo editor.
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    Color muted = theme.unselectedWidgetColor;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const TtuSheetHandle(),
+            Row(
+              children: [
+                const Icon(Ui.memo, size: 20, color: Color(0xFFFFB300)),
+                const SizedBox(width: 10),
+                Text(
+                  '${t.ttu_memo} · ${ttuPercent(memo.progress)}',
+                  style: theme.textTheme.titleMedium!
+                      .copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: t.ttu_edit_memo,
+                  icon: Icon(Ui.edit, size: 20, color: muted),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onEdit();
+                  },
+                ),
+              ],
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(right: 8, top: 4, bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (memo.memo.isNotEmpty)
+                      TtuLinkedText(
+                        text: memo.memo,
+                        style: theme.textTheme.bodyLarge!.copyWith(height: 1.5),
+                      ),
+                    const SizedBox(height: 10),
+                    Text(
+                      ttuQuote(book.language, memo.excerpt),
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        color: muted,
+                        height: 1.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

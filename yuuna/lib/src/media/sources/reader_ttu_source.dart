@@ -717,6 +717,19 @@ class ReaderTtuSource extends ReaderMediaSource {
     await setPreference<bool>(key: 'ttu_full_screen', value: !fullScreen);
   }
 
+  /// Shows each memo's note on the page, above its passage.
+  bool get showMemosOnPage {
+    return getPreference<bool>(key: 'ttu_memos_on_page', defaultValue: true);
+  }
+
+  /// Toggles memo notes on the page.
+  void toggleShowMemosOnPage() async {
+    await setPreference<bool>(
+      key: 'ttu_memos_on_page',
+      value: !showMemosOnPage,
+    );
+  }
+
   /// Keeps the screen on while a book is open.
   bool get keepScreenOn {
     return getPreference<bool>(key: 'ttu_keep_screen_on', defaultValue: true);

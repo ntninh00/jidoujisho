@@ -88,6 +88,13 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   List<TtuChapter>? _chapters;
   int _bookCharacters = 0;
 
+  /// A position known to be on the page that is loading, which tells the
+  /// page which chapter it shows.
+  int _expectedPosition = -1;
+
+  /// Sends the book's memos to the page again whenever they change.
+  StreamSubscription<void>? _memoWatch;
+
   /// The place when the settings opened; the book reopens there.
   TtuPosition? _settingsAnchor;
   bool _settingsChanged = false;
@@ -104,6 +111,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         (_launch?.book.language ?? JapaneseLanguage.instance);
 
     TtuLaunch? launch = _launch;
+    _expectedPosition =
+        launch?.target?.characters ?? launch?.book.exploredCharCount ?? -1;
+    _memoWatch =
+        appModelNoUpdate.watchReaderMemos().listen((_) => _sendMemos());
     if (launch != null) {
       _maskVisible.value = true;
       _maskBuilt = true;
@@ -142,6 +153,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     WidgetsBinding.instance.removeObserver(this);
     _backChipTimer?.cancel();
     _layoutReload?.cancel();
+    _memoWatch?.cancel();
     _menuVisible.dispose();
     _maskVisible.dispose();
     _backChip.dispose();
@@ -703,6 +715,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _maskVisible.value = true;
     _flashPending = false;
     _chipPending = false;
+    _expectedPosition = position.characters;
     await controller.loadUrl(
       urlRequest: URLRequest(
         url: WebUri(TtuLaunch.jumpUrl(book: book, position: position)),
@@ -978,8 +991,85 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     await _reloadAt(book, position, _MaskKind.applying);
   }
 
+  /// Shows the book's memos as notes on the page, or none if that is off.
+  Future<void> _sendMemos() async {
+    InAppWebViewController? controller = _controller;
+    if (controller == null || !_isBookPage(await controller.getUrl())) {
+      return;
+    }
+    TtuBook? book = await _currentBook();
+    if (book == null) {
+      return;
+    }
+    List<Map<String, Object>> memos = !mediaSource.showMemosOnPage
+        ? const []
+        : appModel.readerMemos
+            .where((memo) => memo.bookKey == book.key)
+            .map((memo) => <String, Object>{
+                  'id': memo.id,
+                  'text': memo.memo,
+                  'excerpt': memo.excerpt,
+                  'characters': memo.exploredCharCount,
+                  'progress': memo.progress,
+                })
+            .toList();
+    await controller.evaluateJavascript(
+      source: 'window.__jdj && window.__jdj.showMemos('
+          '${jsonEncode(memos)}, $_expectedPosition);',
+    );
+  }
+
+  /// Opens a memo in full from its note on the page.
+  void _openMemo(int? id) async {
+    ReaderMemo? memo =
+        appModel.readerMemos.firstWhereOrNull((memo) => memo.id == id);
+    TtuBook? book = await _currentBook();
+    if (memo == null || book == null) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    if (isDictionaryShown) {
+      clearDictionaryResult();
+    }
+    _isRecursiveSearching = true;
+    await showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuMemoViewSheet(
+        memo: memo,
+        book: book,
+        onEdit: () => _editMemo(memo, book),
+      ),
+    );
+    _isRecursiveSearching = false;
+    _focusNode.requestFocus();
+  }
+
+  void _editMemo(ReaderMemo memo, TtuBook book) async {
+    _isRecursiveSearching = true;
+    String? text = await showTtuMemoEditor(
+      context: context,
+      book: book,
+      excerpt: memo.excerpt,
+      progress: memo.progress,
+      characters: memo.exploredCharCount,
+      initialMemo: memo.memo,
+      isNew: false,
+      onDelete: () => appModel.deleteReaderMemo(memo),
+    );
+    _isRecursiveSearching = false;
+    await appModel.applyMediaSystemUi();
+    if (text != null) {
+      memo.memo = text;
+      await appModel.putReaderMemo(memo);
+    }
+    _focusNode.requestFocus();
+  }
+
   /// A reading option changed from the settings over the book.
   void _onOptionsChanged() async {
+    _sendMemos();
     await appModel.applyMediaSystemUi();
     if (mediaSource.keepScreenOn) {
       await Wakelock.enable();
@@ -1125,6 +1215,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
               onLookup(Map<String, dynamic>.from(message));
             } else if (message is Map && message['type'] == 'menu') {
               _onMenuTap();
+            } else if (message is Map && message['type'] == 'memo') {
+              _openMemo((message['id'] as num?)?.toInt());
             }
             return null;
           },
@@ -1243,6 +1335,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (_keepPlace) {
       await _restorePlace();
     }
+    await _sendMemos();
     String? excerpt = launch?.excerpt;
     if (_flashPending && excerpt != null) {
       _flashPending = false;

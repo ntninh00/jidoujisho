@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 550
+/// Strings: 552
 ///
-/// Built on 2026-10-05 at 23:33 UTC
+/// Built on 2026-10-05 at 23:47 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -694,6 +694,8 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_chapters => 'Chapters';
 	String get ttu_no_chapters => 'This book has no chapter list';
 	String get ttu_applying => 'Applying settings';
+	String get ttu_memos_on_page => 'Show memos on the page';
+	String get ttu_memos_on_page_info => 'A short note above each memo\'s passage. Tap it to read the whole memo.';
 }
 
 // Path: retrying_in
@@ -1282,6 +1284,8 @@ extension on _StringsEn {
 			case 'ttu_chapters': return 'Chapters';
 			case 'ttu_no_chapters': return 'This book has no chapter list';
 			case 'ttu_applying': return 'Applying settings';
+			case 'ttu_memos_on_page': return 'Show memos on the page';
+			case 'ttu_memos_on_page_info': return 'A short note above each memo\'s passage. Tap it to read the whole memo.';
 			default: return null;
 		}
 	}

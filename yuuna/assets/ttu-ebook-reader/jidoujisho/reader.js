@@ -143,6 +143,12 @@
     if (!target || !target.closest) {
       return;
     }
+    /* A memo's note opens the whole memo in the app. */
+    var note = target.closest('.jdj-memo-note');
+    if (note) {
+      post({ type: 'memo', id: Number(note.getAttribute('data-memo')) });
+      return;
+    }
     /* The full-size viewer handles its own taps. */
     if (target.closest('#jdj-viewer')) {
       return;
@@ -817,6 +823,302 @@
     return run();
   };
 
+  /* ---------- memos on the page ---------- */
+
+  /*
+   * Each memo's quoted passage gets a soft amber mark behind the text, and a
+   * small note above it with the start of the memo. Tapping the note asks
+   * the app to show the whole memo. Only memos on screen are drawn.
+   */
+  var MEMO_FILL = 'rgba(255,193,7,0.26)';
+  var memoState = null;
+  var memosQueued = false;
+
+  /* The characters ッツ counts for its positions: letters, digits, kana and
+   * kanji, as in its own reader. */
+  var UNCOUNTED = /[^0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]+/gimu;
+  var COUNTED = /[0-9A-Z○◯々-〇〻ぁ-ゖゝ-ゞァ-ヺー０-９Ａ-Ｚｦ-ﾝ\p{Radical}\p{Unified_Ideograph}]/iu;
+
+  /* All book text with where each text node starts, in text and in ッツ's
+   * count, furigana left out. */
+  function indexBook(root) {
+    var nodes = textNodesOf(root);
+    var starts = [];
+    var counts = [];
+    var text = '';
+    var counted = 0;
+    for (var i = 0; i < nodes.length; i++) {
+      var content = nodes[i].textContent;
+      starts.push(text.length);
+      counts.push(counted);
+      text += content;
+      counted += content.replace(UNCOUNTED, '').length;
+    }
+    return { nodes: nodes, starts: starts, counts: counts, text: text };
+  }
+
+  /* The text offset where ッツ's count reaches [count]. */
+  function offsetOfCount(index, count) {
+    var lo = 0;
+    var hi = index.nodes.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (index.counts[mid] <= count) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    var content = index.nodes[lo] ? index.nodes[lo].textContent : '';
+    var counted = index.counts[lo] || 0;
+    for (var i = 0; i < content.length; i++) {
+      if (counted >= count) {
+        return index.starts[lo] + i;
+      }
+      if (COUNTED.test(content[i])) {
+        counted++;
+      }
+    }
+    return (index.starts[lo] || 0) + content.length;
+  }
+
+  function locateIn(index, offset) {
+    var lo = 0;
+    var hi = index.nodes.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (index.starts[mid] <= offset) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return { node: index.nodes[lo], offset: offset - index.starts[lo] };
+  }
+
+  /* One range per text node for [at, at + length) of the book text. */
+  function rangesIn(index, at, length) {
+    var a = locateIn(index, at);
+    var b = locateIn(index, at + length - 1);
+    return piecesBetween(index.nodes, a.node, a.offset, b.node, b.offset + 1);
+  }
+
+  /* The quoted passage as it appears in the book: its longest line, since a
+   * selection across paragraphs has line breaks the page text does not. */
+  function passageOf(excerpt) {
+    var lines = String(excerpt || '').split(/\n+/).map(function (line) {
+      return line.trim();
+    }).filter(function (line) {
+      return line.length > 0;
+    });
+    lines.sort(function (a, b) {
+      return b.length - a.length;
+    });
+    return lines[0] || '';
+  }
+
+  /*
+   * ッツ keeps only the current chapter in the page, while its positions
+   * count from the start of the book, and nothing in the page says which
+   * chapter it is. Chapters differ in length, so the chapter is the one
+   * whose stored length matches the page's; [hint], a position known to be
+   * in the page, settles ties.
+   */
+  function pageStartCount(index, hint) {
+    return jdj.chapters().then(function (book) {
+      var sections = (book && book.sections) || [];
+      if (!sections.length) {
+        return 0;
+      }
+      var last = index.nodes.length - 1;
+      var total = last < 0 ? 0 : index.counts[last] + index.nodes[last].textContent.replace(UNCOUNTED, '').length;
+      var root = document.querySelector('.book-content');
+      total += root ? root.querySelectorAll('img, image').length : 0;
+
+      /* A chapter alone, or with the sections nested under it. */
+      var blocks = [];
+      sections.forEach(function (section, i) {
+        blocks.push({ start: section.start, characters: section.characters });
+        if (!section.parent) {
+          var sum = section.characters;
+          for (var j = i + 1; j < sections.length && sections[j].parent; j++) {
+            sum += sections[j].characters;
+          }
+          if (sum !== section.characters) {
+            blocks.push({ start: section.start, characters: sum });
+          }
+        }
+      });
+      var tolerance = Math.max(5, total * 0.01);
+      var close = blocks.filter(function (block) {
+        return Math.abs(block.characters - total) <= tolerance;
+      });
+      if (!close.length) {
+        close = [blocks.reduce(function (a, b) {
+          return Math.abs(a.characters - total) <= Math.abs(b.characters - total) ? a : b;
+        })];
+      }
+      if (close.length > 1 && hint >= 0) {
+        var inside = close.filter(function (block) {
+          return hint >= block.start && hint < block.start + block.characters;
+        });
+        if (inside.length) {
+          return inside[0].start;
+        }
+      }
+      return close[0].start;
+    }).catch(function () {
+      return 0;
+    });
+  }
+
+  var lastMemos = null;
+  var lastHint = -1;
+
+  jdj.showMemos = function (memos, hint) {
+    lastMemos = memos || [];
+    lastHint = typeof hint === 'number' ? hint : -1;
+    var root = document.querySelector('.book-content');
+    if (!root) {
+      return Promise.resolve(0);
+    }
+    var index = indexBook(root);
+    return pageStartCount(index, lastHint).then(function (base) {
+      return placeMemos(index, base, lastMemos);
+    });
+  };
+
+  /* ッツ swaps in the next chapter as pages turn; place the memos again. */
+  var replaceTimer = null;
+  new MutationObserver(function (records) {
+    if (!lastMemos || !lastMemos.length) {
+      return;
+    }
+    var inBook = records.some(function (record) {
+      return record.target.closest && record.target.closest('.book-content');
+    });
+    if (!inBook) {
+      return;
+    }
+    clearTimeout(replaceTimer);
+    replaceTimer = setTimeout(function () {
+      jdj.showMemos(lastMemos, -1);
+    }, 300);
+  }).observe(document.body || document.documentElement, { childList: true, subtree: true });
+  function placeMemos(index, base, memos) {
+    var items = [];
+    (memos || []).forEach(function (memo) {
+      var passage = passageOf(memo.excerpt);
+      if (!passage) {
+        return;
+      }
+      /* The memo's place is the start of the page it was written on, so the
+       * passage is the first match from there; a little slack allows for
+       * pictures, which ッツ counts and the text does not. */
+      var from = memo.characters > 0
+        ? offsetOfCount(index, Math.max(0, memo.characters - base))
+        : Math.round((memo.progress || 0) * index.text.length);
+      var best = index.text.indexOf(passage, Math.max(0, from - 40));
+      if (best < 0) {
+        var distance = Infinity;
+        for (var at = index.text.indexOf(passage); at >= 0; at = index.text.indexOf(passage, at + 1)) {
+          if (Math.abs(at - from) < distance) {
+            best = at;
+            distance = Math.abs(at - from);
+          }
+        }
+      }
+      if (best >= 0) {
+        items.push({ id: memo.id, text: memo.text || '', ranges: rangesIn(index, best, passage.length) });
+      }
+    });
+    memoState = items.length ? { items: items } : null;
+    drawMemos();
+    return items.length;
+  }
+
+  function onScreen(rect) {
+    return rect.width && rect.right > 0 && rect.left < window.innerWidth &&
+      rect.bottom > 0 && rect.top < window.innerHeight;
+  }
+
+  function drawMemos() {
+    memosQueued = false;
+    var marks = layer('jdj-memo-marks', -1);
+    var notes = layer('jdj-memo-notes', 2147482000);
+    if (!memoState || !canDrawBehind()) {
+      marks.innerHTML = '';
+      notes.innerHTML = '';
+      return;
+    }
+    var vertical = bookIsVertical();
+    var shown = [];
+    memoState.items.forEach(function (item) {
+      var rects = [];
+      item.ranges.forEach(function (range) {
+        var list = range.getClientRects();
+        for (var i = 0; i < list.length; i++) {
+          if (onScreen(list[i])) {
+            rects.push(list[i]);
+          }
+        }
+      });
+      if (rects.length) {
+        shown.push({ item: item, rects: rects });
+      }
+    });
+
+    var html = '';
+    shown.forEach(function (entry) {
+      mergeRects(entry.rects, vertical).forEach(function (b) {
+        html += '<div style="position:absolute;left:' + b.left + 'px;top:' + b.top +
+          'px;width:' + (b.right - b.left) + 'px;height:' + (b.bottom - b.top) +
+          'px;border-radius:' + RADIUS + 'px;background:' + MEMO_FILL + '"></div>';
+      });
+    });
+    marks.innerHTML = html;
+
+    notes.innerHTML = '';
+    var page = getComputedStyle(document.body);
+    var root = document.querySelector('.book-content');
+    var ink = root ? getComputedStyle(root).color : page.color;
+    shown.forEach(function (entry) {
+      var first = entry.rects[0];
+      var note = document.createElement('div');
+      note.className = 'jdj-memo-note';
+      note.setAttribute('data-memo', String(entry.item.id));
+      note.textContent = entry.item.text || '…';
+      note.style.cssText =
+        'position:absolute;pointer-events:auto;cursor:pointer;box-sizing:border-box;' +
+        'font:500 11px/16px system-ui,sans-serif;white-space:nowrap;overflow:hidden;' +
+        'text-overflow:ellipsis;padding:0 7px;border-radius:8px;' +
+        'border:1px solid rgba(255,193,7,0.75);background:' + page.backgroundColor + ';' +
+        'color:' + ink + ';box-shadow:0 1px 4px rgba(0,0,0,0.25);';
+      if (vertical) {
+        note.style.writingMode = 'vertical-rl';
+        note.style.maxHeight = '40vh';
+        note.style.padding = '7px 0';
+        note.style.left = Math.min(window.innerWidth - 20, first.right + 2) + 'px';
+        note.style.top = Math.max(4, first.top) + 'px';
+      } else {
+        note.style.maxWidth = Math.min(260, window.innerWidth * 0.7) + 'px';
+        note.style.left = Math.max(4, Math.min(first.left, window.innerWidth - 120)) + 'px';
+        note.style.top = (first.top > 22 ? first.top - 18 : first.bottom + 2) + 'px';
+      }
+      notes.appendChild(note);
+    });
+  }
+
+  function queueMemos() {
+    if (memoState && !memosQueued) {
+      memosQueued = true;
+      requestAnimationFrame(drawMemos);
+    }
+  }
+
+  window.addEventListener('scroll', queueMemos, { capture: true, passive: true });
+  window.addEventListener('resize', queueMemos, { passive: true });
+
   /* ---------- chapters ---------- */
 
   /* The book's chapters as ッツ stored them, with its character count. */
@@ -839,6 +1141,7 @@
             sections: (book.sections || []).map(function (s) {
               return {
                 label: s.label || '',
+                reference: s.reference || '',
                 start: s.startCharacter || 0,
                 characters: s.characters || 0,
                 parent: s.parentChapter || null,
@@ -902,6 +1205,7 @@
     if (word || flashState) {
       redraw();
     }
+    queueMemos();
   };
 
   /* ッツ's own fonts, and fonts the user added in ッツ's settings. */
