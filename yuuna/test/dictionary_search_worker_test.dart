@@ -166,4 +166,31 @@ void main() {
     expect(reply!.outcome!.headingIds,
         contains(DictionaryHeading.hash(term: 'run', reading: '')));
   });
+
+  test('English matches whole words, not the start of a longer word',
+      () async {
+    isar.writeTxnSync(() {
+      Dictionary dictionary = isar.dictionarys.getSync(1)!;
+      DictionaryHeading heading = DictionaryHeading(term: 'boo');
+      isar.dictionaryHeadings.putSync(heading);
+      DictionaryEntry entry =
+          DictionaryEntry(definitions: ['to bellow'], popularity: 1);
+      entry.heading.value = heading;
+      entry.dictionary.value = dictionary;
+      isar.dictionaryEntrys.putSync(entry);
+    });
+
+    DictionarySearchReply? book = await DictionarySearchWorker.instance.search(
+      function: prepareSearchResultsEnglishLanguage,
+      params: params('book has been'),
+    );
+    expect(book!.outcome, isNull);
+
+    DictionarySearchReply? boo = await DictionarySearchWorker.instance.search(
+      function: prepareSearchResultsEnglishLanguage,
+      params: params('boo, she said'),
+    );
+    expect(boo!.outcome!.headingIds.first,
+        DictionaryHeading.hash(term: 'boo', reading: ''));
+  });
 }

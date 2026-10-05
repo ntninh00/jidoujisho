@@ -54,6 +54,8 @@ class EnglishLanguage extends Language {
   }
 }
 
+final RegExp _wordCharacter = RegExp('[a-zA-Z0-9]');
+
 /// Top-level function for use in compute. See [Language] for details.
 Future<DictionarySearchOutcome?> prepareSearchResultsEnglishLanguage(
     DictionarySearchParams params) async {
@@ -215,6 +217,14 @@ Future<DictionarySearchOutcome?> prepareSearchResultsEnglishLanguage(
           .replaceAll(RegExp('[^a-zA-Z -]'), '');
 
       if (partialTerm.endsWith(' ')) {
+        continue;
+      }
+
+      /// Only whole words count: "boo" is not a match for "book".
+      String covered = segments.sublist(0, segments.length - i).join();
+      bool endsAtWordBoundary = covered.length >= searchTerm.length ||
+          !_wordCharacter.hasMatch(searchTerm[covered.length]);
+      if (!endsAtWordBoundary) {
         continue;
       }
 
