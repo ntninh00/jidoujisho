@@ -215,6 +215,33 @@ void main() {
     expect(isar.dictionaryHeadings.getSync(mine), isNull);
   });
 
+  test('Latin text searched in Japanese finds English terms and romaji',
+      () async {
+    int entryId = MyWords.save(
+      isar,
+      term: 'SaaS',
+      meaning: 'software as a service',
+    );
+
+    DictionarySearchReply? saas = await DictionarySearchWorker.instance.search(
+      function: prepareSearchResultsLatinForJapanese,
+      params: params('SaaS'),
+    );
+    expect(saas!.outcome!.headingIds.first,
+        DictionaryHeading.hash(term: 'SaaS', reading: ''));
+
+    DictionarySearchReply? neko = await DictionarySearchWorker.instance.search(
+      function: prepareSearchResultsLatinForJapanese,
+      params: params('neko'),
+    );
+    expect(neko!.outcome!.headingIds.first,
+        DictionaryHeading.hash(term: '猫', reading: 'ねこ'));
+
+    expect(isLatinOnly('SaaS'), isTrue);
+    expect(isLatinOnly('SaaSとは'), isFalse);
+    MyWords.delete(isar, entryId);
+  });
+
   test('English matches whole words, not the start of a longer word',
       () async {
     isar.writeTxnSync(() {

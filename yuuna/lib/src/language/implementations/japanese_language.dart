@@ -276,8 +276,26 @@ class JapaneseLanguage extends Language {
   }
 }
 
-/// Top-level function for use in compute. See [Language] for details.
-/// Credits to Matthew Chan for their port of the Yomichan parser to Dart.
+/// Latin text in a Japanese search, such as SaaS typed in the Dictionary tab.
+/// It is looked up as English first, so English words and the user's own
+/// terms are found; if nothing matches, it is read as romaji instead.
+Future<DictionarySearchOutcome?> prepareSearchResultsLatinForJapanese(
+    DictionarySearchParams params) async {
+  DictionarySearchOutcome? english =
+      await prepareSearchResultsEnglishLanguage(params);
+  if (english != null) {
+    return english;
+  }
+  return prepareSearchResultsJapaneseLanguage(params);
+}
+
+/// Whether [text] is written only in Latin letters and symbols, with no
+/// kana or kanji.
+bool isLatinOnly(String text) {
+  return RegExp('[A-Za-z]').hasMatch(text) &&
+      !RegExp('[\u3040-\u30ff\u3400-\u9fff\uff66-\uff9f]').hasMatch(text);
+}
+
 /// Top-level function for use in compute. See [Language] for details.
 /// Credits to Matthew Chan for their port of the Yomichan parser to Dart.
 Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(

@@ -213,6 +213,9 @@ flutter:
     - family: UiconsSolid
       fonts:
         - asset: assets/fonts/uicons-solid-rounded.ttf
+    - family: NotoSansIPA
+      fonts:
+        - asset: assets/fonts/noto-sans-ipa.ttf
     - family: NotoSansJP
       fonts:
         - asset: assets/fonts/NotoSansJP-Regular.otf

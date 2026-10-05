@@ -86,6 +86,7 @@ class DictionaryHtmlWidget extends ConsumerWidget {
         '*': Style(
           fontSize: fontSize,
           color: textColor,
+          fontFamilyFallback: const [AppModel.ipaFontFamily],
         ),
         'td': tableStyle,
         'th': tableStyle,

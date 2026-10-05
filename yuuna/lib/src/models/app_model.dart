@@ -469,10 +469,18 @@ class AppModel with ChangeNotifier {
   /// Blocks creator from processing initial media while player controller is not ready.
   bool blockCreatorInitialMedia = false;
 
+  /// A small font with the IPA and accent characters dictionaries use.
+  static const String ipaFontFamily = 'NotoSansIPA';
+
   /// Get the app-wide text style. Follows the saved target language, not the
   /// language of the book that is open.
   TextStyle get textStyle => TextStyle(
         fontFamily: savedTargetLanguage.defaultFontFamily,
+
+        /// Pronunciations in English dictionaries use IPA marks such as ˈ and
+        /// ʃ, which the Japanese font lacks and some phones do not fall back
+        /// for.
+        fontFamilyFallback: const [ipaFontFamily],
         fontFeatures: const [FontFeature('liga', 0)],
         locale: savedTargetLanguage.locale,
         textBaseline: savedTargetLanguage.textBaseline,
@@ -1255,6 +1263,7 @@ class AppModel with ChangeNotifier {
     final packageNames = [
       'ebook-reader',
       'ipadic',
+      'noto-sans',
       've',
     ];
 
@@ -1930,8 +1939,13 @@ class AppModel with ChangeNotifier {
       return DictionarySearchResult(searchTerm: searchTerm);
     }
 
+    DictionarySearchFunction function = language.prepareSearchResults;
+    if (language is JapaneseLanguage && isLatinOnly(params.searchTerm)) {
+      function = prepareSearchResultsLatinForJapanese;
+    }
+
     DictionarySearchReply? reply = await DictionarySearchWorker.instance.search(
-      function: language.prepareSearchResults,
+      function: function,
       params: params,
       channel: channel,
     );
