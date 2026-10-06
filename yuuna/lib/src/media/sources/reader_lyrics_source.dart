@@ -273,7 +273,8 @@ kashi.children[0].children[0].innerText;
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.set_media,
-        enabledColor: isOverride ? Colors.red : null,
+        enabledColor:
+            isOverride ? Theme.of(context).colorScheme.primary : null,
         icon: Ui.audio_file,
         onTap: () {
           showSearchDialog(context: context);

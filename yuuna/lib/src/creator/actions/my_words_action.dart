@@ -29,7 +29,7 @@ class MyWordsAction extends QuickAction {
     required AppModel appModel,
     required DictionaryHeading heading,
   }) async {
-    return appModel.myWordFor(heading) != null ? Colors.red : null;
+    return appModel.myWordFor(heading) != null ? appModel.accentColor : null;
   }
 
   @override

@@ -414,4 +414,8 @@ class Ui {
       IconData(0xe647, fontFamily: _regular); // database
   static const IconData trash =
       IconData(0xf463, fontFamily: _regular); // trash
+  static const IconData palette =
+      IconData(0xee59, fontFamily: _regular); // palette
+  static const IconData themeAuto =
+      IconData(0xe485, fontFamily: _regular); // circle-half-stroke
 }

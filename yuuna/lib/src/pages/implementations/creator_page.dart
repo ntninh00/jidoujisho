@@ -1068,7 +1068,8 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
         return JidoujishoIconButton(
             tooltip: locked ? t.field_unlock : t.field_lock,
             size: textTheme.titleLarge?.fontSize,
-            enabledColor: locked ? Colors.red : null,
+            enabledColor:
+                locked ? Theme.of(context).colorScheme.primary : null,
             icon: locked ? Ui.lock : field.icon,
             onTap: () {
               creatorModel.toggleLock(field);
@@ -1159,7 +1160,7 @@ class _CreatorPageState extends BasePageState<CreatorPage> {
         return JidoujishoIconButton(
           size: Theme.of(context).textTheme.titleLarge?.fontSize,
           tooltip: t.close_on_export,
-          enabledColor: value ? Colors.red : null,
+          enabledColor: value ? Theme.of(context).colorScheme.primary : null,
           icon: Ui.exit_to_app,
           onTap: () {
             appModel.toggleCloseCreatorOnExport();

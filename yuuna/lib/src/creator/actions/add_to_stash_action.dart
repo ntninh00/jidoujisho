@@ -27,7 +27,7 @@ class AddToStashAction extends QuickAction {
     required DictionaryHeading heading,
   }) async {
     if (appModel.isTermInStash(heading.term)) {
-      return Colors.red;
+      return appModel.accentColor;
     } else {
       return null;
     }

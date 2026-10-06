@@ -376,7 +376,9 @@ class _ManipulatingBallState extends State<ManipulatingBall> {
             width: ballDiameter,
             height: ballDiameter,
             decoration: BoxDecoration(
-              color: visible ? Colors.red.withOpacity(0.5) : Colors.transparent,
+              color: visible
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                  : Colors.transparent,
               shape: BoxShape.circle,
             ),
           ),

@@ -220,7 +220,7 @@ class ReaderWebsocketSource extends ReaderMediaSource {
       child: JidoujishoIconButton(
         size: Theme.of(context).textTheme.titleLarge?.fontSize,
         tooltip: t.connect_disconnect,
-        enabledColor: isActive ? Colors.red : null,
+        enabledColor: isActive ? Theme.of(context).colorScheme.primary : null,
         icon: Ui.leak_add,
         onTap: () {
           showConnectDialog(

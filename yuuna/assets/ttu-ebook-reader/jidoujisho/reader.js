@@ -15,6 +15,12 @@
 
   var jdj = (window.__jdj = {});
 
+  /* The app's accent as "r, g, b", set by the app before this script. */
+  var ACCENT = window.__jdjAccent || '244, 67, 54';
+  function accent(alpha) {
+    return 'rgba(' + ACCENT + ', ' + alpha + ')';
+  }
+
   /* How far outside a character's box a tap still counts, in CSS pixels. */
   var SLOP = 4;
 
@@ -232,7 +238,7 @@
    * the page paints its own background over that layer, the CSS highlight
    * API is used instead, which has square corners.
    */
-  var HIGHLIGHT_FILL = 'rgba(255,0,0,0.6)';
+  var HIGHLIGHT_FILL = accent(0.6);
   var RADIUS = 4;
   var PAD = 2;
   var hasHighlightApi = !!(window.CSS && CSS.highlights && typeof Highlight !== 'undefined');
@@ -390,7 +396,7 @@
    * the browser's own selection colour is made transparent and rounded
    * boxes are drawn behind the selected text. The selection handles stay.
    */
-  var SELECTION_FILL = 'rgba(255,0,0,0.42)';
+  var SELECTION_FILL = accent(0.42);
   var selectionShown = false;
   var selectionQueued = false;
 
@@ -724,7 +730,7 @@
       style.id = FLASH_STYLE_ID;
       document.head.appendChild(style);
     }
-    style.textContent = '::highlight(jdj-flash){background-color:rgba(244,67,54,' + alpha + ');}';
+    style.textContent = '::highlight(jdj-flash){background-color:' + accent(alpha) + ';}';
   }
 
   function visible(range) {
@@ -798,7 +804,7 @@
         var target = layer('jdj-flash-layer', -1);
         target.style.transition = 'none';
         target.style.opacity = '1';
-        flashState = { layer: target, ranges: [range], fill: 'rgba(244,67,54,0.34)', vertical: bookIsVertical() };
+        flashState = { layer: target, ranges: [range], fill: accent(0.34), vertical: bookIsVertical() };
         drawBoxes(target, flashState.ranges, flashState.fill, flashState.vertical);
         return sleep(900).then(function () {
           target.style.transition = 'opacity 700ms ease-out';
@@ -1288,7 +1294,7 @@
   var style = document.createElement('style');
   style.textContent =
     'rt,rp{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
-    '::selection{color:white;background:rgba(255,0,0,0.6)}' +
+    '::selection{color:white;background:' + accent(0.6) + '}' +
     'html.jdj-round-selection ::selection{color:inherit;background:transparent}';
   (document.head || document.documentElement).appendChild(style);
 })();

@@ -371,7 +371,7 @@ class _PlayerTranscriptPageState
       builder: (context, value, __) {
         return JidoujishoIconButton(
           tooltip: t.search,
-          enabledColor: value ? Colors.red : null,
+          enabledColor: value ? theme.colorScheme.primary : null,
           icon: Ui.search,
           onTap: () async {
             bool newValue = !_searchNotifier.value;
@@ -396,7 +396,9 @@ class _PlayerTranscriptPageState
       notifier: _playerModeNotifier,
       builder: (context, _, __) {
         return JidoujishoIconButton(
-          enabledColor: appModel.isTranscriptPlayerMode ? Colors.red : null,
+          enabledColor: appModel.isTranscriptPlayerMode
+              ? theme.colorScheme.primary
+              : null,
           tooltip: t.transcript_playback_mode,
           icon: Ui.playlist_play,
           onTap: () async {
@@ -756,7 +758,7 @@ class _PlayerTranscriptPageState
             builder: (context, currentSubtitle, child) {
               return ListTile(
                 selected: _selectedIndexNotifier.value == index,
-                selectedTileColor: Colors.red.withOpacity(0.15),
+                selectedTileColor: theme.colorScheme.primary.withOpacity(0.15),
                 dense: true,
                 title: child,
                 onTap: () async {
@@ -786,10 +788,10 @@ class _PlayerTranscriptPageState
                 if (appModel.subtitleTimingsShown)
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Ui.textsms_outlined,
                         size: 12,
-                        color: Colors.red,
+                        color: theme.colorScheme.primary,
                       ),
                       const Space.semiBig(),
                       Text(

@@ -422,8 +422,9 @@ class _MyWordsSheetState extends BasePageState<MyWordsSheet> {
                           onPressed: _undo,
                           child: Text(
                             t.ttu_undo.toUpperCase(),
-                            style: const TextStyle(
-                              color: Color(0xFFFF8A80),
+                            style: TextStyle(
+                              color: Color.lerp(theme.colorScheme.primary,
+                                  Colors.white, 0.45),
                               fontWeight: FontWeight.w600,
                             ),
                           ),

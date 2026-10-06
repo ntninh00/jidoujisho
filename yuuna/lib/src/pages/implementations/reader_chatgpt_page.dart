@@ -512,7 +512,7 @@ class _ReaderChatgptPageState extends BaseSourcePageState<ReaderChatgptPage> {
         right: Spacing.of(context).spaces.normal,
       ),
       child: Card(
-        color: isBot ? null : Colors.red.withOpacity(0.5),
+        color: isBot ? null : theme.colorScheme.primary.withOpacity(0.5),
         shape: const RoundedRectangleBorder(),
         child: Padding(
           padding: Spacing.of(context).insets.all.normal,

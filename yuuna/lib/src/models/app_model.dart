@@ -30,7 +30,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:remove_emoji/remove_emoji.dart';
-import 'package:restart_app/restart_app.dart';
 import 'package:subtitle/subtitle.dart';
 import 'package:wakelock/wakelock.dart';
 import 'package:yuuna/creator.dart';
@@ -518,9 +517,18 @@ class AppModel with ChangeNotifier {
         labelSmall: textStyle,
       );
 
-  /// The accent used across the app. Themes and widgets read it from
-  /// [ColorScheme.primary]; change it here to change the accent everywhere.
-  static const Color accentColor = Colors.red;
+  /// The accent picked in the theme settings.
+  AppAccent get accent => AppAccent.of(_preferences.get('accent'));
+
+  /// The accent used across the app. Widgets read it from
+  /// [ColorScheme.primary] where they have a context.
+  Color get accentColor => accent.color;
+
+  /// Use [accent] across the app. Applies at once.
+  Future<void> setAccent(AppAccent accent) async {
+    await _preferences.put('accent', accent.name);
+    notifyListeners();
+  }
 
   /// Shows when the current mode is a light theme.
   ThemeData get theme => ThemeData(
@@ -590,8 +598,8 @@ class AppModel with ChangeNotifier {
           selectedColor: Colors.black,
           horizontalTitleGap: 0,
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          enabledBorder: UnderlineInputBorder(
+        inputDecorationTheme: InputDecorationTheme(
+          enabledBorder: const UnderlineInputBorder(
             borderSide: BorderSide(
               color: Colors.black54,
             ),
@@ -604,13 +612,13 @@ class AppModel with ChangeNotifier {
           thickness: MaterialStateProperty.all(3),
           thumbVisibility: MaterialStateProperty.all(true),
         ),
-        sliderTheme: const SliderThemeData(
+        sliderTheme: SliderThemeData(
           thumbColor: accentColor,
           activeTrackColor: accentColor,
           inactiveTrackColor: Colors.grey,
-          trackShape: RectangularSliderTrackShape(),
+          trackShape: const RectangularSliderTrackShape(),
           trackHeight: 2,
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         ),
         colorScheme: ColorScheme.fromSwatch()
             .copyWith(
@@ -688,8 +696,8 @@ class AppModel with ChangeNotifier {
           selectedColor: Colors.white,
           horizontalTitleGap: 0,
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          enabledBorder: UnderlineInputBorder(
+        inputDecorationTheme: InputDecorationTheme(
+          enabledBorder: const UnderlineInputBorder(
             borderSide: BorderSide(
               color: Colors.white70,
             ),
@@ -701,13 +709,13 @@ class AppModel with ChangeNotifier {
         scrollbarTheme: ScrollbarThemeData(
           thumbVisibility: MaterialStateProperty.all(true),
         ),
-        sliderTheme: const SliderThemeData(
+        sliderTheme: SliderThemeData(
           thumbColor: accentColor,
           activeTrackColor: accentColor,
           inactiveTrackColor: Colors.grey,
-          trackShape: RectangularSliderTrackShape(),
+          trackShape: const RectangularSliderTrackShape(),
           trackHeight: 2,
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
         ),
         colorScheme: ColorScheme.fromSwatch()
             .copyWith(
@@ -1401,19 +1409,43 @@ class AppModel with ChangeNotifier {
     });
   }
 
-  /// Get whether or not the current theme is dark mode.
-  bool get isDarkMode {
-    bool isDarkMode = _preferences.get('is_dark_mode',
-        defaultValue:
-            WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-                Brightness.dark);
-    return isDarkMode;
+  /// Light, dark, or following the phone. Before this setting, the app kept
+  /// only a light or dark choice, which stays in effect until changed.
+  ThemeMode get themeMode {
+    String? mode = _preferences.get('theme_mode');
+    if (mode == null) {
+      bool? wasDark = _preferences.get('is_dark_mode');
+      if (wasDark == null) {
+        return ThemeMode.system;
+      }
+      return wasDark ? ThemeMode.dark : ThemeMode.light;
+    }
+    return ThemeMode.values.firstWhere(
+      (value) => value.name == mode,
+      orElse: () => ThemeMode.system,
+    );
   }
 
-  /// Toggle between light and dark mode.
-  void toggleDarkMode() async {
-    await _preferences.put('is_dark_mode', !isDarkMode);
-    Restart.restartApp();
+  /// Use [mode]. Applies at once.
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _preferences.put('theme_mode', mode.name);
+    notifyListeners();
+  }
+
+  /// Get whether or not the current theme is dark mode.
+  bool get isDarkMode => switch (themeMode) {
+        ThemeMode.dark => true,
+        ThemeMode.light => false,
+        ThemeMode.system =>
+          WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+              Brightness.dark,
+      };
+
+  /// The phone switched between light and dark.
+  void onPlatformBrightnessChanged() {
+    if (themeMode == ThemeMode.system) {
+      notifyListeners();
+    }
   }
 
   /// Get the target language from persisted preferences.

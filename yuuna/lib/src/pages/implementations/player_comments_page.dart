@@ -472,16 +472,16 @@ class _PlayerCommentsPageState extends BaseSourcePageState<PlayerCommentsPage> {
                       },
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Ui.reply,
                             size: 11,
-                            color: Colors.red,
+                            color: theme.colorScheme.primary,
                           ),
                           const Space.small(),
                           Text(
                             t.view_replies.reply(n: comment.replyCount),
                             style: theme.textTheme.labelSmall
-                                ?.copyWith(color: Colors.red),
+                                ?.copyWith(color: theme.colorScheme.primary),
                           ),
                         ],
                       ),

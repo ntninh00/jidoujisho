@@ -369,7 +369,8 @@ class _MokuroCatalogBrowsePageState
             if (mediaSource.useDarkTheme) {
               await injectDarkTheme();
             }
-            await controller.evaluateJavascript(source: javascriptToExecute);
+            await controller.evaluateJavascript(
+                source: _withAccent(javascriptToExecute));
 
             if (_mediaItem?.sourceMetadata == null) {
               await updateOrientation();
@@ -753,6 +754,10 @@ updatePage(state.page_idx);
   /// This is executed upon page load and change.
   /// More accurate readability courtesy of
   /// https://github.com/birchill/10ten-ja-reader/blob/fbbbde5c429f1467a7b5a938e9d67597d7bd5ffa/src/content/get-text.ts#L314
+  /// The page script with the app's accent as the selection colour.
+  String _withAccent(String script) => script.replaceAll(
+      'rgba(255, 0, 0, 0.6)', appModelNoUpdate.accent.css(0.6));
+
   String javascriptToExecute = """
 /*jshint esversion: 6 */
 // yikes

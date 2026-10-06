@@ -519,6 +519,7 @@ class _BookTileState extends BasePageState<_BookTile> {
                     child: CustomPaint(
                       painter: _ProgressTicksPainter(
                         progress: book.progress,
+                        color: Theme.of(context).colorScheme.primary,
                         marks:
                             widget.memos.map((memo) => memo.progress).toList(),
                       ),
@@ -545,10 +546,12 @@ class _BookTileState extends BasePageState<_BookTile> {
 class _ProgressTicksPainter extends CustomPainter {
   _ProgressTicksPainter({
     required this.progress,
+    required this.color,
     required this.marks,
   });
 
   final double progress;
+  final Color color;
   final List<double> marks;
 
   @override
@@ -561,7 +564,7 @@ class _ProgressTicksPainter extends CustomPainter {
     double shown = progress > 0.97 ? 1 : progress.clamp(0, 1).toDouble();
     canvas.drawRect(
       Rect.fromLTWH(0, top, size.width * shown, 2),
-      Paint()..color = Colors.red,
+      Paint()..color = color,
     );
 
     Paint outline = Paint()..color = Colors.black.withOpacity(0.55);
@@ -576,6 +579,7 @@ class _ProgressTicksPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ProgressTicksPainter oldDelegate) {
     return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
         oldDelegate.marks.length != marks.length ||
         !oldDelegate.marks.every(marks.contains);
   }

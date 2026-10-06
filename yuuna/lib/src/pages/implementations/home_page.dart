@@ -347,10 +347,12 @@ class _HomePageState extends BasePageState<HomePage>
   List<PopupMenuItem<VoidCallback>> getMenuItems() {
     return [
       buildPopupItem(
-        label:
-            appModel.isDarkMode ? t.options_theme_light : t.options_theme_dark,
-        icon: appModel.isDarkMode ? Ui.light_mode : Ui.dark_mode,
-        action: appModel.toggleDarkMode,
+        label: t.theme_menu,
+        icon: Ui.palette,
+        action: () => showModalBottomSheet(
+          context: context,
+          builder: (_) => const AppThemeSheet(),
+        ),
       ),
       // if ((appModel.androidDeviceInfo.version.sdkInt ?? 0) >= 33)
       //   buildPopupItem(

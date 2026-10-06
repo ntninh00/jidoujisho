@@ -188,7 +188,7 @@ class PlayerYoutubeSource extends PlayerMediaSource {
           return JidoujishoIconButton(
             size: Theme.of(context).textTheme.titleLarge?.fontSize,
             tooltip: t.caption_filter,
-            enabledColor: value ? Colors.red : null,
+            enabledColor: value ? Theme.of(context).colorScheme.primary : null,
             icon: Ui.closed_caption,
             onTap: () {
               toggleCaptionFilter();

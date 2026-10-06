@@ -138,7 +138,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   }
 
   Future<void> _prepare() async {
-    _readerScript = await TtuLibrary.readerScript;
+    Color accent = appModelNoUpdate.accentColor;
+    _readerScript = 'window.__jdjAccent = '
+        '"${accent.red}, ${accent.green}, ${accent.blue}";\n'
+        '${await TtuLibrary.readerScript}';
     _fitScript = await TtuLibrary.fitScript;
     _settingsScript = mediaSource.settingsScriptFor(
       _language,

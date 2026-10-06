@@ -151,6 +151,12 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
     super.dispose();
   }
 
+  @override
+  void didChangePlatformBrightness() {
+    super.didChangePlatformBrightness();
+    ref.read(appProvider).onPlatformBrightnessChanged();
+  }
+
   void handleIntent({
     required intents.Intent? intent,
     required bool isInitial,
@@ -382,10 +388,8 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
   /// The application will open to this page upon startup.
   Widget get home => _isMainIntent ? const HomePage() : const Scaffold();
 
-  /// The current theme mode, which by default is based on system setting
-  /// and toggleable.
-  ThemeMode get themeMode =>
-      appModel.isDarkMode ? ThemeMode.dark : ThemeMode.light;
+  /// Light, dark, or following the phone, as picked in the theme settings.
+  ThemeMode get themeMode => appModel.themeMode;
 
   /// The current locale, dependent on the active target language.
   Locale get locale => appModel.targetLanguage.locale;

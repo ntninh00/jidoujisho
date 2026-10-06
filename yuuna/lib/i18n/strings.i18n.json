@@ -657,5 +657,20 @@
     "backup_restored": "Restored. Restart the app to finish.",
     "backup_restart": "Close the app",
     "backup_failed_dictionaries": "Couldn't install: $names",
-    "backup_working": "Keep the app open until this finishes."
+    "backup_working": "Keep the app open until this finishes.",
+    "theme_menu": "Theme",
+    "theme_mode": "Mode",
+    "theme_mode_system": "System",
+    "theme_mode_light": "Light",
+    "theme_mode_dark": "Dark",
+    "theme_mode_hint": "System follows your phone and switches with it.",
+    "theme_accent": "Accent",
+    "theme_accent_red": "Red",
+    "theme_accent_rose": "Pink",
+    "theme_accent_orange": "Orange",
+    "theme_accent_green": "Green",
+    "theme_accent_teal": "Teal",
+    "theme_accent_blue": "Blue",
+    "theme_accent_violet": "Purple",
+    "theme_accent_slate": "Slate"
 }

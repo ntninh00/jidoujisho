@@ -69,14 +69,14 @@ class JidoujishoBottomSheet extends ConsumerWidget {
           leading: Icon(
             option.icon,
             size: 20,
-            color: Colors.red,
+            color: Theme.of(context).colorScheme.primary,
           ),
           title: Text(
             option.label,
             maxLines: 1,
             style: TextStyle(
               color: (option.active)
-                  ? Colors.red
+                  ? Theme.of(context).colorScheme.primary
                   : appModel.isDarkMode
                       ? Colors.white
                       : Colors.black,

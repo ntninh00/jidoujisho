@@ -67,7 +67,10 @@ class TtuMemoColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color ring = Theme.of(context).colorScheme.onSurface;
+    // The dark theme keeps the light scheme's onSurface, so pick by brightness.
+    Color ring = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
     return Wrap(
       spacing: 4,
       children: [

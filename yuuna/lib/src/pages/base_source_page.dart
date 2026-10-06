@@ -407,13 +407,14 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       builder: (context, value, child) {
         return Visibility(
           visible: value,
-          child: const Align(
+          child: Align(
             alignment: Alignment.topCenter,
             child: ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(2)),
+              borderRadius: const BorderRadius.all(Radius.circular(2)),
               child: LinearProgressIndicator(
                 backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary),
                 minHeight: 2.75,
               ),
             ),

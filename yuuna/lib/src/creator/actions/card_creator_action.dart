@@ -116,7 +116,7 @@ class CardCreatorAction extends QuickAction {
   }) async {
     bool hasDuplicates = await appModel.checkForDuplicates(heading.term);
     if (hasDuplicates) {
-      return Colors.red;
+      return appModel.accentColor;
     } else {
       return null;
     }

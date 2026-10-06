@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 625
+/// Strings: 640
 ///
-/// Built on 2026-10-06 at 08:06 UTC
+/// Built on 2026-10-06 at 10:10 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -769,6 +769,21 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get backup_restart => 'Close the app';
 	String backup_failed_dictionaries({required Object names}) => 'Couldn\'t install: ${names}';
 	String get backup_working => 'Keep the app open until this finishes.';
+	String get theme_menu => 'Theme';
+	String get theme_mode => 'Mode';
+	String get theme_mode_system => 'System';
+	String get theme_mode_light => 'Light';
+	String get theme_mode_dark => 'Dark';
+	String get theme_mode_hint => 'System follows your phone and switches with it.';
+	String get theme_accent => 'Accent';
+	String get theme_accent_red => 'Red';
+	String get theme_accent_rose => 'Pink';
+	String get theme_accent_orange => 'Orange';
+	String get theme_accent_green => 'Green';
+	String get theme_accent_teal => 'Teal';
+	String get theme_accent_blue => 'Blue';
+	String get theme_accent_violet => 'Purple';
+	String get theme_accent_slate => 'Slate';
 }
 
 // Path: retrying_in
@@ -1432,6 +1447,21 @@ extension on _StringsEn {
 			case 'backup_restart': return 'Close the app';
 			case 'backup_failed_dictionaries': return ({required Object names}) => 'Couldn\'t install: ${names}';
 			case 'backup_working': return 'Keep the app open until this finishes.';
+			case 'theme_menu': return 'Theme';
+			case 'theme_mode': return 'Mode';
+			case 'theme_mode_system': return 'System';
+			case 'theme_mode_light': return 'Light';
+			case 'theme_mode_dark': return 'Dark';
+			case 'theme_mode_hint': return 'System follows your phone and switches with it.';
+			case 'theme_accent': return 'Accent';
+			case 'theme_accent_red': return 'Red';
+			case 'theme_accent_rose': return 'Pink';
+			case 'theme_accent_orange': return 'Orange';
+			case 'theme_accent_green': return 'Green';
+			case 'theme_accent_teal': return 'Teal';
+			case 'theme_accent_blue': return 'Blue';
+			case 'theme_accent_violet': return 'Purple';
+			case 'theme_accent_slate': return 'Slate';
 			default: return null;
 		}
 	}

@@ -172,7 +172,8 @@ class HistoryPlayerPageState<T extends HistoryPlayerPage>
                       ? 1
                       : (item.position / item.duration),
               backgroundColor: Colors.white.withOpacity(0.6),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.red),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
               minHeight: 2,
             ),
           ),
