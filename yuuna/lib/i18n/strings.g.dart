@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 651
+/// Strings: 673
 ///
-/// Built on 2026-10-06 at 12:59 UTC
+/// Built on 2026-10-06 at 20:07 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -795,6 +795,28 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_search_previous => 'Previous result';
 	String get ttu_search_next => 'Next result';
 	String get ttu_search_info => 'Matches ignore the difference between hiragana and katakana, full- and half-width letters, and upper and lower case. Furigana is not searched. Your saved place stays where it was until you choose Stay here.';
+	String get ttu_favourite => 'Favourite';
+	String get ttu_unfavourite => 'Remove from favourites';
+	String get ttu_favourites => 'Favourites';
+	String get ttu_shelf => 'Shelf';
+	String get ttu_group_by => 'Group by';
+	String get ttu_group_by_none => 'None';
+	String get ttu_group_by_groups => 'My groups';
+	String get ttu_group_by_language => 'Language';
+	String get ttu_group_by_progress => 'Progress';
+	String get ttu_group => 'Group';
+	String get ttu_group_none => 'None';
+	String get ttu_ungrouped => 'Not in a group';
+	String get ttu_progress_reading => 'Reading';
+	String get ttu_progress_unread => 'Not started';
+	String get ttu_progress_finished => 'Finished';
+	String get ttu_other_books => 'Books';
+	String get ttu_new_group => 'New group';
+	String get ttu_group_name => 'Group name';
+	String get ttu_rename_group => 'Rename';
+	String get ttu_delete_group => 'Delete group';
+	String get ttu_group_info => 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
+	String get ttu_group_by_info => 'Favourites always come first. Tap a heading to fold it away.';
 }
 
 // Path: retrying_in
@@ -1484,6 +1506,28 @@ extension on _StringsEn {
 			case 'ttu_search_previous': return 'Previous result';
 			case 'ttu_search_next': return 'Next result';
 			case 'ttu_search_info': return 'Matches ignore the difference between hiragana and katakana, full- and half-width letters, and upper and lower case. Furigana is not searched. Your saved place stays where it was until you choose Stay here.';
+			case 'ttu_favourite': return 'Favourite';
+			case 'ttu_unfavourite': return 'Remove from favourites';
+			case 'ttu_favourites': return 'Favourites';
+			case 'ttu_shelf': return 'Shelf';
+			case 'ttu_group_by': return 'Group by';
+			case 'ttu_group_by_none': return 'None';
+			case 'ttu_group_by_groups': return 'My groups';
+			case 'ttu_group_by_language': return 'Language';
+			case 'ttu_group_by_progress': return 'Progress';
+			case 'ttu_group': return 'Group';
+			case 'ttu_group_none': return 'None';
+			case 'ttu_ungrouped': return 'Not in a group';
+			case 'ttu_progress_reading': return 'Reading';
+			case 'ttu_progress_unread': return 'Not started';
+			case 'ttu_progress_finished': return 'Finished';
+			case 'ttu_other_books': return 'Books';
+			case 'ttu_new_group': return 'New group';
+			case 'ttu_group_name': return 'Group name';
+			case 'ttu_rename_group': return 'Rename';
+			case 'ttu_delete_group': return 'Delete group';
+			case 'ttu_group_info': return 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
+			case 'ttu_group_by_info': return 'Favourites always come first. Tap a heading to fold it away.';
 			default: return null;
 		}
 	}

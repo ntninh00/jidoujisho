@@ -420,4 +420,10 @@ class Ui {
       IconData(0xe485, fontFamily: _regular); // circle-half-stroke
   static const IconData angleLeft =
       IconData(0xe0a2, fontFamily: _regular); // angle-small-left
+  static const IconData star =
+      IconData(0xf2e0, fontFamily: _regular); // star
+  static const IconData starSolid =
+      IconData(0xf2e0, fontFamily: _solid); // star
+  static const IconData layers =
+      IconData(0xebd4, fontFamily: _regular); // layers
 }

@@ -1052,6 +1052,61 @@ class TtuBookDetailsSheet extends BasePage {
 
 class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
   late Language _language = widget.book.language;
+  late bool _favourite = ReaderTtuSource.instance.isFavourite(widget.book);
+
+  void _toggleFavourite() {
+    setState(() => _favourite = !_favourite);
+    ReaderTtuSource.instance.setFavourite(widget.book, favourite: _favourite);
+  }
+
+  Future<void> _chooseGroup() async {
+    await showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuGroupSheet(book: widget.book),
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// The group the book is in, which opens the group picker.
+  Widget _groupRow() {
+    Color muted = theme.unselectedWidgetColor;
+    String? group = ReaderTtuSource.instance.groupOf(widget.book);
+    return Material(
+      color: theme.dividerColor.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(ttuCardRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(ttuCardRadius),
+        onTap: _chooseGroup,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          child: Row(
+            children: [
+              Icon(Ui.folder, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                t.ttu_group,
+                style: textTheme.labelMedium!.copyWith(color: muted),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  group ?? t.ttu_group_none,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodyLarge!.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Icon(Ui.angleRight, size: 18, color: muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Switches to the next shelf language. With two languages, a tap swaps.
   void _nextLanguage() {
@@ -1217,6 +1272,22 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
                         .copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
+                IconButton(
+                  tooltip: _favourite ? t.ttu_unfavourite : t.ttu_favourite,
+                  onPressed: _toggleFavourite,
+                  icon: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    transitionBuilder: (child, animation) =>
+                        ScaleTransition(scale: animation, child: child),
+                    child: Icon(
+                      _favourite ? Ui.starSolid : Ui.star,
+                      key: ValueKey(_favourite),
+                      color: _favourite
+                          ? const Color(0xFFFFC107)
+                          : theme.unselectedWidgetColor,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1261,6 +1332,8 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
               ),
             ],
           ),
+          const SizedBox(height: 8),
+          _groupRow(),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -1723,6 +1796,34 @@ class _TtuReaderSettingsSheetState
               ],
             ),
           ),
+          if (!live) ...[
+            _group(t.ttu_shelf, info: t.ttu_group_by_info),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: _segmented<TtuShelfGrouping>(
+                    values: TtuShelfGrouping.values,
+                    labels: [
+                      t.ttu_group_by_none,
+                      t.ttu_group_by_groups,
+                      t.ttu_group_by_language,
+                      t.ttu_group_by_progress,
+                    ],
+                    selected: source.shelfGrouping,
+                    onSelect: (grouping) async {
+                      await source.setShelfGrouping(grouping);
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
           _group(t.ttu_page, info: live ? null : t.ttu_page_info),
           if (!live && languages.length > 1)
             Padding(

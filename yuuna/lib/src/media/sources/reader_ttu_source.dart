@@ -179,6 +179,134 @@ class ReaderTtuSource extends ReaderMediaSource {
     await setPreference<String?>(key: 'memo_color', value: color.name);
   }
 
+  /* ---------- shelf grouping and favourites ---------- */
+
+  /// Bumped whenever groups, favourites or folded sections change, so the
+  /// shelf lays itself out again.
+  final ValueNotifier<int> shelfChanges = ValueNotifier(0);
+
+  void _shelfChanged() => shelfChanges.value++;
+
+  /// How the shelf groups books: [TtuShelfGrouping].
+  TtuShelfGrouping get shelfGrouping => TtuShelfGrouping.values.firstWhere(
+        (value) =>
+            value.name ==
+            getPreference<String>(key: 'shelf_group_by', defaultValue: ''),
+        orElse: () => TtuShelfGrouping.none,
+      );
+
+  /// Groups the shelf by [grouping].
+  Future<void> setShelfGrouping(TtuShelfGrouping grouping) async {
+    await setPreference<String>(key: 'shelf_group_by', value: grouping.name);
+    _shelfChanged();
+  }
+
+  /// The user's groups, in the order they were made.
+  List<String> get shelfGroups => List<String>.from(
+      getPreference<List?>(key: 'shelf_groups', defaultValue: null) ??
+          const []);
+
+  /// The group [book] is in, if any.
+  String? groupOf(TtuBook book) {
+    String? group =
+        getPreference<String?>(key: 'book_group_${book.key}', defaultValue: null);
+    return group != null && shelfGroups.contains(group) ? group : null;
+  }
+
+  /// Puts [book] in [group], made if new, or in none.
+  Future<void> setGroupOf(TtuBook book, String? group) async {
+    String? name = group?.trim();
+    if (name == null || name.isEmpty) {
+      await deletePreference(key: 'book_group_${book.key}');
+    } else {
+      List<String> groups = shelfGroups;
+      if (!groups.contains(name)) {
+        await setPreference<List<String>>(
+            key: 'shelf_groups', value: [...groups, name]);
+      }
+      await setPreference<String>(key: 'book_group_${book.key}', value: name);
+    }
+    _shelfChanged();
+  }
+
+  /// Renames [group]; its books move with it. Joins an existing group of
+  /// the new name.
+  Future<void> renameGroup(String group, String name) async {
+    String next = name.trim();
+    if (next.isEmpty || next == group) {
+      return;
+    }
+    List<String> groups = shelfGroups;
+    int at = groups.indexOf(group);
+    if (at < 0) {
+      return;
+    }
+    if (groups.contains(next)) {
+      groups.removeAt(at);
+    } else {
+      groups[at] = next;
+    }
+    await setPreference<List<String>>(key: 'shelf_groups', value: groups);
+    for (MapEntry<dynamic, dynamic> entry in preferencesForBackup().entries) {
+      if ('${entry.key}'.startsWith('book_group_') && entry.value == group) {
+        await setPreference<String>(key: '${entry.key}', value: next);
+      }
+    }
+    _shelfChanged();
+  }
+
+  /// Deletes [group]. Its books are left in none.
+  Future<void> deleteGroup(String group) async {
+    await setPreference<List<String>>(
+      key: 'shelf_groups',
+      value: shelfGroups.where((name) => name != group).toList(),
+    );
+    for (MapEntry<dynamic, dynamic> entry
+        in Map.of(preferencesForBackup()).entries) {
+      if ('${entry.key}'.startsWith('book_group_') && entry.value == group) {
+        await deletePreference(key: '${entry.key}');
+      }
+    }
+    _shelfChanged();
+  }
+
+  /// Books marked as favourites, by key.
+  Set<String> get favouriteBooks => Set<String>.from(
+      getPreference<List?>(key: 'shelf_favourites', defaultValue: null) ??
+          const []);
+
+  /// Whether [book] is a favourite.
+  bool isFavourite(TtuBook book) => favouriteBooks.contains(book.key);
+
+  /// Marks [book] as a favourite, or not.
+  Future<void> setFavourite(TtuBook book, {required bool favourite}) async {
+    Set<String> favourites = favouriteBooks;
+    if (favourite) {
+      favourites.add(book.key);
+    } else {
+      favourites.remove(book.key);
+    }
+    await setPreference<List<String>>(
+        key: 'shelf_favourites', value: favourites.toList());
+    _shelfChanged();
+  }
+
+  /// Shelf sections folded away, by id.
+  Set<String> get foldedSections => Set<String>.from(
+      getPreference<List?>(key: 'shelf_folded', defaultValue: null) ??
+          const []);
+
+  /// Folds the shelf section [id] away, or opens it.
+  Future<void> toggleSection(String id) async {
+    Set<String> folded = foldedSections;
+    if (!folded.remove(id)) {
+      folded.add(id);
+    }
+    await setPreference<List<String>>(
+        key: 'shelf_folded', value: folded.toList());
+    _shelfChanged();
+  }
+
   /// Errors from the last read of the shelf, per language.
   final Map<Language, Object> shelfErrors = {};
 
@@ -839,4 +967,19 @@ class ReaderTtuSource extends ReaderMediaSource {
       value: ttuInternalVersion,
     );
   }
+}
+
+/// How the shelf groups books.
+enum TtuShelfGrouping {
+  /// All books together.
+  none,
+
+  /// By the user's own groups.
+  groups,
+
+  /// By the language their words are looked up in.
+  language,
+
+  /// Reading, not started, and finished.
+  progress,
 }

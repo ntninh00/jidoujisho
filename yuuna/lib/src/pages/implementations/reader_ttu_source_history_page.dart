@@ -187,7 +187,10 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
             return buildShelfError(mediaSource.shelfErrors.values.first);
           }
 
-          return buildShelf(books, memos, importing);
+          return ValueListenableBuilder<int>(
+            valueListenable: mediaSource.shelfChanges,
+            builder: (context, _, __) => buildShelf(books, memos, importing),
+          );
         },
       ),
     );
@@ -204,6 +207,9 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
     for (ReaderMemo memo in memos) {
       memosByBook.putIfAbsent(memo.bookKey, () => []).add(memo);
     }
+
+    Set<String> folded = mediaSource.foldedSections;
+    Set<String> favourites = mediaSource.favouriteBooks;
 
     return RefreshIndicator(
       edgeOffset: 52,
@@ -224,30 +230,202 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
               child: buildEmptyShelf(),
             )
           else
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(3, 0, 3, 16),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 150,
-                  childAspectRatio: mediaSource.aspectRatio,
+            for (_ShelfSection section in _sections(books)) ...[
+              if (section.title != null)
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(
+                    section,
+                    folded: folded.contains(section.id),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _BookTile(
-                    key: ValueKey(books[index].key),
-                    book: books[index],
-                    memos: memosByBook[books[index].key] ?? const [],
-                    onOpen: () => _open(books[index]),
-                    onDetails: () => _showDetails(
-                      books[index],
-                      memosByBook[books[index].key]?.length ?? 0,
+              if (!folded.contains(section.id) || section.title == null)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(3, 0, 3, 8),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 150,
+                      childAspectRatio: mediaSource.aspectRatio,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        TtuBook book = section.books[index];
+                        return _BookTile(
+                          key: ValueKey(book.key),
+                          book: book,
+                          favourite: favourites.contains(book.key),
+                          memos: memosByBook[book.key] ?? const [],
+                          onOpen: () => _open(book),
+                          onDetails: () => _showDetails(
+                            book,
+                            memosByBook[book.key]?.length ?? 0,
+                          ),
+                        );
+                      },
+                      childCount: section.books.length,
                     ),
                   ),
-                  childCount: books.length,
+                ),
+            ],
+          const SliverPadding(padding: EdgeInsets.only(bottom: 8)),
+        ],
+      ),
+    );
+  }
+
+  /// The shelf in sections: favourites first, then the books grouped as
+  /// chosen in the shelf settings. A section without a title is the whole
+  /// shelf, ungrouped.
+  List<_ShelfSection> _sections(List<TtuBook> books) {
+    Set<String> favouriteKeys = mediaSource.favouriteBooks;
+    List<TtuBook> favourites =
+        books.where((book) => favouriteKeys.contains(book.key)).toList();
+    List<TtuBook> rest =
+        books.where((book) => !favouriteKeys.contains(book.key)).toList();
+    List<_ShelfSection> sections = [
+      if (favourites.isNotEmpty)
+        _ShelfSection(
+          id: 'favourites',
+          title: t.ttu_favourites,
+          icon: Ui.starSolid,
+          books: favourites,
+        ),
+    ];
+    if (rest.isEmpty) {
+      return sections;
+    }
+
+    switch (mediaSource.shelfGrouping) {
+      case TtuShelfGrouping.none:
+        sections.add(_ShelfSection(
+          id: 'all',
+          title: favourites.isEmpty ? null : t.ttu_other_books,
+          books: rest,
+        ));
+      case TtuShelfGrouping.groups:
+        List<String> groups = mediaSource.shelfGroups;
+        Map<String, List<TtuBook>> byGroup = {};
+        List<TtuBook> ungrouped = [];
+        for (TtuBook book in rest) {
+          String? group = mediaSource.groupOf(book);
+          if (group == null) {
+            ungrouped.add(book);
+          } else {
+            byGroup.putIfAbsent(group, () => []).add(book);
+          }
+        }
+        for (String group in groups) {
+          List<TtuBook>? inGroup = byGroup[group];
+          if (inGroup != null) {
+            sections.add(_ShelfSection(
+              id: 'group:$group',
+              title: group,
+              icon: Ui.folder,
+              group: group,
+              books: inGroup,
+            ));
+          }
+        }
+        if (ungrouped.isNotEmpty) {
+          sections.add(_ShelfSection(
+            id: 'ungrouped',
+            title: sections.isEmpty ? null : t.ttu_ungrouped,
+            books: ungrouped,
+          ));
+        }
+      case TtuShelfGrouping.language:
+        Map<Language, List<TtuBook>> byLanguage = {};
+        for (TtuBook book in rest) {
+          byLanguage.putIfAbsent(book.language, () => []).add(book);
+        }
+        for (MapEntry<Language, List<TtuBook>> entry in byLanguage.entries) {
+          sections.add(_ShelfSection(
+            id: 'language:${entry.key.languageCode}',
+            title: entry.key.languageName,
+            icon: Ui.translate,
+            books: entry.value,
+          ));
+        }
+      case TtuShelfGrouping.progress:
+        List<TtuBook> reading = [];
+        List<TtuBook> unread = [];
+        List<TtuBook> finished = [];
+        for (TtuBook book in rest) {
+          if (book.progress >= 0.97) {
+            finished.add(book);
+          } else if (book.progress <= 0 && book.exploredCharCount <= 0) {
+            unread.add(book);
+          } else {
+            reading.add(book);
+          }
+        }
+        for ((String, String, IconData, List<TtuBook>) part in [
+          ('reading', t.ttu_progress_reading, Ui.play_arrow_rounded, reading),
+          ('unread', t.ttu_progress_unread, Ui.books, unread),
+          ('finished', t.ttu_progress_finished, Ui.checkCircle, finished),
+        ]) {
+          if (part.$4.isNotEmpty) {
+            sections.add(_ShelfSection(
+              id: 'progress:${part.$1}',
+              title: part.$2,
+              icon: part.$3,
+              books: part.$4,
+            ));
+          }
+        }
+    }
+    return sections;
+  }
+
+  Widget _buildSectionHeader(_ShelfSection section, {required bool folded}) {
+    Color muted = theme.unselectedWidgetColor;
+    bool reduceMotion = MediaQuery.of(context).disableAnimations;
+    String? group = section.group;
+    return InkWell(
+      onTap: () => mediaSource.toggleSection(section.id),
+      onLongPress: group == null ? null : () => _showGroupMenu(group),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 6),
+        child: Row(
+          children: [
+            if (section.icon != null) ...[
+              Icon(section.icon, size: 15, color: theme.colorScheme.primary),
+              const SizedBox(width: 7),
+            ],
+            Flexible(
+              child: Text(
+                section.title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleSmall!.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-        ],
+            const SizedBox(width: 7),
+            Text(
+              '${section.books.length}',
+              style: textTheme.labelMedium!.copyWith(color: muted),
+            ),
+            const Spacer(),
+            AnimatedRotation(
+              turns: folded ? -0.25 : 0,
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 160),
+              child: Icon(Ui.angleDown, size: 18, color: muted),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  /// Rename or delete a group, from a long press on its heading.
+  void _showGroupMenu(String group) {
+    HapticFeedback.selectionClick();
+    showTtuSheet<void>(
+      context: context,
+      builder: (sheetContext) => TtuGroupMenuSheet(group: group),
     );
   }
 
@@ -432,16 +610,43 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
 
 /// One book on the shelf: its cover and title, progress with memo marks, and
 /// a coloured tab peeking out from the cover for its memos.
+/// Books under one heading on the shelf.
+class _ShelfSection {
+  const _ShelfSection({
+    required this.id,
+    required this.title,
+    required this.books,
+    this.icon,
+    this.group,
+  });
+
+  /// Remembers whether the section is folded away.
+  final String id;
+
+  /// The heading, or null for the whole shelf without one.
+  final String? title;
+
+  final List<TtuBook> books;
+  final IconData? icon;
+
+  /// The user's group the section shows, if it is one.
+  final String? group;
+}
+
 class _BookTile extends BasePage {
   const _BookTile({
     required this.book,
     required this.memos,
     required this.onOpen,
     required this.onDetails,
+    this.favourite = false,
     super.key,
   });
 
   final TtuBook book;
+
+  /// Marked with a star.
+  final bool favourite;
   final List<ReaderMemo> memos;
   final VoidCallback onOpen;
   final VoidCallback onDetails;
@@ -526,6 +731,23 @@ class _BookTileState extends BasePageState<_BookTile> {
                     ),
                   ),
                 ),
+                if (widget.favourite)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Ui.starSolid,
+                        size: 12,
+                        color: Color(0xFFFFC107),
+                      ),
+                    ),
+                  ),
                 Material(
                   type: MaterialType.transparency,
                   child: InkWell(
