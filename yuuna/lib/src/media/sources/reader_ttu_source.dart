@@ -27,6 +27,7 @@ final ttuServerProvider =
 final ttuShelfProvider = FutureProvider<List<TtuBook>>((ref) async {
   AppModel appModel = ref.read(appProvider);
   ReaderTtuSource source = ReaderTtuSource.instance;
+  await source.shelfSettled;
   source.shelfErrors.clear();
 
   List<List<TtuBook>> perLanguage = await Future.wait(
@@ -156,6 +157,34 @@ class ReaderTtuSource extends ReaderMediaSource {
   /// popup's My terms button can record the book and place. The argument is
   /// the text it was taken from, or empty for the sentence looked up.
   Future<TermOrigin?> Function(String excerpt)? termOrigin;
+
+  /// Done once a closing book's animation has finished. Listing the shelf
+  /// starts hidden web views, which would make that animation stutter.
+  Future<void> get shelfSettled => _shelfSettled;
+  Future<void> _shelfSettled = Future.value();
+
+  /// Holds back listing the shelf until [animation], the route of a book
+  /// being closed, has run back to the shelf.
+  void holdShelfUntilClosed(Animation<double>? animation) {
+    if (animation == null) {
+      return;
+    }
+    Completer<void> closed = Completer();
+    void onStatus(AnimationStatus status) {
+      if (status == AnimationStatus.dismissed) {
+        animation.removeStatusListener(onStatus);
+        if (!closed.isCompleted) {
+          closed.complete();
+        }
+      }
+    }
+
+    animation.addStatusListener(onStatus);
+    _shelfSettled = closed.future
+        .timeout(const Duration(seconds: 1), onTimeout: () {})
+        // Lets the book's own web view close first.
+        .then((_) => Future.delayed(const Duration(milliseconds: 150)));
+  }
 
   /// Takes what the reader should do when it opens, if anything.
   TtuLaunch? takePendingLaunch() {

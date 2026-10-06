@@ -245,6 +245,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (!mounted) {
       return false;
     }
+    mediaSource.holdShelfUntilClosed(ModalRoute.of(context)?.animation);
     await appModel.closeMedia(
       ref: ref,
       mediaSource: mediaSource,
