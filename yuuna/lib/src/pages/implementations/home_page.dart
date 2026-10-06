@@ -381,6 +381,14 @@ class _HomePageState extends BasePageState<HomePage>
         action: appModel.showProfilesMenu,
       ),
       buildPopupItem(
+        label: t.backup_menu,
+        icon: Ui.storage,
+        action: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BackupPage()),
+        ),
+      ),
+      buildPopupItem(
         label: t.options_github,
         icon: Ui.code,
         action: browseToGithub,

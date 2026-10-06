@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 596
+/// Strings: 625
 ///
-/// Built on 2026-10-06 at 04:34 UTC
+/// Built on 2026-10-06 at 08:06 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -740,6 +740,35 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get catalog_empty => 'No dictionaries on the server yet';
 	String catalog_imported({required Object name}) => '${name} imported';
 	String get catalog_unknown_language => 'Unknown';
+	String get backup_title => 'Backup and restore';
+	String get backup_menu => 'Backup and restore';
+	String get backup_step_settings => 'Settings';
+	String get backup_step_memos => 'Memos and terms';
+	String backup_step_books({required Object language}) => 'Books (${language})';
+	String backup_step_dictionary({required Object name}) => 'Dictionary: ${name}';
+	String get backup_step_packing => 'Packing';
+	String backup_step_download({required Object name}) => 'Downloading ${name}';
+	String backup_step_install({required Object name}) => 'Installing ${name}';
+	String get backup_not_a_backup => 'This file isn\'t a jidoujisho backup.';
+	String get backup_too_new => 'This backup was made by a newer version of the app. Update the app to restore it.';
+	String get backup_make => 'Back up';
+	String get backup_make_hint => 'One file with your books and reading positions, ッツ\'s settings and fonts, memos, My terms, history, Anki profiles, app settings with your dictionary server link, and your dictionaries. Dictionaries that are on your dictionary server are downloaded again on restore; the others travel in the file. The file includes your server token, so keep it private.';
+	String get backup_restore => 'Restore';
+	String get backup_restore_hint => 'Replaces this device\'s books, memos, terms and settings with the backup\'s. Dictionaries already on this device are kept; the backup\'s others are installed.';
+	String get backup_choose => 'Choose a backup';
+	String get backup_saved => 'Backup saved';
+	String get backup_not_saved => 'The backup wasn\'t saved';
+	String get backup_books => 'Books';
+	String get backup_dictionaries => 'Dictionaries';
+	String backup_dictionaries_split({required Object included, required Object online}) => '${included} in the file · ${online} from your server';
+	String get backup_memos => 'Memos';
+	String get backup_terms => 'My terms';
+	String backup_made({required Object date, required Object version}) => 'Made ${date} with ${version}';
+	String get backup_restore_confirm => 'Tap again to replace this device\'s data';
+	String get backup_restored => 'Restored. Restart the app to finish.';
+	String get backup_restart => 'Close the app';
+	String backup_failed_dictionaries({required Object names}) => 'Couldn\'t install: ${names}';
+	String get backup_working => 'Keep the app open until this finishes.';
 }
 
 // Path: retrying_in
@@ -1374,6 +1403,35 @@ extension on _StringsEn {
 			case 'catalog_empty': return 'No dictionaries on the server yet';
 			case 'catalog_imported': return ({required Object name}) => '${name} imported';
 			case 'catalog_unknown_language': return 'Unknown';
+			case 'backup_title': return 'Backup and restore';
+			case 'backup_menu': return 'Backup and restore';
+			case 'backup_step_settings': return 'Settings';
+			case 'backup_step_memos': return 'Memos and terms';
+			case 'backup_step_books': return ({required Object language}) => 'Books (${language})';
+			case 'backup_step_dictionary': return ({required Object name}) => 'Dictionary: ${name}';
+			case 'backup_step_packing': return 'Packing';
+			case 'backup_step_download': return ({required Object name}) => 'Downloading ${name}';
+			case 'backup_step_install': return ({required Object name}) => 'Installing ${name}';
+			case 'backup_not_a_backup': return 'This file isn\'t a jidoujisho backup.';
+			case 'backup_too_new': return 'This backup was made by a newer version of the app. Update the app to restore it.';
+			case 'backup_make': return 'Back up';
+			case 'backup_make_hint': return 'One file with your books and reading positions, ッツ\'s settings and fonts, memos, My terms, history, Anki profiles, app settings with your dictionary server link, and your dictionaries. Dictionaries that are on your dictionary server are downloaded again on restore; the others travel in the file. The file includes your server token, so keep it private.';
+			case 'backup_restore': return 'Restore';
+			case 'backup_restore_hint': return 'Replaces this device\'s books, memos, terms and settings with the backup\'s. Dictionaries already on this device are kept; the backup\'s others are installed.';
+			case 'backup_choose': return 'Choose a backup';
+			case 'backup_saved': return 'Backup saved';
+			case 'backup_not_saved': return 'The backup wasn\'t saved';
+			case 'backup_books': return 'Books';
+			case 'backup_dictionaries': return 'Dictionaries';
+			case 'backup_dictionaries_split': return ({required Object included, required Object online}) => '${included} in the file · ${online} from your server';
+			case 'backup_memos': return 'Memos';
+			case 'backup_terms': return 'My terms';
+			case 'backup_made': return ({required Object date, required Object version}) => 'Made ${date} with ${version}';
+			case 'backup_restore_confirm': return 'Tap again to replace this device\'s data';
+			case 'backup_restored': return 'Restored. Restart the app to finish.';
+			case 'backup_restart': return 'Close the app';
+			case 'backup_failed_dictionaries': return ({required Object names}) => 'Couldn\'t install: ${names}';
+			case 'backup_working': return 'Keep the app open until this finishes.';
 			default: return null;
 		}
 	}

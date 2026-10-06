@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'dart:io';
 import 'dart:isolate';
@@ -1574,6 +1575,154 @@ class AppModel with ChangeNotifier {
   bool hasDictionaryNamed(String name) =>
       _database.dictionarys.where().nameEqualTo(name).findFirstSync() != null;
 
+  /* ---------- backups ---------- */
+
+  /// Where dictionaries installed from a dictionary server came from, by
+  /// dictionary name: the server's address, its id and revision there.
+  Map<String, Map<String, dynamic>> get dictionarySources {
+    String raw = _preferences.get('dictionary_sources', defaultValue: '{}');
+    try {
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map).map(
+          (name, source) => MapEntry(name, Map<String, dynamic>.from(source)));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Remembers that the dictionary called [name] came from a server.
+  Future<void> setDictionarySource(
+      String name, Map<String, dynamic> source) async {
+    Map<String, Map<String, dynamic>> sources = dictionarySources;
+    sources[name] = source;
+    await _preferences.put('dictionary_sources', jsonEncode(sources));
+  }
+
+  /// Forgets where the dictionary called [name] came from.
+  Future<void> forgetDictionarySource(String name) async {
+    Map<String, Map<String, dynamic>> sources = dictionarySources;
+    if (sources.remove(name) != null) {
+      await _preferences.put('dictionary_sources', jsonEncode(sources));
+    }
+  }
+
+  /// The folder a dictionary's files were unpacked into when it was
+  /// imported, which a backup carries instead of the original file.
+  Directory dictionaryFilesOf(Dictionary dictionary) => Directory(
+      path.join(dictionaryResourceDirectory.path, dictionary.id.toString()));
+
+  /// Every settings store, by name: the app's own, the dictionary history
+  /// and each media source's.
+  Map<String, Map<dynamic, dynamic>> settingsForBackup() {
+    return {
+      'app': _preferences.toMap(),
+      'dictionaryHistory': _dictionaryHistory.toMap(),
+      for (Map<String, MediaSource> sources in mediaSources.values)
+        for (MediaSource source in sources.values)
+          'source:${source.uniqueKey}': source.preferencesForBackup(),
+    };
+  }
+
+  /// Replaces settings stores with those of a backup. Stores the backup
+  /// doesn't have are left as they are.
+  Future<void> restoreSettings(Map<String, Map<dynamic, dynamic>> stores) async {
+    Map<dynamic, dynamic>? app = stores['app'];
+    if (app != null) {
+      await _preferences.clear();
+      await _preferences.putAll(app);
+    }
+    Map<dynamic, dynamic>? history = stores['dictionaryHistory'];
+    if (history != null) {
+      await _dictionaryHistory.clear();
+      await _dictionaryHistory.putAll(
+        history.map((key, value) => MapEntry(key, (value as num).toInt())),
+      );
+    }
+    for (Map<String, MediaSource> sources in mediaSources.values) {
+      for (MediaSource source in sources.values) {
+        Map<dynamic, dynamic>? values = stores['source:${source.uniqueKey}'];
+        if (values != null) {
+          await source.restorePreferences(values);
+        }
+      }
+    }
+  }
+
+  /// The user's own records, by collection: history, memos, Anki profiles,
+  /// searches, chats, Mokuro catalogs and bookmarks.
+  Map<String, List<Map<String, dynamic>>> recordsForBackup() {
+    return {
+      'mediaItems': _database.mediaItems.where().exportJsonSync(),
+      'readerMemos': _database.readerMemos.where().exportJsonSync(),
+      'ankiMappings': _database.ankiMappings.where().exportJsonSync(),
+      'searchHistoryItems':
+          _database.searchHistoryItems.where().exportJsonSync(),
+      'messageItems': _database.messageItems.where().exportJsonSync(),
+      'mokuroCatalogs': _database.mokuroCatalogs.where().exportJsonSync(),
+      'browserBookmarks': _database.browserBookmarks.where().exportJsonSync(),
+    };
+  }
+
+  /// Replaces the user's own records with those of a backup.
+  void restoreRecords(Map<String, List<Map<String, dynamic>>> records) {
+    void restore<T>(IsarCollection<T> collection, String key) {
+      List<Map<String, dynamic>>? rows = records[key];
+      if (rows == null) {
+        return;
+      }
+      collection.clearSync();
+      collection.importJsonSync(rows);
+    }
+
+    _database.writeTxnSync(() {
+      restore(_database.mediaItems, 'mediaItems');
+      restore(_database.readerMemos, 'readerMemos');
+      restore(_database.ankiMappings, 'ankiMappings');
+      restore(_database.searchHistoryItems, 'searchHistoryItems');
+      restore(_database.messageItems, 'messageItems');
+      restore(_database.mokuroCatalogs, 'mokuroCatalogs');
+      restore(_database.browserBookmarks, 'browserBookmarks');
+    });
+  }
+
+  /// Replaces My terms with [words] from a backup.
+  void restoreMyWords(List<MyWord> words) {
+    for (MyWord word in MyWords.all(_database)) {
+      MyWords.delete(_database, word.entryId);
+    }
+    for (MyWord word in words) {
+      MyWords.save(
+        _database,
+        term: word.term,
+        reading: word.reading,
+        meaning: word.meaning,
+        origin: word.origin,
+      );
+    }
+    _onMyWordsChanged();
+  }
+
+  /// Puts restored dictionaries in the order the backup had them, hidden
+  /// and collapsed in the same languages.
+  void restoreDictionaryLayout(List<Map<String, dynamic>> layout) {
+    List<Dictionary> dictionaries = this.dictionaries;
+    _database.writeTxnSync(() {
+      for (Map<String, dynamic> saved in layout) {
+        Dictionary? dictionary =
+            dictionaries.firstWhereOrNull((d) => d.name == saved['name']);
+        if (dictionary == null) {
+          continue;
+        }
+        dictionary.order = (saved['order'] as num?)?.toInt() ?? dictionary.order;
+        dictionary.hiddenLanguages =
+            List<String>.from(saved['hiddenLanguages'] as List? ?? const []);
+        dictionary.collapsedLanguages =
+            List<String>.from(saved['collapsedLanguages'] as List? ?? const []);
+        _database.dictionarys.putSync(dictionary);
+      }
+    });
+    dictionarySearchAgainNotifier.notifyListeners();
+  }
+
   /// Persist a new last selected model name. This is called when the user
   /// changes the selected model to map in the profiles menu.
   Future<void> setLastSelectedModelName(String modelName) async {
@@ -1850,6 +1999,7 @@ class AppModel with ChangeNotifier {
     if (directory.existsSync()) {
       directory.deleteSync(recursive: true);
     }
+    await forgetDictionarySource(dictionary.name);
 
     dictionarySearchAgainNotifier.notifyListeners();
   }

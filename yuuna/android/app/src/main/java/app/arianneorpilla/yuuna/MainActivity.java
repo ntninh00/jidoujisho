@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Set;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import com.ichi2.anki.api.NoteInfo;
 import com.ryanheise.audioservice.AudioServiceActivity;
@@ -35,9 +38,14 @@ import android.content.pm.PackageManager;
 public class MainActivity extends AudioServiceActivity {
     private static final String ANKIDROID_CHANNEL = "app.arianneorpilla.yuuna/anki";
     private static final int AD_PERM_REQUEST = 4210;
+    private static final String FILES_CHANNEL = "app.arianneorpilla.yuuna/files";
+    private static final int CREATE_DOCUMENT_REQUEST = 4211;
 
     /// Waits for the answer to the AnkiDroid permission request.
     private MethodChannel.Result pendingAnkiPermission;
+
+    /// Waits for the user to choose where a new file is saved.
+    private MethodChannel.Result pendingCreateDocument;
 
     private Activity context;
     private AnkiDroidHelper mAnkiDroid;
@@ -251,5 +259,72 @@ public class MainActivity extends AudioServiceActivity {
                     }
                 }
             );
+
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), FILES_CHANNEL)
+            .setMethodCallHandler(
+                (call, result) -> {
+                    switch (call.method) {
+                        case "createDocument":
+                            // Asks where to save a new file, through the system's own
+                            // picker, so no storage permission is needed.
+                            if (pendingCreateDocument != null) {
+                                pendingCreateDocument.success(null);
+                            }
+                            pendingCreateDocument = result;
+                            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType(call.argument("mimeType"));
+                            intent.putExtra(Intent.EXTRA_TITLE, (String) call.argument("name"));
+                            try {
+                                startActivityForResult(intent, CREATE_DOCUMENT_REQUEST);
+                            } catch (Exception e) {
+                                pendingCreateDocument = null;
+                                result.error("unavailable", e.getMessage(), null);
+                            }
+                            break;
+                        case "copyFileToUri":
+                            final String source = call.argument("path");
+                            final String target = call.argument("uri");
+                            new Thread(() -> {
+                                try (InputStream in = new FileInputStream(source);
+                                     OutputStream out = openForWriting(Uri.parse(target))) {
+                                    byte[] buffer = new byte[1 << 16];
+                                    int read;
+                                    while ((read = in.read(buffer)) != -1) {
+                                        out.write(buffer, 0, read);
+                                    }
+                                    out.flush();
+                                    new Handler(Looper.getMainLooper()).post(() -> result.success(true));
+                                } catch (Exception e) {
+                                    new Handler(Looper.getMainLooper()).post(
+                                        () -> result.error("copy_failed", e.getMessage(), null));
+                                }
+                            }).start();
+                            break;
+                        default:
+                            result.notImplemented();
+                    }
+                }
+            );
+    }
+
+    /// Opens a picked document for writing, emptying it first where the
+    /// provider allows; some, like Google Drive, only accept plain "w".
+    private OutputStream openForWriting(Uri uri) throws java.io.FileNotFoundException {
+        try {
+            return getContentResolver().openOutputStream(uri, "wt");
+        } catch (java.io.FileNotFoundException | IllegalArgumentException e) {
+            return getContentResolver().openOutputStream(uri, "w");
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CREATE_DOCUMENT_REQUEST && pendingCreateDocument != null) {
+            Uri uri = resultCode == Activity.RESULT_OK && data != null ? data.getData() : null;
+            pendingCreateDocument.success(uri == null ? null : uri.toString());
+            pendingCreateDocument = null;
+        }
     }
 }

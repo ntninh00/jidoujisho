@@ -52,6 +52,7 @@ export 'src/pages/implementations/ttu_sheets.dart';
 export 'src/pages/implementations/ttu_reader_menu.dart';
 export 'src/pages/implementations/ttu_memo_colors.dart';
 export 'src/pages/implementations/dictionary_catalog_page.dart';
+export 'src/pages/implementations/backup_page.dart';
 export 'src/pages/implementations/my_words_sheets.dart';
 export 'src/pages/implementations/file_access_sheet.dart';
 export 'src/pages/implementations/dictionary_settings_dialog_page.dart';

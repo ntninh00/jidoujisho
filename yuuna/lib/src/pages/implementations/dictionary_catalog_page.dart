@@ -276,6 +276,20 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
       return;
     }
     Navigator.pop(context);
+    DictionaryServer? server = _server;
+    if (imported && server != null) {
+      // A backup can then download it again instead of carrying it.
+      await appModel.setDictionarySource(dictionary.title, {
+        'kind': 'server',
+        'url': server.url,
+        'id': dictionary.id,
+        'title': dictionary.title,
+        'revision': dictionary.revision,
+      });
+    }
+    if (!mounted) {
+      return;
+    }
     if (imported) {
       _say(t.catalog_imported(name: dictionary.title));
     }

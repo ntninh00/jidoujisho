@@ -369,6 +369,179 @@ class TtuLibrary {
     return result?.value;
   }
 
+  static String? _storageScript;
+
+  /// The storage bridge script, for backups.
+  static Future<String> get storageScript async {
+    return _storageScript ??= await rootBundle
+        .loadString('assets/ttu-ebook-reader/jidoujisho/storage.js');
+  }
+
+  /// Text moves between the app and the page in slices of this many
+  /// characters, so no single message is huge.
+  static const int _slice = 512 * 1024;
+
+  /// Writes everything ッツ keeps for one language into [directory]: its
+  /// databases with books, reading positions and statistics, its settings
+  /// and the fonts the user added. Resolves to the number of books.
+  static Future<int> backUpStorage({
+    required int port,
+    required Directory directory,
+    void Function(int done, int total)? onProgress,
+  }) {
+    return _onPage(
+      port: port,
+      page: 'jidoujisho/shelf.html',
+      timeout: const Duration(hours: 2),
+      action: (controller) async {
+        await controller.evaluateJavascript(source: await storageScript);
+        Map<String, dynamic> description = Map<String, dynamic>.from(
+            await _call(controller,
+                'return await window.jdjStorage.describe();', {}) as Map);
+        directory.createSync(recursive: true);
+        File(path.join(directory.path, 'description.json'))
+            .writeAsStringSync(jsonEncode(description));
+
+        int total = 0;
+        int books = 0;
+        for (Map db in (description['databases'] as List).cast<Map>()) {
+          for (Map store in (db['stores'] as List).cast<Map>()) {
+            total += (store['count'] as num).toInt();
+            if (db['name'] == 'books' && store['name'] == 'data') {
+              books = (store['count'] as num).toInt();
+            }
+          }
+        }
+
+        Future<File> readOut(int length, String name) async {
+          File file = File(path.join(directory.path, name));
+          IOSink sink = file.openWrite();
+          for (int at = 0; at < length; at += _slice) {
+            Object? text = await _call(
+              controller,
+              'return window.jdjStorage.slice(from, to);',
+              {'from': at, 'to': min(length, at + _slice)},
+            );
+            sink.write(text as String);
+          }
+          await sink.close();
+          return file;
+        }
+
+        List<Map<String, dynamic>> batches = [];
+        int done = 0;
+        for (Map db in (description['databases'] as List).cast<Map>()) {
+          for (Map store in (db['stores'] as List).cast<Map>()) {
+            Object? after;
+            do {
+              Map packed = await _call(
+                controller,
+                'return await window.jdjStorage.pack(db, store, after, budget);',
+                {
+                  'db': db['name'],
+                  'store': store['name'],
+                  'after': after,
+                  'budget': 8 * 1024 * 1024,
+                },
+              ) as Map;
+              int count = (packed['count'] as num).toInt();
+              if (count > 0) {
+                String name = 'records-${batches.length}.json';
+                await readOut((packed['length'] as num).toInt(), name);
+                batches.add({
+                  'database': db['name'],
+                  'store': store['name'],
+                  'file': name,
+                });
+                done += count;
+                onProgress?.call(done, total);
+              }
+              after = packed['next'];
+            } while (after != null);
+          }
+        }
+
+        for (Map cache in (description['caches'] as List).cast<Map>()) {
+          Object? from = 0;
+          do {
+            Map packed = await _call(
+              controller,
+              'return await window.jdjStorage.packCache(cache, from, budget);',
+              {'cache': cache['name'], 'from': from, 'budget': 8 * 1024 * 1024},
+            ) as Map;
+            if ((packed['count'] as num).toInt() > 0) {
+              String name = 'cache-${batches.length}.json';
+              await readOut((packed['length'] as num).toInt(), name);
+              batches.add({'cache': cache['name'], 'file': name});
+            }
+            from = packed['next'];
+          } while (from != null);
+        }
+
+        File(path.join(directory.path, 'batches.json'))
+            .writeAsStringSync(jsonEncode(batches));
+        return books;
+      },
+    );
+  }
+
+  /// Replaces what ッツ keeps for one language with a backup written by
+  /// [backUpStorage] into [directory].
+  static Future<void> restoreStorage({
+    required int port,
+    required Directory directory,
+    void Function(int done, int total)? onProgress,
+  }) {
+    return _onPage(
+      port: port,
+      page: 'jidoujisho/shelf.html',
+      timeout: const Duration(hours: 2),
+      action: (controller) async {
+        await controller.evaluateJavascript(source: await storageScript);
+        Map description = jsonDecode(
+          File(path.join(directory.path, 'description.json'))
+              .readAsStringSync(),
+        ) as Map;
+        List<Map> batches = (jsonDecode(
+          File(path.join(directory.path, 'batches.json')).readAsStringSync(),
+        ) as List)
+            .cast<Map>();
+
+        await _call(controller,
+            'return await window.jdjStorage.prepare(description);', {
+          'description': description,
+        });
+
+        for (int i = 0; i < batches.length; i++) {
+          Map batch = batches[i];
+          String text = await File(path.join(directory.path, batch['file']))
+              .readAsString();
+          for (int at = 0; at < text.length; at += _slice) {
+            await _call(controller, 'return window.jdjStorage.receive(chunk);',
+                {'chunk': text.substring(at, min(text.length, at + _slice))});
+          }
+          if (batch['cache'] != null) {
+            await _call(
+                controller,
+                'return await window.jdjStorage.unpackCache(cache);',
+                {'cache': batch['cache']});
+          } else {
+            await _call(
+                controller,
+                'return await window.jdjStorage.unpack(db, store);',
+                {'db': batch['database'], 'store': batch['store']});
+          }
+          onProgress?.call(i + 1, batches.length);
+        }
+
+        await _call(
+            controller,
+            'return window.jdjStorage.restoreSettings(settings);',
+            {'settings': description['localStorage'] ?? {}});
+      },
+    );
+  }
+
   static final RegExp _coverName = RegExp(r'^(\d+)_(\d+)_(\d+)\.jpg$');
 
   /// Lists the books of one language. Covers are cached as small JPEG files

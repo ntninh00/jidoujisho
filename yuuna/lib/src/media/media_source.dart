@@ -109,6 +109,15 @@ abstract class MediaSource {
     await _preferences.put(key, value);
   }
 
+  /// Every preference of this source, for a backup.
+  Map<dynamic, dynamic> preferencesForBackup() => _preferences.toMap();
+
+  /// Replaces every preference of this source with [values] from a backup.
+  Future<void> restorePreferences(Map<dynamic, dynamic> values) async {
+    await _preferences.clear();
+    await _preferences.putAll(values);
+  }
+
   /// Set the preference for a certain parameter [key] for this source.
   Future<void> deletePreference({required String key}) async {
     await _preferences.delete(key);
