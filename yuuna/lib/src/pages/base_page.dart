@@ -25,13 +25,28 @@ class BasePageState<T extends BasePage> extends ConsumerState<T> {
   /// Access the global model responsible for creator state management.
   CreatorModel get creatorModel => ref.watch(creatorProvider);
 
+  /// The models as first looked up. They live as long as the app, and
+  /// [dispose] can no longer look them up through [ref]: a page that uses
+  /// them there has already used them while open.
+  AppModel? _appModel;
+  CreatorModel? _creatorModel;
+
   /// Access the global model responsible for app-wide state management without
-  /// listening to state updates. Useful when accessing state from [initState].
-  AppModel get appModelNoUpdate => ref.read(appProvider);
+  /// listening to state updates. Useful when accessing state from [initState]
+  /// or [dispose].
+  AppModel get appModelNoUpdate {
+    AppModel model = _appModel ?? ref.read<AppModel>(appProvider);
+    return _appModel = model;
+  }
 
   /// Access the global model responsible for creator state management. without
-  /// listening to state updates. Useful when accessing state from [initState].
-  CreatorModel get creatorModelNoUpdate => ref.read(creatorProvider);
+  /// listening to state updates. Useful when accessing state from [initState]
+  /// or [dispose].
+  CreatorModel get creatorModelNoUpdate {
+    CreatorModel model =
+        _creatorModel ?? ref.read<CreatorModel>(creatorProvider);
+    return _creatorModel = model;
+  }
 
   /// Shortcut for accessing the app-wide theme-defined text theme.
   TextTheme get textTheme => Theme.of(context).textTheme;

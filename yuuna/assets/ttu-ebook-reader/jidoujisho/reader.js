@@ -1043,6 +1043,13 @@
           return inside[0].start;
         }
       }
+      /* Without a hint, as when ッツ changes the page, the chapter shown last
+       * is the likeliest, or else the one nearest it. */
+      if (close.length > 1 && lastBase >= 0) {
+        close.sort(function (a, b) {
+          return Math.abs(a.start - lastBase) - Math.abs(b.start - lastBase);
+        });
+      }
       return close[0].start;
     }).catch(function () {
       return 0;
@@ -1051,6 +1058,7 @@
 
   var lastMemos = null;
   var lastHint = -1;
+  var lastBase = -1;
 
   jdj.showMemos = function (memos, hint) {
     lastMemos = memos || [];
@@ -1061,6 +1069,7 @@
     }
     var index = indexBook(root);
     return pageStartCount(index, lastHint).then(function (base) {
+      lastBase = base;
       return placeMemos(index, base, lastMemos);
     });
   };
@@ -1473,6 +1482,21 @@
     }
     var from = Math.max(start, at - 32);
     var to = Math.min(end, at + length + 64);
+    /* Snippets of spaced text start and end on whole words. */
+    var LETTER = /[\p{L}\p{N}]/u;
+    if (from > start && LETTER.test(text[from - 1] || '') && LETTER.test(text[from] || '')) {
+      var space = text.slice(from, at).search(/\s/);
+      if (space >= 0) {
+        from += space + 1;
+      }
+    }
+    if (to < end && LETTER.test(text[to - 1] || '') && LETTER.test(text[to] || '')) {
+      var tail = text.slice(at + length, to);
+      var lastSpace = tail.search(/\s\S*$/);
+      if (lastSpace > 0) {
+        to = at + length + lastSpace;
+      }
+    }
     var characters = countAt(index, at);
     return {
       characters: characters,
