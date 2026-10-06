@@ -1086,31 +1086,79 @@
     var page = getComputedStyle(document.body);
     var root = document.querySelector('.book-content');
     var ink = root ? getComputedStyle(root).color : page.color;
+    var width = window.innerWidth;
+    var height = window.innerHeight;
     shown.forEach(function (entry) {
       var first = entry.rects[0];
       var note = document.createElement('div');
       note.className = 'jdj-memo-note';
       note.setAttribute('data-memo', String(entry.item.id));
-      note.textContent = entry.item.text || '…';
-      note.style.cssText =
-        'position:absolute;pointer-events:auto;cursor:pointer;box-sizing:border-box;' +
-        'font:500 11px/16px system-ui,sans-serif;white-space:nowrap;overflow:hidden;' +
-        'text-overflow:ellipsis;padding:0 7px;border-radius:8px;' +
-        'border:1px solid rgba(255,193,7,0.75);background:' + page.backgroundColor + ';' +
-        'color:' + ink + ';box-shadow:0 1px 4px rgba(0,0,0,0.25);';
+      note.style.cssText = NOTE_STYLE + 'left:0;top:0;visibility:hidden;' +
+        'background:' + page.backgroundColor + ';color:' + ink + ';';
+      var text = document.createElement('div');
+      text.style.cssText = NOTE_TEXT_STYLE;
+      text.textContent = noteText(entry.item.text);
+      note.appendChild(text);
+      /* Fitted to the text along its lines, which run down the page in a
+       * vertical book. */
       if (vertical) {
         note.style.writingMode = 'vertical-rl';
-        note.style.maxHeight = '40vh';
-        note.style.padding = '7px 0';
-        note.style.left = Math.min(window.innerWidth - 20, first.right + 2) + 'px';
-        note.style.top = Math.max(4, first.top) + 'px';
+        note.style.padding = '9px 5px';
+        note.style.height = 'max-content';
+        note.style.maxHeight = Math.min(320, height * 0.5) + 'px';
+        text.style.maxWidth = NOTE_LINES * NOTE_LINE + 'px';
       } else {
-        note.style.maxWidth = Math.min(260, window.innerWidth * 0.7) + 'px';
-        note.style.left = Math.max(4, Math.min(first.left, window.innerWidth - 120)) + 'px';
-        note.style.top = (first.top > 22 ? first.top - 18 : first.bottom + 2) + 'px';
+        note.style.width = 'max-content';
+        note.style.maxWidth = Math.min(300, width - NOTE_EDGE * 2) + 'px';
       }
       notes.appendChild(note);
+
+      /* Beside the passage's first line: above it, or in a vertical book to
+       * its right; the other side when there is no room. Always on screen. */
+      var size = note.getBoundingClientRect();
+      var left;
+      var top;
+      if (vertical) {
+        left = first.right + 3;
+        if (left + size.width > width - NOTE_EDGE) {
+          left = first.left - 3 - size.width;
+        }
+        top = first.top;
+      } else {
+        left = first.left - 2;
+        top = first.top - 3 - size.height;
+        if (top < NOTE_EDGE) {
+          top = first.bottom + 3;
+        }
+      }
+      note.style.left = clamp(left, NOTE_EDGE, width - NOTE_EDGE - size.width) + 'px';
+      note.style.top = clamp(top, NOTE_EDGE, height - NOTE_EDGE - size.height) + 'px';
+      note.style.visibility = '';
     });
+  }
+
+  /* A memo's note: as wide as its text up to a limit, its line breaks
+   * kept, and cut off with an ellipsis after a few lines. */
+  var NOTE_LINES = 3;
+  var NOTE_LINE = 17;
+  var NOTE_EDGE = 6;
+  var NOTE_STYLE =
+    'position:absolute;pointer-events:auto;cursor:pointer;box-sizing:border-box;' +
+    'padding:5px 9px;border-radius:10px;font:500 12px/' + NOTE_LINE + 'px system-ui,sans-serif;' +
+    'border:1px solid rgba(255,193,7,0.75);box-shadow:0 1px 4px rgba(0,0,0,0.25);';
+  /* The text sits in its own box so the cut-off lines stay out of the
+   * note's padding. */
+  var NOTE_TEXT_STYLE =
+    'white-space:pre-line;overflow-wrap:anywhere;overflow:hidden;' +
+    'display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:' + NOTE_LINES + ';';
+
+  function noteText(text) {
+    var trimmed = String(text || '').trim().replace(/\n{3,}/g, '\n\n');
+    return trimmed ? trimmed.slice(0, 600) : '…';
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(value, Math.max(min, max)));
   }
 
   function queueMemos() {
