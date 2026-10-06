@@ -81,7 +81,8 @@ class _BackupPageState extends BasePageState<BackupPage> {
       Fluttertoast.showToast(
           msg: error.message, toastLength: Toast.LENGTH_LONG);
       return null;
-    } catch (error) {
+    } catch (error, stack) {
+      debugPrint('Backup failed: $error\n$stack');
       Fluttertoast.showToast(msg: '$error', toastLength: Toast.LENGTH_LONG);
       return null;
     } finally {

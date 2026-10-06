@@ -1650,7 +1650,8 @@ class AppModel with ChangeNotifier {
       'dictionaryHistory': _dictionaryHistory.toMap(),
       for (Map<String, MediaSource> sources in mediaSources.values)
         for (MediaSource source in sources.values)
-          'source:${source.uniqueKey}': source.preferencesForBackup(),
+          if (source.isInitialised)
+            'source:${source.uniqueKey}': source.preferencesForBackup(),
     };
   }
 
@@ -1672,7 +1673,7 @@ class AppModel with ChangeNotifier {
     for (Map<String, MediaSource> sources in mediaSources.values) {
       for (MediaSource source in sources.values) {
         Map<dynamic, dynamic>? values = stores['source:${source.uniqueKey}'];
-        if (values != null) {
+        if (values != null && source.isInitialised) {
           await source.restorePreferences(values);
         }
       }

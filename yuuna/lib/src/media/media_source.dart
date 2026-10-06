@@ -87,6 +87,10 @@ abstract class MediaSource {
   /// Whether or not [initialise] has been called for this source.
   bool _initialised = false;
 
+  /// Whether this source has been readied. Sources of media types the app
+  /// doesn't show, such as the camera viewer, never are.
+  bool get isInitialised => _initialised;
+
   /// This function is run at startup. It is not called again if already run.
   Future<void> initialise() async {
     if (_initialised) {
