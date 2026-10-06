@@ -746,7 +746,9 @@
     return false;
   }
 
-  function findVisible(excerpt) {
+  /* The first place [excerpt] shows on screen. With [anywhere], the place
+   * nearest the screen when none shows. */
+  function findVisible(excerpt, anywhere) {
     var root = document.querySelector('.book-content');
     if (!root) {
       return null;
@@ -771,6 +773,8 @@
       }
       return { node: nodes[lo], offset: offset - starts[lo] };
     };
+    var nearest = null;
+    var nearestDistance = Infinity;
     for (var at = text.indexOf(excerpt); at >= 0; at = text.indexOf(excerpt, at + 1)) {
       var a = locate(at);
       var b = locate(at + excerpt.length - 1);
@@ -780,21 +784,75 @@
       if (visible(range)) {
         return range;
       }
+      if (anywhere) {
+        var box = range.getBoundingClientRect();
+        var distance = Math.abs(box.left + box.width / 2 - window.innerWidth / 2) +
+          Math.abs(box.top + box.height / 2 - window.innerHeight / 2);
+        if (distance < nearestDistance) {
+          nearest = range;
+          nearestDistance = distance;
+        }
+      }
     }
-    return null;
+    return nearest;
   }
 
-  /* Briefly highlights the memo's quoted line once it is on screen. */
-  jdj.flash = function (excerpt) {
+  function isPaginated() {
+    try {
+      return localStorage.getItem('viewMode') !== 'continuous';
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /* Scrolling down turns to the next page in either writing direction. */
+  function turnPage(direction) {
+    var target = document.body || document.documentElement;
+    target.dispatchEvent(new WheelEvent('wheel', {
+      deltaY: 100 * direction, bubbles: true, cancelable: true,
+    }));
+  }
+
+  /* Pages to try, one turn at a time, when the text is not on the page
+   * landed on: the next two, then the two before. */
+  var REVEAL_TURNS = [1, 1, -1, -1, -1, -1];
+
+  /*
+   * Briefly highlights the memo's quoted line once it is on screen. With
+   * [reveal], as for a search result, the reader is also taken to the text
+   * when the page landed on does not show it: ッツ's count on a page can
+   * run a little ahead of the book's, for example by the labels it puts on
+   * hidden pictures.
+   */
+  jdj.flash = function (excerpt, reveal) {
     if (!excerpt || !window.CSS || !CSS.highlights || typeof Highlight === 'undefined') {
       return Promise.resolve(false);
     }
+    var text = excerpt.trim();
     var tries = 0;
+    var moves = 0;
     var run = function () {
-      var range = findVisible(excerpt.trim());
+      var range = findVisible(text);
       if (!range) {
         tries += 1;
-        if (tries > 12) {
+        if (reveal && tries >= 3) {
+          if (!isPaginated()) {
+            if (moves === 0) {
+              moves++;
+              var near = findVisible(text, true);
+              if (near) {
+                var el = near.startContainer.parentElement;
+                el.scrollIntoView({ block: 'center', inline: 'center' });
+              }
+              return sleep(300).then(run);
+            }
+          } else if (moves < REVEAL_TURNS.length) {
+            turnPage(REVEAL_TURNS[moves]);
+            moves++;
+            return sleep(450).then(run);
+          }
+        }
+        if (tries > 12 + moves) {
           return Promise.resolve(false);
         }
         return sleep(250).then(run);
@@ -1224,6 +1282,249 @@
       }).finally(function () {
         db.close();
       });
+    });
+  };
+
+  /* ---------- search ---------- */
+
+  /*
+   * Search covers the whole book as ッツ stored it, since the page holds
+   * only the current chapter. The book is read and indexed once per page;
+   * each search is then one pass over its text. A result's position is
+   * ッツ's count of the characters before it, furigana left out, which
+   * matches the chapter starts ッツ stored.
+   */
+  var SEARCH_BLOCKS = /^(P|DIV|H[1-6]|LI|UL|OL|DL|DD|DT|BLOCKQUOTE|PRE|TABLE|TR|TD|TH|SECTION|ARTICLE|ASIDE|HEADER|FOOTER|NAV|FIGURE|FIGCAPTION|BR|HR)$/;
+
+  /* Ends a paragraph in the index. Text never contains it, so a match or a
+   * snippet never runs from one paragraph into the next. */
+  var BREAK = ' ';
+
+  var searchIndex = null;
+  var searchIndexing = null;
+
+  /* One character as search compares it, always one character long so that
+   * positions in the folded text are positions in the book text: any space
+   * is a space, letters lower case, full-width letters and digits plain,
+   * katakana as hiragana, curly quotes straight. */
+  function foldChar(ch) {
+    var code = ch.charCodeAt(0);
+    if (ch === BREAK) {
+      return ch;
+    }
+    if (/\s/.test(ch)) {
+      return ' ';
+    }
+    if (code >= 0xff01 && code <= 0xff5e) {
+      ch = String.fromCharCode(code - 0xfee0);
+      code = ch.charCodeAt(0);
+    }
+    if ((code >= 0x30a1 && code <= 0x30f6) || code === 0x30fd || code === 0x30fe) {
+      return String.fromCharCode(code - 0x60);
+    }
+    if (ch === '‘' || ch === '’') {
+      return "'";
+    }
+    if (ch === '“' || ch === '”') {
+      return '"';
+    }
+    var lower = ch.toLowerCase();
+    return lower.length === 1 ? lower : ch;
+  }
+
+  function foldText(text) {
+    var out = '';
+    for (var i = 0; i < text.length; i++) {
+      out += foldChar(text[i]);
+    }
+    return out;
+  }
+
+  function readBookData(id) {
+    return openBooks().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var request = db.transaction('data', 'readonly').objectStore('data').get(id);
+        request.onsuccess = function () {
+          resolve(request.result || null);
+        };
+        request.onerror = function () {
+          reject(request.error);
+        };
+      }).finally(function () {
+        db.close();
+      });
+    });
+  }
+
+  /* The book's text with a break after each paragraph, folded for search,
+   * and where each piece starts in the text and in ッツ's count. */
+  function buildSearchIndex(book) {
+    var doc = new DOMParser().parseFromString(
+      '<!doctype html><body>' + (book.elementHtml || '') + '</body>', 'text/html');
+    var text = [];
+    var folded = [];
+    var starts = [];
+    var counts = [];
+    var length = 0;
+    var counted = 0;
+    var lastBreak = true;
+    var piece = function (raw, isBreak) {
+      starts.push(length);
+      counts.push(counted);
+      text.push(raw);
+      folded.push(isBreak ? raw : foldText(raw));
+      length += raw.length;
+      if (!isBreak) {
+        counted += raw.replace(UNCOUNTED, '').length;
+      }
+      lastBreak = isBreak;
+    };
+    var paragraphBreak = function () {
+      if (!lastBreak) {
+        piece(BREAK, true);
+      }
+    };
+    var walk = function (node) {
+      for (var n = node.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) {
+          if (n.data.length) {
+            piece(n.data, false);
+          }
+        } else if (n.nodeType === 1) {
+          if (n.nodeName === 'RT' || n.nodeName === 'RP') {
+            continue;
+          }
+          var block = SEARCH_BLOCKS.test(n.nodeName);
+          if (block) {
+            paragraphBreak();
+          }
+          walk(n);
+          if (block) {
+            paragraphBreak();
+          }
+        }
+      }
+    };
+    walk(doc.body);
+    return {
+      id: book.id,
+      text: text.join(''),
+      folded: folded.join(''),
+      starts: starts,
+      counts: counts,
+      characters: book.characters || counted,
+    };
+  }
+
+  function searchIndexFor(id) {
+    if (searchIndex && searchIndex.id === id) {
+      return Promise.resolve(searchIndex);
+    }
+    if (!searchIndexing) {
+      searchIndexing = readBookData(id).then(function (book) {
+        searchIndexing = null;
+        if (!book) {
+          return null;
+        }
+        searchIndex = buildSearchIndex(book);
+        return searchIndex;
+      }, function (error) {
+        searchIndexing = null;
+        throw error;
+      });
+    }
+    return searchIndexing;
+  }
+
+  /* ッツ's count at [offset] of the indexed text. */
+  function countAt(index, offset) {
+    var lo = 0;
+    var hi = index.starts.length - 1;
+    while (lo < hi) {
+      var mid = (lo + hi + 1) >> 1;
+      if (index.starts[mid] <= offset) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    var counted = index.counts[lo] || 0;
+    var from = index.starts[lo] || 0;
+    for (var i = from; i < offset; i++) {
+      if (COUNTED.test(index.text[i])) {
+        counted++;
+      }
+    }
+    return counted;
+  }
+
+  function oneLine(text) {
+    return text.replace(/\s+/g, ' ');
+  }
+
+  /* A result: where it is, a little of its paragraph around it, and the
+   * text to highlight once the page shows it. */
+  function describeMatch(index, at, length) {
+    var text = index.text;
+    var start = text.lastIndexOf(BREAK, at - 1) + 1;
+    var end = text.indexOf(BREAK, at + length);
+    if (end < 0) {
+      end = text.length;
+    }
+    var from = Math.max(start, at - 32);
+    var to = Math.min(end, at + length + 64);
+    var characters = countAt(index, at);
+    return {
+      characters: characters,
+      progress: index.characters > 0 ? Math.min(1, characters / index.characters) : 0,
+      before: (from > start ? '…' : '') + oneLine(text.slice(from, at)).replace(/^\s+/, ''),
+      match: oneLine(text.slice(at, at + length)),
+      after: oneLine(text.slice(at + length, to)).replace(/\s+$/, '') + (to < end ? '…' : ''),
+      flash: text.slice(at, Math.min(end, at + length + 12)),
+    };
+  }
+
+  /* Starts reading the book for search, so the first search is quick. */
+  jdj.prepareSearch = function () {
+    var id = bookId();
+    if (isNaN(id)) {
+      return Promise.resolve(false);
+    }
+    return searchIndexFor(id).then(function (index) {
+      return !!index;
+    });
+  };
+
+  /* Every place [query] appears, in book order: the first [limit] described,
+   * and how many there are in all. */
+  jdj.search = function (query, limit) {
+    var id = bookId();
+    if (isNaN(id)) {
+      return Promise.resolve(null);
+    }
+    return searchIndexFor(id).then(function (index) {
+      if (!index) {
+        return null;
+      }
+      var words = foldText(String(query || '')).split(' ').filter(function (word) {
+        return word.length > 0;
+      });
+      var results = [];
+      var total = 0;
+      if (words.length) {
+        var pattern = words.map(function (word) {
+          return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }).join(' +');
+        var re = new RegExp(pattern, 'g');
+        var max = typeof limit === 'number' ? limit : 500;
+        for (var m = re.exec(index.folded); m; m = re.exec(index.folded)) {
+          total++;
+          if (results.length < max) {
+            results.push(describeMatch(index, m.index, m[0].length));
+          }
+        }
+      }
+      return { total: total, results: results, characters: index.characters };
     });
   };
 

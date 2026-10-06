@@ -19,6 +19,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_charset_detector/flutter_charset_detector.dart';
 import 'package:flutter_exit_app/flutter_exit_app.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -1306,6 +1307,12 @@ class AppModel with ChangeNotifier {
     /// Prepare entities that may be repeatedly used at runtime.
     _packageInfo = await PackageInfo.fromPlatform();
     _androidDeviceInfo = await DeviceInfoPlugin().androidInfo;
+
+    /// The dev build's pages can be inspected from a computer over USB or
+    /// wireless debugging, to look into problems on a phone.
+    if (_packageInfo.packageName.endsWith('.dev')) {
+      await InAppWebViewController.setWebContentsDebuggingEnabled(true);
+    }
 
     /// Initialise persistent key-value store.
     await Hive.initFlutter();
