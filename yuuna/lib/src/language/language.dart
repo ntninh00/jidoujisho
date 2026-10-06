@@ -316,10 +316,11 @@ abstract class Language {
   int getGuessHighlightLength({
     required String searchTerm,
   }) {
-    return textToWords(searchTerm)
-        .firstWhere((e) => e.trim().isNotEmpty)
-        .trim()
-        .length;
+    /// Without a word, as when segmentation finds none, one character is
+    /// highlighted until the search says how long the match is.
+    String? word =
+        textToWords(searchTerm).firstWhereOrNull((e) => e.trim().isNotEmpty);
+    return max(1, word?.trim().length ?? 1);
   }
 
   /// Get final highlight length after a dictionary search.

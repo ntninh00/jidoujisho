@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:kana_kit/kana_kit.dart';
 import 'package:mecab_dart/mecab_dart.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:ruby_text/ruby_text.dart';
 import 'package:ve_dart/ve_dart.dart';
 import 'package:yuuna/dictionary.dart';
@@ -49,6 +52,21 @@ class JapaneseLanguage extends Language {
   @override
   Future<void> prepareResources() async {
     await mecab.init('assets/language/japanese/ipadic', true);
+
+    /// MeCab copies its dictionary out of the app once and reuses the copy.
+    /// A copy cut short, as when the app is closed during the first start,
+    /// leaves it finding no words at all; copy it again.
+    if (mecab.parse('日本語の文章').isEmpty) {
+      debugPrint('MeCab found no words; copying its dictionary again');
+      Directory documents = await getApplicationDocumentsDirectory();
+      Directory copy = Directory(path.join(documents.path, 'ipadic'));
+      if (copy.existsSync()) {
+        copy.deleteSync(recursive: true);
+      }
+      await mecab.init('assets/language/japanese/ipadic', true);
+      debugPrint('MeCab after copying again: '
+          '${mecab.parse('日本語の文章').length} tokens');
+    }
   }
 
   @override

@@ -1553,7 +1553,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       mediaSource.setCurrentSentence(
         selection: selection,
       );
-    } catch (e) {
+    } catch (error, stack) {
+      debugPrint('Lookup failed: $error\n$stack');
       clearDictionaryResult();
     }
   }
