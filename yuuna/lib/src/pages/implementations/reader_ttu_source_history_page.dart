@@ -391,22 +391,26 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
               Icon(section.icon, size: 15, color: theme.colorScheme.primary),
               const SizedBox(width: 7),
             ],
-            Flexible(
-              child: Text(
-                section.title ?? '',
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: section.title ?? '',
+                      style: textTheme.titleSmall!.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '  ${section.books.length}',
+                      style: textTheme.labelMedium!.copyWith(color: muted),
+                    ),
+                  ],
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: textTheme.titleSmall!.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
               ),
             ),
-            const SizedBox(width: 7),
-            Text(
-              '${section.books.length}',
-              style: textTheme.labelMedium!.copyWith(color: muted),
-            ),
-            const Spacer(),
             AnimatedRotation(
               turns: folded ? -0.25 : 0,
               duration: reduceMotion
