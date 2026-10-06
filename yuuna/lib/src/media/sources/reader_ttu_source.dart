@@ -137,6 +137,16 @@ class ReaderTtuSource extends ReaderMediaSource {
     );
   }
 
+  /// The colour picked for the last memo, which new memos start with.
+  TtuMemoColor get lastMemoColor => TtuMemoColor.of(
+        getPreference<String?>(key: 'memo_color', defaultValue: null),
+      );
+
+  /// Remembers the colour picked for a memo.
+  Future<void> setLastMemoColor(TtuMemoColor color) async {
+    await setPreference<String?>(key: 'memo_color', value: color.name);
+  }
+
   /// Errors from the last read of the shelf, per language.
   final Map<Language, Object> shelfErrors = {};
 

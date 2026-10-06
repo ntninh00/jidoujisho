@@ -241,7 +241,6 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                       books[index],
                       memosByBook[books[index].key]?.length ?? 0,
                     ),
-                    onMemos: () => _showMemos(books[index]),
                   ),
                   childCount: books.length,
                 ),
@@ -431,16 +430,14 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
   }
 }
 
-/// One book on the shelf: its cover and title, progress with memo marks, a
-/// memo count that opens the book's memos, and a language tag for books not
-/// in the app's language.
+/// One book on the shelf: its cover and title, progress with memo marks, and
+/// a coloured tab peeking out from the cover for its memos.
 class _BookTile extends BasePage {
   const _BookTile({
     required this.book,
     required this.memos,
     required this.onOpen,
     required this.onDetails,
-    required this.onMemos,
     super.key,
   });
 
@@ -448,7 +445,6 @@ class _BookTile extends BasePage {
   final List<ReaderMemo> memos;
   final VoidCallback onOpen;
   final VoidCallback onDetails;
-  final VoidCallback onMemos;
 
   @override
   BasePageState<_BookTile> createState() => _BookTileState();
@@ -465,118 +461,82 @@ class _BookTileState extends BasePageState<_BookTile> {
       appModel: appModel,
       item: item,
     );
-    int count = widget.memos.length;
-
     return Padding(
       padding: const EdgeInsets.all(5),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            TtuCover(book: book, radius: 0, overrideImage: overrideImage),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: 0.25,
-                widthFactor: 1,
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.fromLTRB(3, 2, 3, 5),
-                  color: Colors.black.withOpacity(0.6),
-                  child: Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodySmall!.copyWith(
-                      color: Colors.white,
-                      fontSize: textTheme.bodySmall!.fontSize! * 0.9,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: 8,
-                width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        clipBehavior: Clip.none,
+        children: [
+          if (widget.memos.isNotEmpty)
+            Positioned.fill(
+              child: IgnorePointer(
                 child: CustomPaint(
-                  painter: _ProgressTicksPainter(
-                    progress: book.progress,
-                    marks: widget.memos.map((memo) => memo.progress).toList(),
+                  painter: TtuMemoTabsPainter(
+                    tabs: [
+                      for (ReaderMemo memo in widget.memos)
+                        (
+                          at: memo.progress,
+                          color: TtuMemoColor.ofMemo(memo).color,
+                        ),
+                    ],
                   ),
                 ),
               ),
             ),
-            Material(
-              type: MaterialType.transparency,
-              child: InkWell(
-                onTap: widget.onOpen,
-                onLongPress: widget.onDetails,
-              ),
-            ),
-            if (count > 0)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Semantics(
-                  button: true,
-                  label: '${t.ttu_memos} · $count',
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: widget.onMemos,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 5, 5, 14),
-                      child: _Pill(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Ui.edit_note,
-                              size: 14,
-                              color: Color(0xFFFF8A80),
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                TtuCover(book: book, radius: 0, overrideImage: overrideImage),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: FractionallySizedBox(
+                    heightFactor: 0.25,
+                    widthFactor: 1,
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.fromLTRB(3, 2, 3, 5),
+                      color: Colors.black.withOpacity(0.6),
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodySmall!.copyWith(
+                          color: Colors.white,
+                          fontSize: textTheme.bodySmall!.fontSize! * 0.9,
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    height: 8,
+                    width: double.infinity,
+                    child: CustomPaint(
+                      painter: _ProgressTicksPainter(
+                        progress: book.progress,
+                        marks:
+                            widget.memos.map((memo) => memo.progress).toList(),
+                      ),
+                    ),
+                  ),
+                ),
+                Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: widget.onOpen,
+                    onLongPress: widget.onDetails,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _Pill extends StatelessWidget {
-  const _Pill({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 20,
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: child,
     );
   }
 }

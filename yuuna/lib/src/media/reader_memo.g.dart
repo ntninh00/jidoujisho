@@ -27,28 +27,33 @@ const ReaderMemoSchema = CollectionSchema(
       name: r'bookTitle',
       type: IsarType.string,
     ),
-    r'createdAt': PropertySchema(
+    r'color': PropertySchema(
       id: 2,
+      name: r'color',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'excerpt': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'excerpt',
       type: IsarType.string,
     ),
     r'exploredCharCount': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'exploredCharCount',
       type: IsarType.long,
     ),
     r'memo': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'memo',
       type: IsarType.string,
     ),
     r'progress': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'progress',
       type: IsarType.double,
     )
@@ -89,6 +94,12 @@ int _readerMemoEstimateSize(
   var bytesCount = offsets.last;
   bytesCount += 3 + object.bookKey.length * 3;
   bytesCount += 3 + object.bookTitle.length * 3;
+  {
+    final value = object.color;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.excerpt.length * 3;
   bytesCount += 3 + object.memo.length * 3;
   return bytesCount;
@@ -102,11 +113,12 @@ void _readerMemoSerialize(
 ) {
   writer.writeString(offsets[0], object.bookKey);
   writer.writeString(offsets[1], object.bookTitle);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.excerpt);
-  writer.writeLong(offsets[4], object.exploredCharCount);
-  writer.writeString(offsets[5], object.memo);
-  writer.writeDouble(offsets[6], object.progress);
+  writer.writeString(offsets[2], object.color);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeString(offsets[4], object.excerpt);
+  writer.writeLong(offsets[5], object.exploredCharCount);
+  writer.writeString(offsets[6], object.memo);
+  writer.writeDouble(offsets[7], object.progress);
 }
 
 ReaderMemo _readerMemoDeserialize(
@@ -118,12 +130,13 @@ ReaderMemo _readerMemoDeserialize(
   final object = ReaderMemo(
     bookKey: reader.readString(offsets[0]),
     bookTitle: reader.readString(offsets[1]),
-    createdAt: reader.readDateTime(offsets[2]),
-    excerpt: reader.readString(offsets[3]),
-    exploredCharCount: reader.readLong(offsets[4]),
+    color: reader.readStringOrNull(offsets[2]),
+    createdAt: reader.readDateTime(offsets[3]),
+    excerpt: reader.readString(offsets[4]),
+    exploredCharCount: reader.readLong(offsets[5]),
     id: id,
-    memo: reader.readString(offsets[5]),
-    progress: reader.readDouble(offsets[6]),
+    memo: reader.readString(offsets[6]),
+    progress: reader.readDouble(offsets[7]),
   );
   return object;
 }
@@ -140,14 +153,16 @@ P _readerMemoDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readLong(offset)) as P;
-    case 5:
       return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readLong(offset)) as P;
     case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
       return (reader.readDouble(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -551,6 +566,153 @@ extension ReaderMemoQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'bookTitle',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'color',
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'color',
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'color',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'color',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'color',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition> colorIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'color',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterFilterCondition>
+      colorIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'color',
         value: '',
       ));
     });
@@ -1077,6 +1239,18 @@ extension ReaderMemoQuerySortBy
     });
   }
 
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> sortByColor() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> sortByColorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.desc);
+    });
+  }
+
   QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -1162,6 +1336,18 @@ extension ReaderMemoQuerySortThenBy
   QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> thenByBookTitleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bookTitle', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> thenByColor() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ReaderMemo, ReaderMemo, QAfterSortBy> thenByColorDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'color', Sort.desc);
     });
   }
 
@@ -1255,6 +1441,13 @@ extension ReaderMemoQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ReaderMemo, ReaderMemo, QDistinct> distinctByColor(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'color', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ReaderMemo, ReaderMemo, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -1306,6 +1499,12 @@ extension ReaderMemoQueryProperty
   QueryBuilder<ReaderMemo, String, QQueryOperations> bookTitleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'bookTitle');
+    });
+  }
+
+  QueryBuilder<ReaderMemo, String?, QQueryOperations> colorProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'color');
     });
   }
 

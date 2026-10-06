@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 552
+/// Strings: 557
 ///
-/// Built on 2026-10-05 at 23:47 UTC
+/// Built on 2026-10-06 at 03:39 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -696,6 +696,11 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_applying => 'Applying settings';
 	String get ttu_memos_on_page => 'Show memos on the page';
 	String get ttu_memos_on_page_info => 'A short note above each memo\'s passage. Tap it to read the whole memo.';
+	String get ttu_color_amber => 'Amber';
+	String get ttu_color_rose => 'Pink';
+	String get ttu_color_green => 'Green';
+	String get ttu_color_sky => 'Blue';
+	String get ttu_color_violet => 'Purple';
 }
 
 // Path: retrying_in
@@ -1286,6 +1291,11 @@ extension on _StringsEn {
 			case 'ttu_applying': return 'Applying settings';
 			case 'ttu_memos_on_page': return 'Show memos on the page';
 			case 'ttu_memos_on_page_info': return 'A short note above each memo\'s passage. Tap it to read the whole memo.';
+			case 'ttu_color_amber': return 'Amber';
+			case 'ttu_color_rose': return 'Pink';
+			case 'ttu_color_green': return 'Green';
+			case 'ttu_color_sky': return 'Blue';
+			case 'ttu_color_violet': return 'Purple';
 			default: return null;
 		}
 	}

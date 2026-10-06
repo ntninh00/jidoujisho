@@ -584,5 +584,10 @@
     "ttu_no_chapters": "This book has no chapter list",
     "ttu_applying": "Applying settings",
     "ttu_memos_on_page": "Show memos on the page",
-    "ttu_memos_on_page_info": "A short note above each memo's passage. Tap it to read the whole memo."
+    "ttu_memos_on_page_info": "A short note above each memo's passage. Tap it to read the whole memo.",
+    "ttu_color_amber": "Amber",
+    "ttu_color_rose": "Pink",
+    "ttu_color_green": "Green",
+    "ttu_color_sky": "Blue",
+    "ttu_color_violet": "Purple"
 }

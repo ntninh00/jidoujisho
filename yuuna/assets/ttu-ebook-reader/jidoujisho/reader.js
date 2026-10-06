@@ -830,11 +830,20 @@
   /* ---------- memos on the page ---------- */
 
   /*
-   * Each memo's quoted passage gets a soft amber mark behind the text, and a
-   * small note above it with the start of the memo. Tapping the note asks
-   * the app to show the whole memo. Only memos on screen are drawn.
+   * Each memo's quoted passage gets a soft mark in the memo's colour behind
+   * the text, and a small note above it with the start of the memo. Tapping
+   * the note asks the app to show the whole memo. Only memos on screen are
+   * drawn.
    */
-  var MEMO_FILL = 'rgba(255,193,7,0.26)';
+  var MEMO_COLOR = '#ffc107';
+
+  /* [hex] as `#rrggbb`, see through by [alpha]. */
+  function tint(hex, alpha) {
+    var match = /^#?([0-9a-f]{6})$/i.exec(hex || '') || [null, MEMO_COLOR.slice(1)];
+    var value = parseInt(match[1], 16);
+    return 'rgba(' + (value >> 16) + ',' + ((value >> 8) & 255) + ',' + (value & 255) + ',' + alpha + ')';
+  }
+
   var memoState = null;
   var memosQueued = false;
 
@@ -1033,7 +1042,7 @@
         }
       }
       if (best >= 0) {
-        items.push({ id: memo.id, text: memo.text || '', ranges: rangesIn(index, best, passage.length) });
+        items.push({ id: memo.id, text: memo.text || '', color: memo.color || MEMO_COLOR, ranges: rangesIn(index, best, passage.length) });
       }
     });
     memoState = items.length ? { items: items } : null;
@@ -1074,10 +1083,11 @@
 
     var html = '';
     shown.forEach(function (entry) {
+      var fill = tint(entry.item.color, 0.28);
       mergeRects(entry.rects, vertical).forEach(function (b) {
         html += '<div style="position:absolute;left:' + b.left + 'px;top:' + b.top +
           'px;width:' + (b.right - b.left) + 'px;height:' + (b.bottom - b.top) +
-          'px;border-radius:' + RADIUS + 'px;background:' + MEMO_FILL + '"></div>';
+          'px;border-radius:' + RADIUS + 'px;background:' + fill + '"></div>';
       });
     });
     marks.innerHTML = html;
@@ -1094,7 +1104,8 @@
       note.className = 'jdj-memo-note';
       note.setAttribute('data-memo', String(entry.item.id));
       note.style.cssText = NOTE_STYLE + 'left:0;top:0;visibility:hidden;' +
-        'background:' + page.backgroundColor + ';color:' + ink + ';';
+        'background:' + page.backgroundColor + ';color:' + ink + ';' +
+        'border:1px solid ' + tint(entry.item.color, 0.8) + ';';
       var text = document.createElement('div');
       text.style.cssText = NOTE_TEXT_STYLE;
       text.textContent = noteText(entry.item.text);
@@ -1145,7 +1156,7 @@
   var NOTE_STYLE =
     'position:absolute;pointer-events:auto;cursor:pointer;box-sizing:border-box;' +
     'padding:5px 9px;border-radius:10px;font:500 12px/' + NOTE_LINE + 'px system-ui,sans-serif;' +
-    'border:1px solid rgba(255,193,7,0.75);box-shadow:0 1px 4px rgba(0,0,0,0.25);';
+    'box-shadow:0 1px 4px rgba(0,0,0,0.25);';
   /* The text sits in its own box so the cut-off lines stay out of the
    * note's padding. */
   var NOTE_TEXT_STYLE =

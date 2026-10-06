@@ -15,6 +15,7 @@ class ReaderMemo {
     required this.memo,
     required this.excerpt,
     required this.createdAt,
+    this.color,
     this.id = Isar.autoIncrement,
   });
 
@@ -42,4 +43,7 @@ class ReaderMemo {
 
   /// When the memo was written.
   DateTime createdAt;
+
+  /// Name of the colour the memo is marked with, or null for the default.
+  String? color;
 }

@@ -62,6 +62,13 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   _MaskKind _maskKind = _MaskKind.opening;
   double? _maskProgress;
 
+  /// The memo being jumped to, shown on the loading screen.
+  String? _maskMemo;
+  String? _maskExcerpt;
+
+  /// The quoted line to flash once the page is loaded.
+  String? _flashExcerpt;
+
   /// Offers the position before a jump for a few seconds.
   final ValueNotifier<TtuPosition?> _backChip = ValueNotifier(null);
   Timer? _backChipTimer;
@@ -121,6 +128,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       _maskKind = launch.target == null ? _MaskKind.opening : _MaskKind.jumping;
       _maskProgress = launch.target?.progress ?? launch.book.progress;
       _flashPending = launch.excerpt != null && launch.target != null;
+      _maskMemo = launch.memo;
+      _maskExcerpt = launch.excerpt;
+      _flashExcerpt = launch.excerpt;
       _chipPending = launch.returnTo != null;
     }
 
@@ -494,8 +504,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     Color foreground = colors[1];
     Color muted = foreground.withOpacity(0.5);
     TtuLaunch? launch = _launch;
-    String? memo = _maskKind == _MaskKind.jumping ? launch?.memo : null;
-    String? excerpt = _maskKind == _MaskKind.jumping ? launch?.excerpt : null;
+    String? memo = _maskKind == _MaskKind.jumping ? _maskMemo : null;
+    String? excerpt = _maskKind == _MaskKind.jumping ? _maskExcerpt : null;
     String kicker = switch (_maskKind) {
       _MaskKind.opening => t.ttu_opening,
       _MaskKind.jumping => t.ttu_jumping_to,
@@ -698,12 +708,15 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _reloadAt(launch.book, back, _MaskKind.returning);
   }
 
-  /// Opens [book] again at [position], behind the loading screen.
+  /// Opens [book] again at [position], behind the loading screen. With a
+  /// [memo], the loading screen shows it and its [excerpt] flashes after.
   Future<void> _reloadAt(
     TtuBook book,
     TtuPosition position,
-    _MaskKind kind,
-  ) async {
+    _MaskKind kind, {
+    String? memo,
+    String? excerpt,
+  }) async {
     InAppWebViewController? controller = _controller;
     if (controller == null || !mounted) {
       return;
@@ -711,10 +724,13 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     setState(() {
       _maskKind = kind;
       _maskProgress = position.progress;
+      _maskMemo = memo;
+      _maskExcerpt = excerpt;
       _maskBuilt = true;
     });
     _maskVisible.value = true;
-    _flashPending = false;
+    _flashExcerpt = excerpt;
+    _flashPending = excerpt != null;
     _chipPending = false;
     _expectedPosition = position.characters;
     await controller.loadUrl(
@@ -838,9 +854,15 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _menuVisible.value = false;
     await _loadChapters();
     TtuPosition? position = await _capturePosition();
+    TtuBook? book = await _currentBook();
     if (!mounted) {
       return;
     }
+    List<ReaderMemo> memos = book == null
+        ? const []
+        : appModel.readerMemos
+            .where((memo) => memo.bookKey == book.key)
+            .toList();
     _isRecursiveSearching = true;
     await showTtuSheet<void>(
       context: context,
@@ -848,7 +870,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         chapters: _chapters ?? const [],
         totalCharacters: _bookCharacters,
         position: position?.characters ?? 0,
+        memos: memos,
+        language: _language,
         onSelect: _goToChapter,
+        onSelectMemo: _goToMemo,
       ),
     );
     _isRecursiveSearching = false;
@@ -868,6 +893,23 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       book,
       TtuPosition(characters: chapter.start, progress: progress),
       _MaskKind.jumping,
+    );
+  }
+
+  /// Reads on from [memo], flashing its quoted line. Like choosing a
+  /// chapter, this moves the saved place.
+  void _goToMemo(ReaderMemo memo) async {
+    TtuBook? book = await _currentBook();
+    if (book == null) {
+      return;
+    }
+    _wentBack = true;
+    await _reloadAt(
+      book,
+      TtuPosition(characters: memo.exploredCharCount, progress: memo.progress),
+      _MaskKind.jumping,
+      memo: memo.memo,
+      excerpt: memo.excerpt,
     );
   }
 
@@ -1012,6 +1054,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                   'excerpt': memo.excerpt,
                   'characters': memo.exploredCharCount,
                   'progress': memo.progress,
+                  'color': TtuMemoColor.ofMemo(memo).hex,
                 })
             .toList();
     await controller.evaluateJavascript(
@@ -1049,20 +1092,23 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
 
   void _editMemo(ReaderMemo memo, TtuBook book) async {
     _isRecursiveSearching = true;
-    String? text = await showTtuMemoEditor(
+    TtuMemoDraft? draft = await showTtuMemoEditor(
       context: context,
       book: book,
       excerpt: memo.excerpt,
       progress: memo.progress,
       characters: memo.exploredCharCount,
       initialMemo: memo.memo,
+      initialColor: TtuMemoColor.ofMemo(memo),
       isNew: false,
       onDelete: () => appModel.deleteReaderMemo(memo),
     );
     _isRecursiveSearching = false;
     await appModel.applyMediaSystemUi();
-    if (text != null) {
-      memo.memo = text;
+    if (draft != null) {
+      memo
+        ..memo = draft.text
+        ..color = draft.color.name;
       await appModel.putReaderMemo(memo);
     }
     _focusNode.requestFocus();
@@ -1337,7 +1383,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       await _restorePlace();
     }
     await _sendMemos();
-    String? excerpt = launch?.excerpt;
+    String? excerpt = _flashExcerpt;
     if (_flashPending && excerpt != null) {
       _flashPending = false;
       controller.evaluateJavascript(
@@ -1707,7 +1753,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     }
 
     _isRecursiveSearching = true;
-    String? text = await showTtuMemoEditor(
+    TtuMemoDraft? draft = await showTtuMemoEditor(
       context: context,
       book: book,
       excerpt: excerpt,
@@ -1718,7 +1764,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     await appModel.applyMediaSystemUi();
     _focusNode.requestFocus();
 
-    if (text == null) {
+    if (draft == null) {
       return;
     }
 
@@ -1728,9 +1774,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         bookTitle: book.title,
         exploredCharCount: position.characters,
         progress: position.progress,
-        memo: text,
+        memo: draft.text,
         excerpt: excerpt,
         createdAt: DateTime.now(),
+        color: draft.color.name,
       ),
     );
     Fluttertoast.showToast(

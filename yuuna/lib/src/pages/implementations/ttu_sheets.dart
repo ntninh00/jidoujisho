@@ -171,19 +171,24 @@ class TtuCover extends StatelessWidget {
   }
 }
 
-/// Opens the memo editor. Resolves to the memo text, or null when cancelled.
-/// With [onDelete], the editor also offers Delete.
-Future<String?> showTtuMemoEditor({
+/// What the memo editor saves: the memo's text and colour.
+typedef TtuMemoDraft = ({String text, TtuMemoColor color});
+
+/// Opens the memo editor. Resolves to the memo, or null when cancelled. A
+/// new memo starts in the colour picked last. With [onDelete], the editor
+/// also offers Delete.
+Future<TtuMemoDraft?> showTtuMemoEditor({
   required BuildContext context,
   required TtuBook book,
   required String excerpt,
   required double progress,
   required int characters,
   String initialMemo = '',
+  TtuMemoColor? initialColor,
   bool isNew = true,
   VoidCallback? onDelete,
 }) {
-  return showTtuSheet<String>(
+  return showTtuSheet<TtuMemoDraft>(
     context: context,
     builder: (context) => Padding(
       padding: EdgeInsets.only(
@@ -195,6 +200,7 @@ Future<String?> showTtuMemoEditor({
         progress: progress,
         characters: characters,
         initialMemo: initialMemo,
+        initialColor: initialColor ?? ReaderTtuSource.instance.lastMemoColor,
         isNew: isNew,
         onDelete: onDelete,
       ),
@@ -211,6 +217,7 @@ class TtuMemoEditor extends StatefulWidget {
     required this.progress,
     required this.characters,
     required this.initialMemo,
+    required this.initialColor,
     required this.isNew,
     this.onDelete,
     super.key,
@@ -218,6 +225,9 @@ class TtuMemoEditor extends StatefulWidget {
 
   /// The book the memo belongs to.
   final TtuBook book;
+
+  /// The memo's colour when the editor opens.
+  final TtuMemoColor initialColor;
 
   /// The quoted line.
   final String excerpt;
@@ -244,6 +254,7 @@ class TtuMemoEditor extends StatefulWidget {
 class _TtuMemoEditorState extends State<TtuMemoEditor> {
   late final TextEditingController _controller =
       TextEditingController(text: widget.initialMemo);
+  late TtuMemoColor _color = widget.initialColor;
 
   @override
   void dispose() {
@@ -252,7 +263,8 @@ class _TtuMemoEditorState extends State<TtuMemoEditor> {
   }
 
   void _save() {
-    Navigator.pop(context, _controller.text.trim());
+    ReaderTtuSource.instance.setLastMemoColor(_color);
+    Navigator.pop(context, (text: _controller.text.trim(), color: _color));
   }
 
   @override
@@ -260,6 +272,7 @@ class _TtuMemoEditorState extends State<TtuMemoEditor> {
     ThemeData theme = Theme.of(context);
     Color muted = theme.unselectedWidgetColor;
     VoidCallback? onDelete = widget.onDelete;
+    bool reduceMotion = MediaQuery.of(context).disableAnimations;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 12, 12),
@@ -275,12 +288,24 @@ class _TtuMemoEditorState extends State<TtuMemoEditor> {
                 .copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 110),
-            child: SingleChildScrollView(
-              child: Text(
-                ttuQuote(widget.book.language, widget.excerpt),
-                style: theme.textTheme.bodyLarge!.copyWith(height: 1.6),
+          // The quoted line, highlighted as it will be on the page.
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: AnimatedContainer(
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              constraints: const BoxConstraints(maxHeight: 110),
+              padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+              decoration: BoxDecoration(
+                color: _color.color.withOpacity(0.22),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: SingleChildScrollView(
+                child: Text(
+                  ttuQuote(widget.book.language, widget.excerpt),
+                  style: theme.textTheme.bodyLarge!.copyWith(height: 1.6),
+                ),
               ),
             ),
           ),
@@ -306,7 +331,12 @@ class _TtuMemoEditorState extends State<TtuMemoEditor> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          TtuMemoColorPicker(
+            selected: _color,
+            onChanged: (color) => setState(() => _color = color),
+          ),
+          const SizedBox(height: 2),
           Row(
             children: [
               if (onDelete != null)
@@ -349,7 +379,6 @@ class TtuMemoStripPainter extends CustomPainter {
     required this.marks,
     required this.trackColor,
     required this.readColor,
-    required this.markColor,
     required this.surfaceColor,
     required this.animation,
   }) : super(repaint: animation);
@@ -360,17 +389,14 @@ class TtuMemoStripPainter extends CustomPainter {
   /// Current reading position, from 0 to 1.
   final double current;
 
-  /// Memo positions, from 0 to 1.
-  final List<double> marks;
+  /// Memo positions, from 0 to 1, with each memo's colour.
+  final List<({double at, Color color})> marks;
 
   /// Colour of the unread track.
   final Color trackColor;
 
   /// Colour of the read part and the position dot.
   final Color readColor;
-
-  /// Colour of memo marks.
-  final Color markColor;
 
   /// Colour behind the strip, used to ring the position dot.
   final Color surfaceColor;
@@ -398,14 +424,15 @@ class TtuMemoStripPainter extends CustomPainter {
     );
     canvas.restore();
 
-    List<double> sorted = [...marks]..sort();
+    List<({double at, Color color})> sorted = [...marks]
+      ..sort((a, b) => a.at.compareTo(b.at));
     for (int i = 0; i < sorted.length; i++) {
       double local =
           ((animation.value * 420 - i * 24) / 240).clamp(0, 1).toDouble();
       double eased = Curves.easeOutCubic.transform(local);
-      double x = size.width * sorted[i].clamp(0, 1);
+      double x = size.width * sorted[i].at.clamp(0, 1);
       double top = trackY - 22 - (1 - eased) * 6;
-      Paint mark = Paint()..color = markColor.withOpacity(eased);
+      Paint mark = Paint()..color = sorted[i].color.withOpacity(eased);
       Path flag = Path()
         ..moveTo(x - 5, top)
         ..lineTo(x + 5, top)
@@ -427,7 +454,6 @@ class TtuMemoStripPainter extends CustomPainter {
         oldDelegate.current != current ||
         oldDelegate.marks.length != marks.length ||
         !oldDelegate.marks.every(marks.contains) ||
-        oldDelegate.markColor != markColor ||
         oldDelegate.trackColor != trackColor;
   }
 }
@@ -493,20 +519,23 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
   TtuBook get book => widget.book;
 
   void _edit(ReaderMemo memo) async {
-    String? text = await showTtuMemoEditor(
+    TtuMemoDraft? draft = await showTtuMemoEditor(
       context: context,
       book: book,
       excerpt: memo.excerpt,
       progress: memo.progress,
       characters: memo.exploredCharCount,
       initialMemo: memo.memo,
+      initialColor: TtuMemoColor.ofMemo(memo),
       isNew: false,
       onDelete: () => _delete(memo),
     );
-    if (text == null) {
+    if (draft == null) {
       return;
     }
-    memo.memo = text;
+    memo
+      ..memo = draft.text
+      ..color = draft.color.name;
     await appModelNoUpdate.putReaderMemo(memo);
   }
 
@@ -664,10 +693,15 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                         painter: TtuMemoStripPainter(
                           read: book.progress,
                           current: book.progress,
-                          marks: memos.map((memo) => memo.progress).toList(),
+                          marks: [
+                            for (ReaderMemo memo in memos)
+                              (
+                                at: memo.progress,
+                                color: TtuMemoColor.ofMemo(memo).color,
+                              ),
+                          ],
                           trackColor: muted.withOpacity(0.25),
                           readColor: red,
-                          markColor: theme.textTheme.bodyLarge!.color!,
                           surfaceColor: theme.cardColor,
                           animation: _drop,
                         ),
@@ -903,6 +937,10 @@ class _MemoRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 4, right: 8),
+                child: TtuMemoFlag(color: TtuMemoColor.ofMemo(memo).color),
+              ),
               SizedBox(
                 width: 54,
                 child: Column(
@@ -2204,7 +2242,7 @@ class TtuMemoViewSheet extends StatelessWidget {
             const TtuSheetHandle(),
             Row(
               children: [
-                const Icon(Ui.memo, size: 20, color: Color(0xFFFFB300)),
+                TtuMemoFlag(color: TtuMemoColor.ofMemo(memo).color, size: 18),
                 const SizedBox(width: 10),
                 Text(
                   '${t.ttu_memo} · ${ttuPercent(memo.progress)}',
@@ -2234,11 +2272,19 @@ class TtuMemoViewSheet extends StatelessWidget {
                         style: theme.textTheme.bodyLarge!.copyWith(height: 1.5),
                       ),
                     const SizedBox(height: 10),
-                    Text(
-                      ttuQuote(book.language, memo.excerpt),
-                      style: theme.textTheme.bodyMedium!.copyWith(
-                        color: muted,
-                        height: 1.6,
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                      decoration: BoxDecoration(
+                        color:
+                            TtuMemoColor.ofMemo(memo).color.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        ttuQuote(book.language, memo.excerpt),
+                        style: theme.textTheme.bodyMedium!.copyWith(
+                          color: muted,
+                          height: 1.6,
+                        ),
                       ),
                     ),
                   ],
