@@ -11,6 +11,8 @@ export 'src/dictionary/dictionary_tag.dart';
 export 'src/dictionary/dictionary_format.dart';
 export 'src/dictionary/dictionary_operations_params.dart';
 export 'src/dictionary/structured_content.dart';
+export 'src/dictionary/structured_content_html.dart';
+export 'src/dictionary/dictionary_css.dart';
 export 'src/dictionary/dictionary_server.dart';
 export 'src/dictionary/dictionary_rebuild.dart';
 
