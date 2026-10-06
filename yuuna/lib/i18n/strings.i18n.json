@@ -672,5 +672,16 @@
     "theme_accent_teal": "Teal",
     "theme_accent_blue": "Blue",
     "theme_accent_violet": "Purple",
-    "theme_accent_slate": "Slate"
+    "theme_accent_slate": "Slate",
+    "ttu_search": "Search",
+    "ttu_search_hint": "Search this book",
+    "ttu_search_found": "$count found",
+    "ttu_search_first": "The first $shown are listed",
+    "ttu_search_none": "Not in this book",
+    "ttu_search_reading": "Reading the book…",
+    "ttu_search_stay": "Stay here",
+    "ttu_search_list": "All results",
+    "ttu_search_previous": "Previous result",
+    "ttu_search_next": "Next result",
+    "ttu_search_info": "Matches ignore the difference between hiragana and katakana, full- and half-width letters, and upper and lower case. Furigana is not searched. Your saved place stays where it was until you choose Stay here."
 }

@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 640
+/// Strings: 651
 ///
-/// Built on 2026-10-06 at 10:10 UTC
+/// Built on 2026-10-06 at 12:59 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -784,6 +784,17 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get theme_accent_blue => 'Blue';
 	String get theme_accent_violet => 'Purple';
 	String get theme_accent_slate => 'Slate';
+	String get ttu_search => 'Search';
+	String get ttu_search_hint => 'Search this book';
+	String ttu_search_found({required Object count}) => '${count} found';
+	String ttu_search_first({required Object shown}) => 'The first ${shown} are listed';
+	String get ttu_search_none => 'Not in this book';
+	String get ttu_search_reading => 'Reading the book…';
+	String get ttu_search_stay => 'Stay here';
+	String get ttu_search_list => 'All results';
+	String get ttu_search_previous => 'Previous result';
+	String get ttu_search_next => 'Next result';
+	String get ttu_search_info => 'Matches ignore the difference between hiragana and katakana, full- and half-width letters, and upper and lower case. Furigana is not searched. Your saved place stays where it was until you choose Stay here.';
 }
 
 // Path: retrying_in
@@ -1462,6 +1473,17 @@ extension on _StringsEn {
 			case 'theme_accent_blue': return 'Blue';
 			case 'theme_accent_violet': return 'Purple';
 			case 'theme_accent_slate': return 'Slate';
+			case 'ttu_search': return 'Search';
+			case 'ttu_search_hint': return 'Search this book';
+			case 'ttu_search_found': return ({required Object count}) => '${count} found';
+			case 'ttu_search_first': return ({required Object shown}) => 'The first ${shown} are listed';
+			case 'ttu_search_none': return 'Not in this book';
+			case 'ttu_search_reading': return 'Reading the book…';
+			case 'ttu_search_stay': return 'Stay here';
+			case 'ttu_search_list': return 'All results';
+			case 'ttu_search_previous': return 'Previous result';
+			case 'ttu_search_next': return 'Next result';
+			case 'ttu_search_info': return 'Matches ignore the difference between hiragana and katakana, full- and half-width letters, and upper and lower case. Furigana is not searched. Your saved place stays where it was until you choose Stay here.';
 			default: return null;
 		}
 	}

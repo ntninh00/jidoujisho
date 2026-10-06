@@ -69,6 +69,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// The quoted line to flash once the page is loaded.
   String? _flashExcerpt;
 
+  /// The page should also move to the flashed text if it is not in view,
+  /// as for a search result.
+  bool _flashReveal = false;
+
   /// Offers the position before a jump for a few seconds.
   final ValueNotifier<TtuPosition?> _backChip = ValueNotifier(null);
   Timer? _backChipTimer;
@@ -82,8 +86,36 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// chapter to read from.
   bool _wentBack = false;
 
-  /// This visit is to a memo or term: ッツ's saved place stays as it was.
-  bool get _keepPlace => (_launch?.keepPlace ?? false) && !_wentBack;
+  /// The last search in this book, shown again when search reopens.
+  TtuSearchResults? _searchResults;
+
+  /// The search whose results are being read, and which one is open.
+  TtuSearchResults? _searchOpen;
+  final ValueNotifier<int?> _searchAt = ValueNotifier(null);
+
+  /// Where the reader was before opening a search result. Their saved place
+  /// stays there until they choose to stay where a result took them.
+  TtuPosition? _searchHome;
+
+  /// Leaving the book from the menu, rather than going back from a result.
+  bool _leavingBook = false;
+
+  /// The saved place to keep while this visit lasts: the reader's own place
+  /// on a visit to a memo or term, or where they were before a search.
+  TtuPosition? get _keptPlace {
+    TtuLaunch? launch = _launch;
+    if (launch != null && launch.keepPlace && !_wentBack) {
+      return TtuPosition(
+        characters: launch.book.exploredCharCount,
+        progress: launch.book.progress,
+      );
+    }
+    return _searchHome;
+  }
+
+  /// ッツ's saved place stays as it was: this visit is to a memo or term, or
+  /// the reader is looking through search results.
+  bool get _keepPlace => _keptPlace != null;
 
   /// The menu over the book, opened from its top or bottom edge.
   final ValueNotifier<bool> _menuVisible = ValueNotifier(false);
@@ -170,6 +202,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _menuVisible.dispose();
     _maskVisible.dispose();
     _backChip.dispose();
+    _searchAt.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -239,13 +272,18 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       mediaSource.clearCurrentSentence();
       return false;
     }
+    if (_searchHome != null && !_leavingBook) {
+      _searchGoHome();
+      return false;
+    }
     if (_leaving) {
       return false;
     }
     _leaving = true;
 
     TtuPosition? saved;
-    bool keptPlace = _keepPlace;
+    TtuPosition? kept = _keptPlace;
+    bool keptPlace = kept != null;
     if (keptPlace) {
       await _restorePlace()
           .timeout(const Duration(milliseconds: 1500), onTimeout: () {});
@@ -265,10 +303,13 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       item: widget.item,
     );
 
-    TtuLaunch? launch = _launch;
-    if (keptPlace && launch != null) {
+    TtuBook? book = _launch?.book;
+    if (_searchHome != null && book != null) {
+      await mediaSource.clearSearchHome(book);
+    }
+    if (kept != null) {
       Fluttertoast.showToast(
-        msg: t.ttu_place_kept(position: ttuPercent(launch.book.progress)),
+        msg: t.ttu_place_kept(position: ttuPercent(kept.progress)),
       );
     } else if (saved != null) {
       Fluttertoast.showToast(
@@ -281,14 +322,14 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   /// Puts ッツ's saved place back to where the reader was before this visit
   /// to a memo or term.
   Future<void> _restorePlace() async {
-    TtuLaunch? launch = _launch;
-    if (launch == null) {
+    TtuPosition? place = _keptPlace;
+    if (place == null) {
       return;
     }
     try {
       await _controller?.callAsyncJavaScript(
         functionBody: 'return window.__jdj ? await window.__jdj.writePosition('
-            '${launch.book.exploredCharCount}, ${launch.book.progress}) : null;',
+            '${place.characters}, ${place.progress}) : null;',
       );
     } catch (error) {
       debugPrint('Could not keep place: $error');
@@ -443,6 +484,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                   buildDictionary(),
                   if (_maskBuilt) buildMask(),
                   buildBackChip(),
+                  buildSearchBar(),
                 ],
               ),
             ),
@@ -719,6 +761,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _MaskKind kind, {
     String? memo,
     String? excerpt,
+    String? flash,
+    bool reveal = false,
   }) async {
     InAppWebViewController? controller = _controller;
     if (controller == null || !mounted) {
@@ -732,8 +776,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       _maskBuilt = true;
     });
     _maskVisible.value = true;
-    _flashExcerpt = excerpt;
-    _flashPending = excerpt != null;
+    _flashExcerpt = flash ?? excerpt;
+    _flashPending = _flashExcerpt != null;
+    _flashReveal = reveal;
     _chipPending = false;
     _expectedPosition = position.characters;
     await controller.loadUrl(
@@ -834,6 +879,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                     foreground: colors[1],
                     onBack: _leaveFromMenu,
                     onChapters: _showChapters,
+                    onSearch: _showSearch,
                     onSettings: _showLiveSettings,
                   ),
                 ),
@@ -847,7 +893,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
 
   void _leaveFromMenu() async {
     _menuVisible.value = false;
+    _leavingBook = true;
     bool leave = await onWillPop();
+    _leavingBook = false;
     if (leave && mounted) {
       Navigator.pop(context);
     }
@@ -891,6 +939,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       return;
     }
     _wentBack = true;
+    await _endSearch();
     double progress = _bookCharacters > 0 ? chapter.start / _bookCharacters : 0;
     await _reloadAt(
       book,
@@ -907,6 +956,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       return;
     }
     _wentBack = true;
+    await _endSearch();
     await _reloadAt(
       book,
       TtuPosition(characters: memo.exploredCharCount, progress: memo.progress),
@@ -1013,6 +1063,22 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (controller == null || book == null || !mounted) {
       return;
     }
+    await _refreshPageScripts();
+    TtuPosition position = _settingsAnchor ??
+        TtuPosition(
+          characters: book.exploredCharCount,
+          progress: book.progress,
+        );
+    await _reloadAt(book, position, _MaskKind.applying);
+  }
+
+  /// Gives the page scripts for its next load. While a place is kept, ッツ
+  /// does not save its position by itself.
+  Future<void> _refreshPageScripts() async {
+    InAppWebViewController? controller = _controller;
+    if (controller == null) {
+      return;
+    }
     _settingsScript = mediaSource.settingsScriptFor(
       _language,
       darkMode: appModel.isDarkMode,
@@ -1029,12 +1095,168 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),
     ]);
-    TtuPosition position = _settingsAnchor ??
-        TtuPosition(
-          characters: book.exploredCharCount,
-          progress: book.progress,
+  }
+
+  /* ---------- search ---------- */
+
+  Future<void> _showSearch() async {
+    _menuVisible.value = false;
+    await _loadChapters();
+    if (!mounted) {
+      return;
+    }
+    unawaited(_controller?.evaluateJavascript(
+      source: 'window.__jdj && window.__jdj.prepareSearch();',
+    ));
+    TtuSearchResults? shown = _searchResults;
+    _isRecursiveSearching = true;
+    await showTtuSheet<void>(
+      context: context,
+      builder: (sheetContext) => TtuSearchSheet(
+        chapters: _chapters ?? const [],
+        language: _language,
+        results: shown,
+        current: identical(shown, _searchOpen) ? _searchAt.value : null,
+        onSearch: _runSearch,
+        onSelect: (results, index) {
+          Navigator.pop(sheetContext);
+          _openSearchResult(results, index);
+        },
+      ),
+    );
+    _isRecursiveSearching = false;
+    _focusNode.requestFocus();
+  }
+
+  Future<TtuSearchResults?> _runSearch(String query) async {
+    try {
+      CallAsyncJavaScriptResult? result =
+          await _controller?.callAsyncJavaScript(
+        functionBody:
+            'return window.__jdj ? await window.__jdj.search(query, 500) : null;',
+        arguments: {'query': query},
+      );
+      Object? value = result?.value;
+      if (value is! Map) {
+        return null;
+      }
+      return _searchResults = TtuSearchResults.fromMap(query, value);
+    } catch (error) {
+      debugPrint('Search failed: $error');
+      return null;
+    }
+  }
+
+  /// Reads at a search result. The first result opened remembers where the
+  /// reader was, and ッツ keeps that as the saved place until the reader
+  /// goes back or chooses to stay.
+  Future<void> _openSearchResult(TtuSearchResults results, int index) async {
+    TtuBook? book = await _currentBook();
+    if (book == null || index < 0 || index >= results.hits.length) {
+      return;
+    }
+    if (_searchHome == null) {
+      TtuPosition? home = await _capturePosition();
+      if (home == null || !mounted) {
+        return;
+      }
+      _searchHome = home;
+      await mediaSource.setSearchHome(book, home);
+      await _refreshPageScripts();
+    }
+    _searchOpen = results;
+    _searchAt.value = index;
+    TtuSearchHit hit = results.hits[index];
+    await _reloadAt(
+      book,
+      hit.position,
+      _MaskKind.jumping,
+      excerpt: '${hit.before}${hit.match}${hit.after}',
+      flash: hit.flash,
+      reveal: true,
+    );
+  }
+
+  /// Leaves the results without moving: the saved place is wherever the
+  /// next save puts it.
+  Future<void> _endSearch() async {
+    if (_searchHome == null) {
+      return;
+    }
+    TtuBook? book = await _currentBook();
+    _searchHome = null;
+    _searchAt.value = null;
+    if (book != null) {
+      await mediaSource.clearSearchHome(book);
+    }
+    await _refreshPageScripts();
+  }
+
+  /// Goes back to where the reader was before the search.
+  Future<void> _searchGoHome() async {
+    TtuPosition? home = _searchHome;
+    TtuBook? book = await _currentBook();
+    if (home == null || book == null) {
+      return;
+    }
+    await _endSearch();
+    await _reloadAt(book, home, _MaskKind.returning);
+  }
+
+  /// Keeps reading from the result on screen.
+  Future<void> _searchStay() async {
+    await _endSearch();
+    if (_keepPlace) {
+      return;
+    }
+    TtuPosition? here = await _savePosition();
+    if (here != null) {
+      Fluttertoast.showToast(
+        msg: t.ttu_saved_place(position: ttuPercent(here.progress)),
+      );
+    }
+  }
+
+  /// While reading search results: the result's number with the previous
+  /// and next ones, the way back, and staying here.
+  Widget buildSearchBar() {
+    return ValueListenableBuilder<int?>(
+      valueListenable: _searchAt,
+      builder: (context, at, _) {
+        TtuSearchResults? results = _searchOpen;
+        TtuPosition? home = _searchHome;
+        bool shown = at != null && results != null && home != null;
+        return AnimatedSwitcher(
+          duration: MediaQuery.of(context).disableAnimations
+              ? Duration.zero
+              : const Duration(milliseconds: 200),
+          child: !shown
+              ? const SizedBox.shrink()
+              : Align(
+                  key: const ValueKey('search-bar'),
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 44),
+                    child: TtuSearchBar(
+                      index: at,
+                      count: results.hits.length,
+                      more: results.total > results.hits.length,
+                      home: home,
+                      onPrevious: at > 0
+                          ? () => _openSearchResult(results, at - 1)
+                          : null,
+                      onNext: at < results.hits.length - 1
+                          ? () => _openSearchResult(results, at + 1)
+                          : null,
+                      onList: _showSearch,
+                      onBack: _searchGoHome,
+                      onStay: _searchStay,
+                    ),
+                  ),
+                ),
         );
-    await _reloadAt(book, position, _MaskKind.applying);
+      },
+    );
   }
 
   /// Shows the book's memos as notes on the page, or none if that is off.
@@ -1390,7 +1612,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (_flashPending && excerpt != null) {
       _flashPending = false;
       controller.evaluateJavascript(
-        source: 'window.__jdj && window.__jdj.flash(${jsonEncode(excerpt)});',
+        source: 'window.__jdj && '
+            'window.__jdj.flash(${jsonEncode(excerpt)}, $_flashReveal);',
       );
     }
     TtuPosition? back = launch?.returnTo;

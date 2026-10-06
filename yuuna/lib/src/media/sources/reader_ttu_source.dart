@@ -112,6 +112,38 @@ class ReaderTtuSource extends ReaderMediaSource {
         .firstWhereOrNull((language) => getPortForLanguage(language) == port);
   }
 
+  /// Where the reader was in [book] before opening a search result. Kept
+  /// until the search ends, so that place survives the app closing.
+  Future<void> setSearchHome(TtuBook book, TtuPosition home) async {
+    await setPreference<String>(
+      key: 'search_home_${book.key}',
+      value: '${home.characters}:${home.progress}',
+    );
+  }
+
+  /// The place [setSearchHome] kept for [book], if a search is under way.
+  TtuPosition? searchHomeOf(TtuBook book) {
+    String? value = getPreference<String?>(
+      key: 'search_home_${book.key}',
+      defaultValue: null,
+    );
+    List<String> parts = (value ?? '').split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    int? characters = int.tryParse(parts[0]);
+    double? progress = double.tryParse(parts[1]);
+    if (characters == null || progress == null) {
+      return null;
+    }
+    return TtuPosition(characters: characters, progress: progress);
+  }
+
+  /// Forgets the place kept for [book]'s search.
+  Future<void> clearSearchHome(TtuBook book) async {
+    await deletePreference(key: 'search_home_${book.key}');
+  }
+
   /// The language the user chose for the book with [bookKey], if they
   /// changed it from the one it was added with.
   Language? chosenLanguageFor(String bookKey) {
@@ -305,6 +337,15 @@ class ReaderTtuSource extends ReaderMediaSource {
     } else if (returnTo != null) {
       target = returnTo;
       returnPositions.remove(book.key);
+    } else {
+      /// The app closed while the reader was looking through search
+      /// results: open where they were before the search.
+      TtuPosition? home = searchHomeOf(book);
+      if (home != null) {
+        returnTo = home;
+        target = home;
+        await clearSearchHome(book);
+      }
     }
 
     bool visit = target != null && returnTo == null;

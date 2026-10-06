@@ -418,4 +418,6 @@ class Ui {
       IconData(0xee59, fontFamily: _regular); // palette
   static const IconData themeAuto =
       IconData(0xe485, fontFamily: _regular); // circle-half-stroke
+  static const IconData angleLeft =
+      IconData(0xe0a2, fontFamily: _regular); // angle-small-left
 }

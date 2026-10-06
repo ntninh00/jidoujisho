@@ -63,6 +63,7 @@ class TtuReaderMenu extends StatelessWidget {
     required this.foreground,
     required this.onBack,
     required this.onChapters,
+    required this.onSearch,
     required this.onSettings,
     super.key,
   });
@@ -84,6 +85,9 @@ class TtuReaderMenu extends StatelessWidget {
 
   /// Opens the chapter list.
   final VoidCallback onChapters;
+
+  /// Opens search in the book.
+  final VoidCallback onSearch;
 
   /// Opens the page settings over the book.
   final VoidCallback onSettings;
@@ -145,6 +149,7 @@ class TtuReaderMenu extends StatelessWidget {
                   ],
                 ),
               ),
+              button(Ui.search, t.ttu_search, onSearch),
               button(Ui.chapters, t.ttu_chapters, onChapters),
               button(Ui.textSize, t.ttu_reader_settings, onSettings),
             ],
