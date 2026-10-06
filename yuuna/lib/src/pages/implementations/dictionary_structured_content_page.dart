@@ -59,6 +59,12 @@ final dictionaryResourceDirectoryProvider =
 final dictionaryPreviewImageProvider =
     Provider<ImageProvider Function(String src)?>((ref) => null);
 
+/// The stylesheet of entries that aren't imported, such as a dictionary
+/// previewed from a server. Null for imported dictionaries, whose
+/// stylesheet is a file in their resource directory.
+final dictionaryPreviewCssProvider =
+    Provider<List<DictionaryCssRule>?>((ref) => null);
+
 /// HTML renderer for dictionary definitions. Structured content is drawn
 /// as Yomitan draws it, with the dictionary's own stylesheet; its colours
 /// that would not read on the popup are left out.
@@ -88,7 +94,13 @@ class DictionaryHtmlWidget extends ConsumerWidget {
       background: theme.cardColor,
       fontSize: dictionaryFontSize,
     );
-    final body = ref.watch(dictionaryEntryHtmlProvider((entry, cssTheme)));
+    final previewCss = ref.watch(dictionaryPreviewCssProvider);
+    final body = previewCss == null
+        ? ref.watch(dictionaryEntryHtmlProvider((entry, cssTheme)))
+        : entry.definitions
+            .map((definition) =>
+                definitionHtml(definition, css: previewCss, theme: cssTheme))
+            .join();
 
     /// The app's defaults go first, so a dictionary's styles win over them.
     final defaults = '<style>'

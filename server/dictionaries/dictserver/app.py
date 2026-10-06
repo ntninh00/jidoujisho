@@ -11,6 +11,7 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/search?q=&limit=
     GET    /api/dictionaries/{id}/download       -> the original zip
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
+    GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
     PATCH  /api/dictionaries/{id}                -> {"sourceLanguage", "targetLanguage"}
     DELETE /api/dictionaries/{id}
@@ -45,6 +46,7 @@ from .store import Catalog
 
 ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
+MAX_STYLES_BYTES = 1024 * 1024
 FAILURE_WINDOW = 600
 MAX_FAILURES = 10
 
@@ -236,6 +238,23 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             headers={"Content-Disposition": "attachment", "Cache-Control": "private, max-age=86400"},
         )
 
+    def styles(request: Request) -> Response:
+        role_of(request)
+        entry = dictionary_of(request)
+        with zipfile.ZipFile(catalog.zip_path(entry["id"])) as archive:
+            try:
+                info = archive.getinfo("styles.css")
+            except KeyError:
+                raise Problem(404, "This dictionary has no stylesheet.") from None
+            if info.file_size > MAX_STYLES_BYTES:
+                raise Problem(413, "This dictionary's stylesheet is too large to preview.")
+            data = archive.read(info)
+        return Response(
+            data,
+            media_type="text/css; charset=utf-8",
+            headers={"Content-Disposition": "attachment", "Cache-Control": "private, max-age=86400"},
+        )
+
     async def upload(request: Request) -> Response:
         require_admin(request)
         try:
@@ -337,6 +356,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             Route("/api/dictionaries/{id}/search", lookup),
             Route("/api/dictionaries/{id}/download", download),
             Route("/api/dictionaries/{id}/media", media),
+            Route("/api/dictionaries/{id}/styles", styles),
         ],
         middleware=[Middleware(SecurityHeaders)],
         exception_handlers={Problem: problem},

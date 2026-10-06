@@ -1119,6 +1119,7 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
   Timer? _debounce;
   CatalogResults? _results;
   List<DictionaryEntry> _entries = const [];
+  List<DictionaryCssRule> _css = const [];
   String? _error;
   bool _searching = false;
   int _serial = 0;
@@ -1126,9 +1127,21 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
   @override
   void initState() {
     super.initState();
+    _loadStyles();
     if (_query.text.isNotEmpty) {
       _search();
     }
+  }
+
+  /// The dictionary's own stylesheet, so entries look as they will once
+  /// downloaded.
+  Future<void> _loadStyles() async {
+    String? css = await widget.server.styles(widget.dictionary.id);
+    if (css == null || css.trim().isEmpty || !mounted) {
+      return;
+    }
+    List<DictionaryCssRule> rules = parseDictionaryCss(css);
+    setState(() => _css = rules);
   }
 
   @override
@@ -1301,6 +1314,7 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
                     headers: widget.server.headers,
                   ),
                 ),
+                dictionaryPreviewCssProvider.overrideWithValue(_css),
               ],
               child: buildResults(controller),
             ),

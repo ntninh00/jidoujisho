@@ -1,5 +1,7 @@
 import hashlib
+import io
 import time
+import zipfile
 
 from conftest import ADMIN, PNG, READER, auth, format_one, frequency, ja_en, ja_ja, kanji, make_zip
 
@@ -123,6 +125,20 @@ def test_media_only_for_listed_pictures(client):
     assert picture.headers["content-type"] == "image/png"
     for path in ("index.json", "term_bank_1.json", "../catalog.sqlite", "img/missing.png"):
         assert client.get(base, params={"path": path}, headers=auth(READER)).status_code == 404
+
+
+def test_styles_when_the_dictionary_has_them(client):
+    css = "span[data-sc-content=\"tag\"] { color: #333; }".encode()
+    with zipfile.ZipFile(io.BytesIO(ja_en())) as archive:
+        files = {name: archive.read(name) for name in archive.namelist()}
+    styled = added(client, make_zip({**files, "styles.css": css}))
+    response = client.get(f"/api/dictionaries/{styled['id']}/styles", headers=auth(READER))
+    assert response.status_code == 200
+    assert response.content == css
+    assert response.headers["content-type"].startswith("text/css")
+    plain = added(client, ja_ja())
+    assert client.get(f"/api/dictionaries/{plain['id']}/styles", headers=auth(READER)).status_code == 404
+    assert client.get(f"/api/dictionaries/{styled['id']}/styles").status_code == 401
 
 
 def test_duplicates_and_replacing(client, settings):

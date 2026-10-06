@@ -266,6 +266,136 @@ void applyDictionaryCss(
   }
 
   _yomitanLayout(root, all, theme);
+  _sizesInPixels(root, theme.fontSize, theme.fontSize);
+}
+
+/// The renderer's own sizes for elements that have one.
+const Map<String, double> _tagScale = {
+  'big': 1.2,
+  'small': 0.83,
+  'sub': 0.83,
+  'sup': 0.83,
+  'h1': 2,
+  'h2': 1.5,
+  'h3': 1.17,
+  'h5': 0.83,
+  'h6': 0.67,
+};
+
+/// Font sizes by keyword, as a share of the base size.
+const Map<String, double> _sizeKeywords = {
+  'xx-small': 9 / 16,
+  'x-small': 10 / 16,
+  'small': 13 / 16,
+  'medium': 1,
+  'large': 18 / 16,
+  'x-large': 24 / 16,
+  'xx-large': 32 / 16,
+  'xxx-large': 48 / 16,
+};
+
+const List<String> _lengths = [
+  'margin-top',
+  'margin-right',
+  'margin-bottom',
+  'margin-left',
+  'padding-top',
+  'padding-right',
+  'padding-bottom',
+  'padding-left',
+  'width',
+  'height',
+];
+
+/// Writes every font size, and every margin, padding and size in em, in
+/// pixels. The renderer hands an element's size in em down to its children
+/// before their own size is read, so a size in em grows again at every
+/// level below it: Jitendex's 1.3em example sentences drew at nearly three
+/// times the size.
+void _sizesInPixels(dom.Element element, double parent, double base) {
+  Map<String, String> style = parseInlineStyle(element.attributes['style']);
+  String? declared = style['font-size'];
+  double? scale = _tagScale[element.localName];
+  double size = parent;
+  if (declared != null) {
+    size = _fontSizeOf(declared, parent, base) ?? parent * (scale ?? 1);
+  } else if (scale != null) {
+    size = parent * scale;
+  }
+
+  bool changed = false;
+  if (declared != null || scale != null) {
+    style['font-size'] = '${_number(size)}px';
+    changed = true;
+  }
+  for (String property in _lengths) {
+    String? value = style[property];
+    Match? match = value == null
+        ? null
+        : RegExp(r'^(-?[\d.]+)(em|rem)$').firstMatch(value.trim());
+    if (match != null) {
+      double number = double.parse(match.group(1)!);
+      double pixels = number * (match.group(2) == 'em' ? size : base);
+      style[property] = '${_number(pixels)}px';
+      changed = true;
+    }
+  }
+  if (changed) {
+    element.attributes['style'] =
+        style.entries.map((e) => '${e.key}:${e.value};').join();
+  }
+
+  /// The renderer has no margins beside inline text, so a label's margin,
+  /// such as the one after Jitendex's "See also", becomes a space.
+  if (const {'span', 'a', 'b', 'i', 'em', 'strong', 'small', 'big'}
+          .contains(element.localName) &&
+      element.attributes['data-jdj-pill'] == null &&
+      !const {'block', 'list-item'}.contains(style['display'])) {
+    double pixels(String? value) =>
+        double.tryParse(value?.replaceFirst(RegExp(r'px$'), '') ?? '') ?? 0;
+    if (pixels(style['margin-left']) >= size * 0.2) {
+      element.nodes.insert(0, dom.Text(' '));
+    }
+    if (pixels(style['margin-right']) >= size * 0.2) {
+      element.append(dom.Text(' '));
+    }
+  }
+
+  for (dom.Element child in element.children) {
+    _sizesInPixels(child, size, base);
+  }
+}
+
+/// A font size in pixels, given the parent's and the base size.
+double? _fontSizeOf(String value, double parent, double base) {
+  String text = value.trim().toLowerCase();
+  double? keyword = _sizeKeywords[text];
+  if (keyword != null) {
+    return base * keyword;
+  }
+  if (text == 'smaller') {
+    return parent * 0.83;
+  }
+  if (text == 'larger') {
+    return parent * 1.2;
+  }
+  Match? match = RegExp(r'^([\d.]+)(px|em|rem|%|pt)?$').firstMatch(text);
+  if (match == null) {
+    return null;
+  }
+  double number = double.parse(match.group(1)!);
+  switch (match.group(2)) {
+    case 'em':
+      return parent * number;
+    case 'rem':
+      return base * number;
+    case '%':
+      return parent * number / 100;
+    case 'pt':
+      return number * 4 / 3;
+    default:
+      return number;
+  }
 }
 
 /// What Yomitan does around dictionary styles, and what the renderer needs

@@ -445,6 +445,20 @@ class DictionaryServer {
             Map<String, dynamic>.from(response.data));
       });
 
+  /// A dictionary's stylesheet, or null when it has none or the server is
+  /// older than stylesheets.
+  Future<String?> styles(String id) async {
+    try {
+      Response<String> response = await _dio.get<String>(
+        'dictionaries/$id/styles',
+        options: Options(responseType: ResponseType.plain),
+      );
+      return response.data;
+    } on DioError {
+      return null;
+    }
+  }
+
   /// Downloads a dictionary's zip to [target], checking it arrived whole.
   Future<void> download(
     CatalogDictionary dictionary,
