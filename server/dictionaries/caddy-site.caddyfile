@@ -1,0 +1,25 @@
+
+# jidoujisho's dictionary catalog (~/jdj-dictionaries). Uploads can be large
+# and slow on mobile data, so bodies up to 1100 MB are allowed and the
+# backend gets time to answer.
+dict.health-journal.duckdns.org {
+	encode gzip
+
+	request_body {
+		max_size 1100MB
+	}
+
+	reverse_proxy jdj-dictionaries:8000 {
+		transport http {
+			read_timeout 30m
+			write_timeout 30m
+		}
+	}
+
+	log {
+		output file /data/dict-access.log {
+			roll_size 10mb
+			roll_keep 3
+		}
+	}
+}

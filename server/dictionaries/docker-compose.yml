@@ -1,0 +1,46 @@
+# jidoujisho's dictionary catalog, on the home server next to the family
+# dashboard and Cluebook. It borrows their Caddy for HTTPS and touches nothing
+# else of theirs.
+#
+#   docker compose up -d --build     start / apply changes
+#   docker compose logs -f           live logs
+name: jdj-dictionaries
+
+services:
+  dictionaries:
+    build: .
+    image: jdj-dictionaries:local
+    container_name: jdj-dictionaries
+    restart: unless-stopped
+    # ninh's uid:gid, so data/ stays writable from the container and over ssh.
+    user: "1000:1000"
+    environment:
+      DICT_DATA_DIR: /data
+      DICT_ENV_FILE: /config/.env
+    volumes:
+      - ./data:/data
+      # Tokens and limits. Kept out of the image and read-only here.
+      - ./.env:/config/.env:ro
+    # Only Caddy reaches this port, over the network it already shares with
+    # the dashboard; nothing is published on the host.
+    expose:
+      - "8000"
+    networks: [edge]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    read_only: true
+    tmpfs:
+      - /tmp
+    # Indexing parses one bank file at a time; this leaves the rest of the
+    # machine to the dashboard and Cluebook.
+    mem_limit: 1536m
+    cpus: 2
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+networks:
+  edge:
+    external: true
+    name: family-dashboard_internal
