@@ -30,6 +30,7 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
       child: SizedBox(
         height: _height,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Flexible(
               child: Material(

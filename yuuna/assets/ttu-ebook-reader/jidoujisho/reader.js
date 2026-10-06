@@ -135,8 +135,16 @@
 
   var CONTROLS = 'button, a, input, select, textarea, label, [role="button"], [role="dialog"]';
 
-  /* Height of the strips at the top and bottom edges that open the menu. */
-  var MENU_STRIP = 40;
+  /* Heights of the strips at the top and bottom edges that open the menu.
+   * Paged books keep these edges free of text (fit.js widens the top one);
+   * in a scrolling book they win over any text passing under them, as
+   * ッツ's own header strip did. */
+  var TOP_STRIP = 48;
+  var BOTTOM_STRIP = 32;
+
+  function inMenuStrip(y) {
+    return y < TOP_STRIP || y > window.innerHeight - BOTTOM_STRIP;
+  }
 
   function onTap(e) {
     var target = e.target;
@@ -153,6 +161,14 @@
     if (target.closest('#jdj-viewer')) {
       return;
     }
+    /* ッツ's own buttons are left alone. */
+    if (!target.closest('.book-content') && target.closest(CONTROLS)) {
+      return;
+    }
+    if (inMenuStrip(e.clientY)) {
+      post({ type: 'menu' });
+      return;
+    }
     /* A formula or table shrunk to fit opens at full size. */
     var fitted = target.closest('[data-jdj-fit]');
     if (fitted && window.__jdjFit) {
@@ -160,26 +176,14 @@
       window.__jdjFit.open(fitted);
       return;
     }
+    /* Margins close the popup. */
     if (!target.closest('.book-content')) {
-      /* Margins close the popup, and the edge strips open the app's menu;
-       * ッツ's own buttons are left alone. */
-      if (!target.closest(CONTROLS)) {
-        if (e.clientY < MENU_STRIP || e.clientY > window.innerHeight - MENU_STRIP) {
-          post({ type: 'menu' });
-        } else {
-          dismiss(e);
-        }
-      }
+      dismiss(e);
       return;
     }
 
     var hit = hitTest(e.clientX, e.clientY);
     if (!hit) {
-      /* The strips along the top and bottom edges open the app's menu. */
-      if (e.clientY < MENU_STRIP || e.clientY > window.innerHeight - MENU_STRIP) {
-        post({ type: 'menu' });
-        return;
-      }
       dismiss(e);
       return;
     }
@@ -1221,11 +1225,9 @@
   };
 
   /* Unselectable furigana, and selection colours: drawn as rounded boxes
-   * where possible, the browser's own square selection otherwise. ッツ's own
-   * header is replaced by the app's menu. */
+   * where possible, the browser's own square selection otherwise. */
   var style = document.createElement('style');
   style.textContent =
-    'button.fixed.inset-x-0.top-0.h-8{display:none!important}' +
     'rt,rp{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}' +
     '::selection{color:white;background:rgba(255,0,0,0.6)}' +
     'html.jdj-round-selection ::selection{color:inherit;background:transparent}';

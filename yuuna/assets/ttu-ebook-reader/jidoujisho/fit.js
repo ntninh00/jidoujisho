@@ -4,7 +4,9 @@
  * A formula or table wider than the page pushes ッツ's page columns out of
  * line, so every page after it is cut off. Such elements are shrunk to fit
  * and marked; tapping one shows it at full size in a viewer above the page.
- * Long code lines wrap instead.
+ * Long code lines wrap instead. ッツ's own header over a book is hidden too,
+ * since the app's menu replaces it, and the empty band above the text is
+ * made as tall as the strip that opens that menu.
  *
  * Runs at document start so the fix is in place before ッツ lays out a book.
  */
@@ -29,6 +31,11 @@
       '.book-content pre{white-space:pre-wrap!important;overflow-wrap:anywhere!important}' +
       '.book-content svg{max-inline-size:100%}' +
       '.book-content [' + MARK + ']{cursor:zoom-in}' +
+      /* ッツ's header over a book, and the strip that brings it back. */
+      'div.elevation-4.writing-horizontal-tb.fixed.inset-x-0.top-0,' +
+      'button.fixed.inset-x-0.top-0.h-8{display:none!important}' +
+      /* Keeps the first line clear of the reader's 48px menu strip. */
+      'div.py-8:has(> .book-content){padding-top:48px!important}' +
       '#jdj-viewer{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;' +
       'justify-content:center;background:rgba(0,0,0,.6);padding:16px;box-sizing:border-box;' +
       'animation:jdj-viewer-in .14s ease-out}' +
@@ -89,8 +96,16 @@
     probe.selectNodeContents(el);
     var inner = probe.getBoundingClientRect();
     size = Math.max(size, vertical ? inner.height : inner.width);
-    var scroll = vertical ? el.scrollHeight : el.scrollWidth;
+    /* Unlike the boxes above, scroll sizes leave out the element's own zoom. */
+    var scroll = (vertical ? el.scrollHeight : el.scrollWidth) * (parseFloat(el.style.zoom) || 1);
     return Math.max(size, scroll || 0);
+  }
+
+  /* A formula lays itself out to whatever room its box has, so zoom alone
+   * only makes it reflow wider; it is measured, and kept, at its natural
+   * width instead. */
+  function natural(el) {
+    return el.localName === 'math';
   }
 
   function outermost(list) {
@@ -119,6 +134,9 @@
       if (els[i].style.zoom) {
         els[i].style.zoom = '';
       }
+      if (natural(els[i])) {
+        els[i].style.setProperty(vertical ? 'height' : 'width', 'max-content');
+      }
     }
     var plan = [];
     for (i = 0; i < els.length; i++) {
@@ -133,8 +151,13 @@
         els[i].style.zoom = String(Math.floor(plan[i] * 1000) / 1000);
         els[i].setAttribute(MARK, '');
         fitted.push(els[i]);
-      } else if (els[i].hasAttribute(MARK)) {
-        els[i].removeAttribute(MARK);
+      } else {
+        if (els[i].hasAttribute(MARK)) {
+          els[i].removeAttribute(MARK);
+        }
+        if (natural(els[i])) {
+          els[i].style.removeProperty(vertical ? 'height' : 'width');
+        }
       }
     }
     /* Some content, such as a fraction bar, grows with its box; one more
@@ -287,6 +310,14 @@
   if (document.documentElement) {
     start();
   } else {
-    document.addEventListener('DOMContentLoaded', start);
+    /* Nothing is parsed yet: start the moment <html> appears, before
+     * anything is drawn. */
+    var early = new MutationObserver(function () {
+      if (document.documentElement) {
+        early.disconnect();
+        start();
+      }
+    });
+    early.observe(document, { childList: true });
   }
 })();
