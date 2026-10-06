@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 557
+/// Strings: 596
 ///
-/// Built on 2026-10-06 at 03:39 UTC
+/// Built on 2026-10-06 at 04:34 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -701,6 +701,45 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_color_green => 'Green';
 	String get ttu_color_sky => 'Blue';
 	String get ttu_color_violet => 'Purple';
+	String get catalog_title => 'Online dictionaries';
+	String get catalog_open => 'Online';
+	String get catalog_connect_title => 'Connect a dictionary server';
+	String get catalog_connect_hint => 'Paste the server\'s address and a token. A read token can browse and download; an admin token can also upload and delete. Pasting a link with the token after # fills in both.';
+	String get catalog_address => 'Server address';
+	String get catalog_token => 'Token';
+	String get catalog_connect => 'Connect';
+	String get catalog_all => 'All';
+	String get catalog_section_bilingual => 'Bilingual';
+	String get catalog_section_monolingual => 'Monolingual';
+	String get catalog_section_kanji => 'Kanji';
+	String get catalog_section_frequency => 'Frequency';
+	String get catalog_section_pronunciation => 'Pronunciation';
+	String get catalog_section_other => 'Other';
+	String catalog_entries({required Object n}) => '${n} entries';
+	String get catalog_installed => 'Installed';
+	String get catalog_preparing => 'Preparing';
+	String get catalog_failed => 'Couldn\'t prepare';
+	String get catalog_download => 'Download';
+	String get catalog_search_hint => 'Search this dictionary';
+	String catalog_nothing_found({required Object query}) => 'Nothing found for ${query}';
+	String get catalog_upload => 'Upload';
+	String catalog_uploading({required Object name}) => 'Uploading ${name}';
+	String catalog_uploaded({required Object name}) => '${name} is on the server and being prepared';
+	String get catalog_replace => 'Replace';
+	String get catalog_delete => 'Delete from server';
+	String get catalog_delete_confirm => 'Tap again to delete';
+	String catalog_deleted({required Object name}) => '${name} deleted from the server';
+	String get catalog_words => 'Words';
+	String get catalog_definitions => 'Definitions';
+	String get catalog_languages_hint => 'The language you look words up in, and the language of the definitions. Dictionaries without this in their index are labelled by the server from their text; correct it here if it guessed wrong.';
+	String get catalog_save => 'Save';
+	String get catalog_server => 'Server';
+	String get catalog_disconnect => 'Disconnect';
+	String get catalog_role_admin => 'Admin';
+	String get catalog_role_read => 'Read only';
+	String get catalog_empty => 'No dictionaries on the server yet';
+	String catalog_imported({required Object name}) => '${name} imported';
+	String get catalog_unknown_language => 'Unknown';
 }
 
 // Path: retrying_in
@@ -1296,6 +1335,45 @@ extension on _StringsEn {
 			case 'ttu_color_green': return 'Green';
 			case 'ttu_color_sky': return 'Blue';
 			case 'ttu_color_violet': return 'Purple';
+			case 'catalog_title': return 'Online dictionaries';
+			case 'catalog_open': return 'Online';
+			case 'catalog_connect_title': return 'Connect a dictionary server';
+			case 'catalog_connect_hint': return 'Paste the server\'s address and a token. A read token can browse and download; an admin token can also upload and delete. Pasting a link with the token after # fills in both.';
+			case 'catalog_address': return 'Server address';
+			case 'catalog_token': return 'Token';
+			case 'catalog_connect': return 'Connect';
+			case 'catalog_all': return 'All';
+			case 'catalog_section_bilingual': return 'Bilingual';
+			case 'catalog_section_monolingual': return 'Monolingual';
+			case 'catalog_section_kanji': return 'Kanji';
+			case 'catalog_section_frequency': return 'Frequency';
+			case 'catalog_section_pronunciation': return 'Pronunciation';
+			case 'catalog_section_other': return 'Other';
+			case 'catalog_entries': return ({required Object n}) => '${n} entries';
+			case 'catalog_installed': return 'Installed';
+			case 'catalog_preparing': return 'Preparing';
+			case 'catalog_failed': return 'Couldn\'t prepare';
+			case 'catalog_download': return 'Download';
+			case 'catalog_search_hint': return 'Search this dictionary';
+			case 'catalog_nothing_found': return ({required Object query}) => 'Nothing found for ${query}';
+			case 'catalog_upload': return 'Upload';
+			case 'catalog_uploading': return ({required Object name}) => 'Uploading ${name}';
+			case 'catalog_uploaded': return ({required Object name}) => '${name} is on the server and being prepared';
+			case 'catalog_replace': return 'Replace';
+			case 'catalog_delete': return 'Delete from server';
+			case 'catalog_delete_confirm': return 'Tap again to delete';
+			case 'catalog_deleted': return ({required Object name}) => '${name} deleted from the server';
+			case 'catalog_words': return 'Words';
+			case 'catalog_definitions': return 'Definitions';
+			case 'catalog_languages_hint': return 'The language you look words up in, and the language of the definitions. Dictionaries without this in their index are labelled by the server from their text; correct it here if it guessed wrong.';
+			case 'catalog_save': return 'Save';
+			case 'catalog_server': return 'Server';
+			case 'catalog_disconnect': return 'Disconnect';
+			case 'catalog_role_admin': return 'Admin';
+			case 'catalog_role_read': return 'Read only';
+			case 'catalog_empty': return 'No dictionaries on the server yet';
+			case 'catalog_imported': return ({required Object name}) => '${name} imported';
+			case 'catalog_unknown_language': return 'Unknown';
 			default: return null;
 		}
 	}

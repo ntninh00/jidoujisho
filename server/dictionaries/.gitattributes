@@ -1,0 +1,2 @@
+# Shipped to Linux as is; CRLF would break deploy.sh and the .env reader.
+* text=auto eol=lf

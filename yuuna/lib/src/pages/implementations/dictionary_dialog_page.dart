@@ -46,9 +46,27 @@ class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
 
   List<Widget> get actions => [
         buildClearButton(),
+        buildOnlineButton(),
         buildImportButton(),
         buildCloseButton(),
       ];
+
+  /// Opens the dictionaries on the user's server, and shows any imported
+  /// from there on return.
+  Widget buildOnlineButton() {
+    return TextButton(
+      child: Text(t.catalog_open),
+      onPressed: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DictionaryCatalogPage()),
+        );
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
+  }
 
   Future<void> showDictionaryClearDialog() async {
     Widget alertDialog = AlertDialog(

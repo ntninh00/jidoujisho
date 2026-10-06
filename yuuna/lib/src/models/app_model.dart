@@ -1536,6 +1536,44 @@ class AppModel with ChangeNotifier {
         'last_selected_dictionary_format', lastDictionaryFormatName);
   }
 
+  /// The dictionary server set up for browsing and downloading
+  /// dictionaries, or null before one is.
+  DictionaryServer? get dictionaryServer {
+    String url = _preferences.get('dictionary_server_url', defaultValue: '');
+    String token =
+        _preferences.get('dictionary_server_token', defaultValue: '');
+    if (url.isEmpty || token.isEmpty) {
+      return null;
+    }
+    return DictionaryServer(url: url, token: token);
+  }
+
+  /// Whether the server's token lets this app upload and delete.
+  bool get isDictionaryServerAdmin =>
+      _preferences.get('dictionary_server_role', defaultValue: '') == 'admin';
+
+  /// Remembers a dictionary server that answered with [role] for [token].
+  Future<void> setDictionaryServer({
+    required String url,
+    required String token,
+    required String role,
+  }) async {
+    await _preferences.put('dictionary_server_url', url);
+    await _preferences.put('dictionary_server_token', token);
+    await _preferences.put('dictionary_server_role', role);
+  }
+
+  /// Forgets the dictionary server.
+  Future<void> clearDictionaryServer() async {
+    await _preferences.delete('dictionary_server_url');
+    await _preferences.delete('dictionary_server_token');
+    await _preferences.delete('dictionary_server_role');
+  }
+
+  /// Whether a dictionary called [name] is already imported.
+  bool hasDictionaryNamed(String name) =>
+      _database.dictionarys.where().nameEqualTo(name).findFirstSync() != null;
+
   /// Persist a new last selected model name. This is called when the user
   /// changes the selected model to map in the profiles menu.
   Future<void> setLastSelectedModelName(String modelName) async {
@@ -1613,18 +1651,19 @@ class AppModel with ChangeNotifier {
   }
 
   /// Start the process of importing a dictionary. This is called from the
-  /// dictionary menu, and starts the process of importing for the
-  /// [lastSelectedDictionaryFormat].
+  /// dictionary menu, and starts the process of importing for [format], or
+  /// the [lastSelectedDictionaryFormat].
   Future<void> importDictionary({
     required File file,
     required ValueNotifier<String> progressNotifier,
     required Function() onImportSuccess,
+    DictionaryFormat? format,
   }) async {
     /// New results may be wrong after dictionary is added so this has to be
     /// done.
     clearDictionaryResultsCache();
 
-    DictionaryFormat dictionaryFormat = lastSelectedDictionaryFormat;
+    DictionaryFormat dictionaryFormat = format ?? lastSelectedDictionaryFormat;
 
     /// Importing makes heavy use of isolates as it is very performance
     /// intensive to work with files. In order to ensure the UI isolate isn't

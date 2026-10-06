@@ -47,6 +47,12 @@ final dictionaryResourceDirectoryProvider =
       path.join(appModel.dictionaryResourceDirectory.path, '$dictionaryId'));
 });
 
+/// Where pictures come from for entries that aren't imported, such as a
+/// dictionary previewed from a server. Null for imported dictionaries,
+/// whose pictures are files in their resource directory.
+final dictionaryPreviewImageProvider =
+    Provider<ImageProvider Function(String src)?>((ref) => null);
+
 /// HTML renderer for dictionary definitions.
 class DictionaryHtmlWidget extends ConsumerWidget {
   /// Create an instance of this page.
@@ -138,6 +144,21 @@ class JidoujishoDictionaryImage extends ConsumerWidget {
         .replaceAll(RegExp(r'\D'), ''));
     final height = double.tryParse((extensionContext.attributes['height'] ?? '')
         .replaceAll(RegExp(r'\D'), ''));
+
+    final preview = ref.watch(dictionaryPreviewImageProvider);
+    if (preview != null) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image(
+            image: preview(src),
+            height: height,
+            width: width,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ],
+      );
+    }
 
     final directory = ref
         .read(dictionaryResourceDirectoryProvider(entry.dictionary.value!.id));

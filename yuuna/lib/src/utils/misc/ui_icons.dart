@@ -400,4 +400,18 @@ class Ui {
       IconData(0xe510, fontFamily: _regular); // cloud-upload
   static const IconData chapters =
       IconData(0xec31, fontFamily: _regular); // list
+  static const IconData download =
+      IconData(0xe70d, fontFamily: _regular); // download
+  static const IconData cloudDownload =
+      IconData(0xe4f3, fontFamily: _regular); // cloud-download
+  static const IconData checkCircle =
+      IconData(0xe431, fontFamily: _regular); // check-circle
+  static const IconData checkCircleSolid =
+      IconData(0xe431, fontFamily: _solid); // check-circle
+  static const IconData globe =
+      IconData(0xe974, fontFamily: _regular); // globe
+  static const IconData server =
+      IconData(0xe647, fontFamily: _regular); // database
+  static const IconData trash =
+      IconData(0xf463, fontFamily: _regular); // trash
 }
