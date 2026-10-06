@@ -705,5 +705,11 @@
     "ttu_rename_group": "Rename",
     "ttu_delete_group": "Delete group",
     "ttu_group_info": "Books show under their group when the shelf is grouped by My groups, in the shelf settings.",
-    "ttu_group_by_info": "Favourites always come first. Tap a heading to fold it away."
+    "ttu_group_by_info": "Favourites always come first. Tap a heading to fold it away.",
+    "ttu_this_book": "This book",
+    "ttu_follow_links": "Follow links",
+    "ttu_follow_links_info": "On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.",
+    "ttu_book_fonts": "Book's own fonts",
+    "ttu_book_fonts_info": "Off, your font is used all through the book. Code keeps its fixed-width font.",
+    "ttu_repaired_partly": "Parts of $title were missing from the file. The rest was added."
 }

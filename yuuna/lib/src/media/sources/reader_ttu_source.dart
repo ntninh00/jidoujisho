@@ -144,6 +144,24 @@ class ReaderTtuSource extends ReaderMediaSource {
     await deletePreference(key: 'search_home_${book.key}');
   }
 
+  /// Whether tapping a link in [book] follows it. Off, links read as plain
+  /// text and look words up like the rest.
+  bool followsLinks(TtuBook book) =>
+      getPreference<bool>(key: 'book_links_${book.key}', defaultValue: true);
+
+  /// Sets whether links in [book] are followed.
+  Future<void> setFollowsLinks(TtuBook book, {required bool follow}) =>
+      setPreference<bool>(key: 'book_links_${book.key}', value: follow);
+
+  /// Whether [book] keeps the fonts it comes with. Off, the reader's own
+  /// font is used throughout, apart from code.
+  bool keepsBookFonts(TtuBook book) =>
+      getPreference<bool>(key: 'book_fonts_${book.key}', defaultValue: true);
+
+  /// Sets whether [book] keeps its own fonts.
+  Future<void> setKeepsBookFonts(TtuBook book, {required bool keep}) =>
+      setPreference<bool>(key: 'book_fonts_${book.key}', value: keep);
+
   /// The language the user chose for the book with [bookKey], if they
   /// changed it from the one it was added with.
   Language? chosenLanguageFor(String bookKey) {
@@ -605,6 +623,34 @@ class ReaderTtuSource extends ReaderMediaSource {
       ...files.map((file) => path.basenameWithoutExtension(file.path)),
     ];
 
+    /// ッツ refuses a book when a file it names cannot be found; such books
+    /// are mended first, and added from a copy.
+    Directory? mended;
+    List<File> prepared = [];
+    for (File file in files) {
+      if (path.extension(file.path).toLowerCase() == '.epub') {
+        try {
+          mended ??= await Directory.systemTemp.createTemp('jdj_mended_');
+          EpubRepair? repair = await repairEpub(file, mended);
+          if (repair != null) {
+            prepared.add(repair.file);
+            if (repair.missing > 0) {
+              Fluttertoast.showToast(
+                msg: t.ttu_repaired_partly(
+                  title: path.basenameWithoutExtension(file.path),
+                ),
+              );
+            }
+            continue;
+          }
+        } catch (error) {
+          debugPrint('Could not check ${file.path}: $error');
+        }
+      }
+      prepared.add(file);
+    }
+    files = prepared;
+
     Language fallback = shelfLanguages.contains(appModel.targetLanguage)
         ? appModel.targetLanguage
         : JapaneseLanguage.instance;
@@ -635,6 +681,9 @@ class ReaderTtuSource extends ReaderMediaSource {
 
     importing.value = const [];
     ref.invalidate(ttuShelfProvider);
+    try {
+      await mended?.delete(recursive: true);
+    } catch (_) {}
 
     if (failures.isNotEmpty) {
       Fluttertoast.showToast(

@@ -1411,6 +1411,9 @@ class TtuReaderSettingsSheet extends BasePage {
     this.onPresetChanged,
     this.onOptionsChanged,
     this.extraFonts = const [],
+    this.book,
+    this.bookTraits,
+    this.onBookOptionsChanged,
     super.key,
   });
 
@@ -1432,6 +1435,18 @@ class TtuReaderSettingsSheet extends BasePage {
 
   /// Fonts the user added in ッツ's settings.
   final List<String> extraFonts;
+
+  /// The open book, whose own settings show when it has links or fonts of
+  /// its own.
+  final TtuBook? book;
+
+  /// What [book] has: links, and fonts of its own. Null when unknown, which
+  /// shows both settings.
+  final ({bool links, bool fonts})? bookTraits;
+
+  /// A setting of [book] changed. The flag is true when ッツ must lay the
+  /// book out again for it, as for its fonts.
+  final void Function({required bool relayout})? onBookOptionsChanged;
 
   /// Whether the sheet is over an open book.
   bool get live => onPresetChanged != null;
@@ -1491,11 +1506,12 @@ class _TtuReaderSettingsSheetState
     if (!_fonts.any((font) => font.key == selected)) {
       selected = '';
     }
+    Color accent = theme.colorScheme.primary;
     return SizedBox(
       height: 40,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         children: [
           for (MapEntry<String, String> font in _fonts)
             Padding(
@@ -1506,12 +1522,21 @@ class _TtuReaderSettingsSheetState
                   style: TextStyle(
                     fontFamily: _previewFamilyOf(font.key),
                     fontWeight: FontWeight.w600,
+                    color: font.key == selected ? accent : null,
                   ),
                 ),
                 selected: font.key == selected,
                 showCheckmark: false,
-                shape: const StadiumBorder(),
-                selectedColor: theme.colorScheme.primary.withOpacity(0.18),
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: font.key == selected
+                        ? accent
+                        : theme.dividerColor.withOpacity(0.25),
+                    width: font.key == selected ? 1.5 : 1,
+                  ),
+                ),
+                backgroundColor: Colors.transparent,
+                selectedColor: accent.withOpacity(0.12),
                 onSelected: (_) =>
                     _update((preset) => preset.fontFamily = font.key),
               ),
@@ -1541,9 +1566,10 @@ class _TtuReaderSettingsSheetState
   String get _effectiveTheme =>
       _preset.theme ?? (appModelNoUpdate.isDarkMode ? 'dark' : 'light');
 
+  /// The heading above a card of settings.
   Widget _group(String title, {String? info}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 12, 2),
+      padding: const EdgeInsets.fromLTRB(28, 20, 16, 4),
       child: Row(
         children: [
           Text(
@@ -1560,6 +1586,53 @@ class _TtuReaderSettingsSheetState
     );
   }
 
+  /// Settings that belong together, on one rounded card.
+  Widget _card(List<Widget> children) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Material(
+        color: theme.dividerColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A faint line between parts of a card.
+  Widget _divider() {
+    return Divider(
+      height: 13,
+      thickness: 1,
+      indent: 16,
+      endIndent: 16,
+      color: theme.dividerColor.withOpacity(0.08),
+    );
+  }
+
+  /// A setting's name, with its ⓘ right after the last word.
+  Widget _title(String title, String? info) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: title),
+          if (info != null)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: JidoujishoInfoButton(message: info),
+            ),
+        ],
+      ),
+      style: textTheme.bodyMedium,
+    );
+  }
+
   /// A setting that is on or off. The whole row toggles it.
   Widget _switch({
     required String title,
@@ -1570,58 +1643,163 @@ class _TtuReaderSettingsSheetState
   }) {
     return InkWell(
       onTap: () => onChanged(!value),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 52),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(indent ? 32 : 16, 2, 8, 2),
+          child: Row(
+            children: [
+              Expanded(child: _title(title, info)),
+              const SizedBox(width: 8),
+              Switch(value: value, onChanged: onChanged),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// A setting with its control at the end of the row, or, with
+  /// [stacked], below its name, for controls too wide to share the row.
+  Widget _row(
+    String title,
+    Widget trailing, {
+    String? info,
+    bool stacked = false,
+  }) {
+    if (stacked) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _title(title, info),
+            const SizedBox(height: 6),
+            Align(alignment: Alignment.centerRight, child: trailing),
+          ],
+        ),
+      );
+    }
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(indent ? 36 : 20, 2, 12, 2),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
         child: Row(
           children: [
-            Flexible(child: Text(title, style: textTheme.bodyMedium)),
-            if (info != null) JidoujishoInfoButton(message: info),
-            const Spacer(),
-            Switch(value: value, onChanged: onChanged),
+            Expanded(child: _title(title, info)),
+            const SizedBox(width: 12),
+            trailing,
           ],
         ),
       ),
     );
   }
 
-  Widget _row(String title, Widget trailing, {String? info}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 16, 6),
-      child: Row(
-        children: [
-          Flexible(child: Text(title, style: textTheme.bodyMedium)),
-          if (info != null) JidoujishoInfoButton(message: info),
-          const Spacer(),
-          trailing,
-        ],
-      ),
-    );
-  }
-
-  /// A number with minus and plus buttons.
+  /// A number between minus and plus, on one pill as wide as every other.
   Widget _stepper({
     required String value,
     required VoidCallback? onLess,
     required VoidCallback? onMore,
   }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _RoundButton(icon: Ui.remove, onTap: onLess),
-        SizedBox(
-          width: 44,
-          child: Text(
-            value,
-            textAlign: TextAlign.center,
-            style: textTheme.bodyLarge!.copyWith(
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+    Widget button(IconData icon, VoidCallback? onTap) {
+      return InkResponse(
+        onTap: onTap,
+        radius: 22,
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(
+            icon,
+            size: 18,
+            color: onTap == null ? theme.disabledColor : null,
           ),
         ),
-        _RoundButton(icon: Ui.add, onTap: onMore),
-      ],
+      );
+    }
+
+    return Material(
+      color: theme.dividerColor.withOpacity(0.1),
+      shape: const StadiumBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button(Ui.remove, onLess),
+          SizedBox(
+            width: 44,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge!.copyWith(
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          button(Ui.add, onMore),
+        ],
+      ),
     );
+  }
+
+  /// The page themes, spread across the card.
+  Widget _themes({required bool japanese}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 8, 6, 2),
+      child: Row(
+        children: [
+          for (String name in TtuPagePreset.themes)
+            Expanded(
+              child: _ThemeSwatch(
+                name: name,
+                selected: _effectiveTheme == name,
+                sample: japanese ? 'あ' : 'Aa',
+                onTap: () => _update((preset) => preset.theme = name),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The open book's own settings, for what it has.
+  List<Widget> _bookSettings() {
+    TtuBook? book = widget.book;
+    if (book == null) {
+      return const [];
+    }
+    bool links = widget.bookTraits?.links ?? true;
+    bool fonts = widget.bookTraits?.fonts ?? true;
+    if (!links && !fonts) {
+      return const [];
+    }
+    return [
+      _group(t.ttu_this_book),
+      _card([
+        if (links)
+          _switch(
+            title: t.ttu_follow_links,
+            info: t.ttu_follow_links_info,
+            value: source.followsLinks(book),
+            onChanged: (value) async {
+              await source.setFollowsLinks(book, follow: value);
+              setState(() {});
+              widget.onBookOptionsChanged?.call(relayout: false);
+            },
+          ),
+        if (fonts)
+          _switch(
+            title: t.ttu_book_fonts,
+            info: t.ttu_book_fonts_info,
+            value: source.keepsBookFonts(book),
+            onChanged: (value) async {
+              await source.setKeepsBookFonts(book, keep: value);
+              setState(() {});
+              widget.onBookOptionsChanged?.call(relayout: true);
+            },
+          ),
+      ]),
+    ];
   }
 
   Widget _segmented<T>({
@@ -1731,7 +1909,7 @@ class _TtuReaderSettingsSheetState
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       height: 116,
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+      margin: const EdgeInsets.fromLTRB(10, 6, 10, 4),
       padding: _preset.vertical
           ? EdgeInsets.fromLTRB(inset + 4, 10, inset + 4, 10)
           : EdgeInsets.fromLTRB(14, inset, 14, inset),
@@ -1778,7 +1956,7 @@ class _TtuReaderSettingsSheetState
         children: [
           const TtuSheetHandle(),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 4, 0),
+            padding: const EdgeInsets.fromLTRB(24, 4, 8, 0),
             child: Row(
               children: [
                 Expanded(
@@ -1798,280 +1976,287 @@ class _TtuReaderSettingsSheetState
           ),
           if (!live) ...[
             _group(t.ttu_shelf, info: t.ttu_group_by_info),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _segmented<TtuShelfGrouping>(
-                    values: TtuShelfGrouping.values,
-                    labels: [
-                      t.ttu_group_by_none,
-                      t.ttu_group_by_groups,
-                      t.ttu_group_by_language,
-                      t.ttu_group_by_progress,
-                    ],
-                    selected: source.shelfGrouping,
-                    onSelect: (grouping) async {
-                      await source.setShelfGrouping(grouping);
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
+            _card([
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _segmented<TtuShelfGrouping>(
+                      values: TtuShelfGrouping.values,
+                      labels: [
+                        t.ttu_group_by_none,
+                        t.ttu_group_by_groups,
+                        t.ttu_group_by_language,
+                        t.ttu_group_by_progress,
+                      ],
+                      selected: source.shelfGrouping,
+                      onSelect: (grouping) async {
+                        await source.setShelfGrouping(grouping);
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
+            ]),
           ],
           _group(t.ttu_page, info: live ? null : t.ttu_page_info),
-          if (!live && languages.length > 1)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _segmented<Language>(
-                  values: languages,
-                  labels: languages
-                      .map((language) =>
-                          t.ttu_books_in(language: language.languageName))
-                      .toList(),
-                  selected: _language,
-                  onSelect: (language) => setState(() {
-                    _language = language;
-                    _preset = source.presetFor(language);
-                  }),
+          _card([
+            if (!live && languages.length > 1)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: _segmented<Language>(
+                      values: languages,
+                      labels: languages
+                          .map((language) =>
+                              t.ttu_books_in(language: language.languageName))
+                          .toList(),
+                      selected: _language,
+                      onSelect: (language) => setState(() {
+                        _language = language;
+                        _preset = source.presetFor(language);
+                      }),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          if (!live) _preview(),
-          SizedBox(
-            height: 74,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              children: [
-                for (String name in TtuPagePreset.themes)
-                  _ThemeSwatch(
-                    name: name,
-                    selected: _effectiveTheme == name,
-                    sample: japanese ? 'あ' : 'Aa',
-                    onTap: () => _update((preset) => preset.theme = name),
-                  ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
-            child: Text(t.ttu_font, style: textTheme.bodyMedium),
-          ),
-          _fontChips(),
-          _row(
-            t.ttu_text_size,
-            _stepper(
-              value: '${_preset.fontSize}',
-              onLess: _preset.fontSize > 12
-                  ? () => _update((preset) => preset.fontSize -= 2)
-                  : null,
-              onMore: _preset.fontSize < 48
-                  ? () => _update((preset) => preset.fontSize += 2)
-                  : null,
-            ),
-          ),
-          _row(
-            t.ttu_line_spacing,
-            _stepper(
-              value: _preset.lineHeight.toStringAsFixed(1),
-              onLess: _preset.lineHeight > 1.25
-                  ? () => _update((preset) => preset.lineHeight =
-                      ((preset.lineHeight - 0.1) * 10).round() / 10)
-                  : null,
-              onMore: _preset.lineHeight < 2.45
-                  ? () => _update((preset) => preset.lineHeight =
-                      ((preset.lineHeight + 0.1) * 10).round() / 10)
-                  : null,
-            ),
-          ),
-          _row(
-            t.ttu_margins,
-            _stepper(
-              value: '${_preset.margin}',
-              onLess: _preset.margin > 0
-                  ? () => _update((preset) => preset.margin -= 8)
-                  : null,
-              onMore: _preset.margin < 96
-                  ? () => _update((preset) => preset.margin += 8)
-                  : null,
-            ),
-          ),
-          _row(
-            t.ttu_direction,
-            _segmented<bool>(
-              values: const [true, false],
-              labels: [t.ttu_vertical, t.ttu_horizontal],
-              selected: _preset.vertical,
-              onSelect: (value) => _update((preset) => preset.vertical = value),
-            ),
-          ),
-          _row(
-            t.ttu_layout,
-            _segmented<bool>(
-              values: const [true, false],
-              labels: [t.ttu_pages, t.ttu_scroll],
-              selected: _preset.paginated,
-              onSelect: (value) =>
-                  _update((preset) => preset.paginated = value),
-            ),
-          ),
-          if (_preset.paginated)
-            _row(
-              t.ttu_columns,
-              _segmented<int>(
-                values: const [0, 1, 2],
-                labels: [t.ttu_columns_auto, '1', '2'],
-                selected: _preset.columns,
-                onSelect: (value) =>
-                    _update((preset) => preset.columns = value),
-              ),
-            ),
-          if (japanese)
-            _row(
-              t.ttu_furigana_label,
-              _segmented<String>(
-                values: const ['show', 'partial', 'full', 'toggle'],
-                labels: [
-                  t.ttu_furigana_show,
-                  t.ttu_furigana_faded,
-                  t.ttu_furigana_hidden,
-                  t.ttu_furigana_tap,
-                ],
-                selected: _furiganaChoice,
-                onSelect: _setFurigana,
-              ),
-              info: t.ttu_furigana_info,
-            ),
-          _switch(
-            title: t.ttu_avoid_break,
-            info: t.ttu_avoid_break_info,
-            value: _preset.avoidPageBreak,
-            onChanged: (value) =>
-                _update((preset) => preset.avoidPageBreak = value),
-          ),
-          _switch(
-            title: t.ttu_blur_images,
-            info: t.ttu_blur_images_info,
-            value: _preset.blurImages,
-            onChanged: (value) =>
-                _update((preset) => preset.blurImages = value),
-          ),
-          _group(t.ttu_while_reading),
-          _switch(
-            title: t.ttu_full_screen,
-            info: t.ttu_full_screen_info,
-            value: source.fullScreen,
-            onChanged: (_) => _toggle(source.toggleFullScreen),
-          ),
-          if (source.fullScreen)
-            _switch(
-              title: t.ttu_camera_area,
-              info: t.ttu_camera_area_info,
-              value: source.extendPageBeyondNavigationBar,
-              indent: true,
-              onChanged: (_) =>
-                  _toggle(source.toggleExtendPageBeyondNavigationBar),
-            ),
-          _switch(
-            title: t.ttu_memos_on_page,
-            info: t.ttu_memos_on_page_info,
-            value: source.showMemosOnPage,
-            onChanged: (_) => _toggle(source.toggleShowMemosOnPage),
-          ),
-          _switch(
-            title: t.ttu_keep_screen_on,
-            value: source.keepScreenOn,
-            onChanged: (_) => _toggle(source.toggleKeepScreenOn),
-          ),
-          _switch(
-            title: t.ttu_auto_save,
-            info: t.ttu_auto_save_info,
-            value: source.autoSavePosition,
-            onChanged: (_) => _toggle(source.toggleAutoSavePosition),
-          ),
-          _switch(
-            title: t.ttu_highlight,
-            value: source.highlightOnTap,
-            onChanged: (_) => _toggle(source.toggleHighlightOnTap),
-          ),
-          _switch(
-            title: t.ttu_match_popup,
-            info: t.ttu_match_popup_info,
-            value: source.adaptTtuTheme,
-            onChanged: (_) => _toggle(source.toggleAdaptTtuTheme),
-          ),
-          _switch(
-            title: t.ttu_volume,
-            value: source.volumePageTurningEnabled,
-            onChanged: (_) => _toggle(source.toggleVolumePageTurningEnabled),
-          ),
-          if (source.volumePageTurningEnabled)
-            _switch(
-              title: t.ttu_volume_swap,
-              value: source.volumePageTurningInverted,
-              indent: true,
-              onChanged: (_) => _toggle(source.toggleVolumePageTurningInverted),
-            ),
-          if (source.volumePageTurningEnabled && hasScroll)
+            if (!live) _preview(),
+            _themes(japanese: japanese),
             Padding(
-              padding: const EdgeInsets.fromLTRB(36, 4, 20, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(t.ttu_scroll_step, style: textTheme.bodyMedium),
-                      JidoujishoInfoButton(message: t.ttu_scroll_step_info),
-                      const Spacer(),
-                      Text(
-                        '${source.volumePageTurningSpeed}',
-                        style: textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value:
-                        source.volumePageTurningSpeed.clamp(20, 400).toDouble(),
-                    min: 20,
-                    max: 400,
-                    divisions: 38,
-                    onChanged: (value) => _toggle(
-                        () => source.setVolumePageTurningSpeed(value.round())),
-                  ),
-                ],
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+              child: Text(t.ttu_font, style: textTheme.bodyMedium),
+            ),
+            _fontChips(),
+            const SizedBox(height: 4),
+            _row(
+              t.ttu_text_size,
+              _stepper(
+                value: '${_preset.fontSize}',
+                onLess: _preset.fontSize > 12
+                    ? () => _update((preset) => preset.fontSize -= 2)
+                    : null,
+                onMore: _preset.fontSize < 48
+                    ? () => _update((preset) => preset.fontSize += 2)
+                    : null,
               ),
             ),
-          if (openTtuPage != null) _group(t.ttu_more),
-          if (openTtuPage != null)
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-              leading: const Icon(Ui.cloud_upload_outlined),
-              title: Text(t.ttu_backup_sync),
-              trailing: const Icon(Ui.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                openTtuPage(_language, 'manage.html');
-              },
+            _row(
+              t.ttu_line_spacing,
+              _stepper(
+                value: _preset.lineHeight.toStringAsFixed(1),
+                onLess: _preset.lineHeight > 1.25
+                    ? () => _update((preset) => preset.lineHeight =
+                        ((preset.lineHeight - 0.1) * 10).round() / 10)
+                    : null,
+                onMore: _preset.lineHeight < 2.45
+                    ? () => _update((preset) => preset.lineHeight =
+                        ((preset.lineHeight + 0.1) * 10).round() / 10)
+                    : null,
+              ),
             ),
-          if (openTtuPage != null)
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-              leading: const Icon(Ui.tune),
-              title: Text(t.ttu_all_settings),
-              trailing: const Icon(Ui.chevron_right),
-              onTap: () {
-                Navigator.pop(context);
-                openTtuPage(_language, 'settings.html');
-              },
+            _row(
+              t.ttu_margins,
+              _stepper(
+                value: '${_preset.margin}',
+                onLess: _preset.margin > 0
+                    ? () => _update((preset) => preset.margin -= 8)
+                    : null,
+                onMore: _preset.margin < 96
+                    ? () => _update((preset) => preset.margin += 8)
+                    : null,
+              ),
             ),
+            _divider(),
+            _row(
+              t.ttu_direction,
+              _segmented<bool>(
+                values: const [true, false],
+                labels: [t.ttu_vertical, t.ttu_horizontal],
+                selected: _preset.vertical,
+                onSelect: (value) =>
+                    _update((preset) => preset.vertical = value),
+              ),
+            ),
+            _row(
+              t.ttu_layout,
+              _segmented<bool>(
+                values: const [true, false],
+                labels: [t.ttu_pages, t.ttu_scroll],
+                selected: _preset.paginated,
+                onSelect: (value) =>
+                    _update((preset) => preset.paginated = value),
+              ),
+            ),
+            if (_preset.paginated)
+              _row(
+                t.ttu_columns,
+                _segmented<int>(
+                  values: const [0, 1, 2],
+                  labels: [t.ttu_columns_auto, '1', '2'],
+                  selected: _preset.columns,
+                  onSelect: (value) =>
+                      _update((preset) => preset.columns = value),
+                ),
+              ),
+            if (japanese)
+              _row(
+                t.ttu_furigana_label,
+                _segmented<String>(
+                  values: const ['show', 'partial', 'full', 'toggle'],
+                  labels: [
+                    t.ttu_furigana_show,
+                    t.ttu_furigana_faded,
+                    t.ttu_furigana_hidden,
+                    t.ttu_furigana_tap,
+                  ],
+                  selected: _furiganaChoice,
+                  onSelect: _setFurigana,
+                ),
+                info: t.ttu_furigana_info,
+                stacked: true,
+              ),
+            _divider(),
+            _switch(
+              title: t.ttu_avoid_break,
+              info: t.ttu_avoid_break_info,
+              value: _preset.avoidPageBreak,
+              onChanged: (value) =>
+                  _update((preset) => preset.avoidPageBreak = value),
+            ),
+            _switch(
+              title: t.ttu_blur_images,
+              info: t.ttu_blur_images_info,
+              value: _preset.blurImages,
+              onChanged: (value) =>
+                  _update((preset) => preset.blurImages = value),
+            ),
+          ]),
+          ..._bookSettings(),
+          _group(t.ttu_while_reading),
+          _card([
+            _switch(
+              title: t.ttu_full_screen,
+              info: t.ttu_full_screen_info,
+              value: source.fullScreen,
+              onChanged: (_) => _toggle(source.toggleFullScreen),
+            ),
+            if (source.fullScreen)
+              _switch(
+                title: t.ttu_camera_area,
+                info: t.ttu_camera_area_info,
+                value: source.extendPageBeyondNavigationBar,
+                indent: true,
+                onChanged: (_) =>
+                    _toggle(source.toggleExtendPageBeyondNavigationBar),
+              ),
+            _switch(
+              title: t.ttu_memos_on_page,
+              info: t.ttu_memos_on_page_info,
+              value: source.showMemosOnPage,
+              onChanged: (_) => _toggle(source.toggleShowMemosOnPage),
+            ),
+            _switch(
+              title: t.ttu_keep_screen_on,
+              value: source.keepScreenOn,
+              onChanged: (_) => _toggle(source.toggleKeepScreenOn),
+            ),
+            _switch(
+              title: t.ttu_auto_save,
+              info: t.ttu_auto_save_info,
+              value: source.autoSavePosition,
+              onChanged: (_) => _toggle(source.toggleAutoSavePosition),
+            ),
+            _switch(
+              title: t.ttu_highlight,
+              value: source.highlightOnTap,
+              onChanged: (_) => _toggle(source.toggleHighlightOnTap),
+            ),
+            _switch(
+              title: t.ttu_match_popup,
+              info: t.ttu_match_popup_info,
+              value: source.adaptTtuTheme,
+              onChanged: (_) => _toggle(source.toggleAdaptTtuTheme),
+            ),
+            _switch(
+              title: t.ttu_volume,
+              value: source.volumePageTurningEnabled,
+              onChanged: (_) => _toggle(source.toggleVolumePageTurningEnabled),
+            ),
+            if (source.volumePageTurningEnabled)
+              _switch(
+                title: t.ttu_volume_swap,
+                value: source.volumePageTurningInverted,
+                indent: true,
+                onChanged: (_) =>
+                    _toggle(source.toggleVolumePageTurningInverted),
+              ),
+            if (source.volumePageTurningEnabled && hasScroll)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 4, 16, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _title(
+                            t.ttu_scroll_step,
+                            t.ttu_scroll_step_info,
+                          ),
+                        ),
+                        Text(
+                          '${source.volumePageTurningSpeed}',
+                          style: textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: source.volumePageTurningSpeed
+                          .clamp(20, 400)
+                          .toDouble(),
+                      min: 20,
+                      max: 400,
+                      divisions: 38,
+                      onChanged: (value) => _toggle(() =>
+                          source.setVolumePageTurningSpeed(value.round())),
+                    ),
+                  ],
+                ),
+              ),
+          ]),
+          if (openTtuPage != null) ...[
+            _group(t.ttu_more),
+            _card([
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Ui.cloud_upload_outlined),
+                title: Text(t.ttu_backup_sync),
+                trailing: const Icon(Ui.chevron_right),
+                onTap: () {
+                  Navigator.pop(context);
+                  openTtuPage(_language, 'manage.html');
+                },
+              ),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                leading: const Icon(Ui.tune),
+                title: Text(t.ttu_all_settings),
+                trailing: const Icon(Ui.chevron_right),
+                onTap: () {
+                  Navigator.pop(context);
+                  openTtuPage(_language, 'settings.html');
+                },
+              ),
+            ]),
+          ],
         ],
       ),
     );
@@ -2098,14 +2283,15 @@ class _ThemeSwatch extends StatelessWidget {
     String label = '${name[0].toUpperCase()}${name.substring(1)}';
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
         child: Column(
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 160),
-              width: 38,
-              height: 38,
+              width: 40,
+              height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Color(colors[0]),
@@ -2130,40 +2316,6 @@ class _ThemeSwatch extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundButton extends StatelessWidget {
-  const _RoundButton({
-    required this.icon,
-    required this.onTap,
-  });
-
-  final IconData icon;
-
-  /// Null at the end of the range, which greys the button out.
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    ThemeData theme = Theme.of(context);
-    return Material(
-      color: theme.dividerColor.withOpacity(0.12),
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: SizedBox(
-          width: 36,
-          height: 36,
-          child: Icon(
-            icon,
-            size: 18,
-            color: onTap == null ? theme.disabledColor : null,
-          ),
         ),
       ),
     );

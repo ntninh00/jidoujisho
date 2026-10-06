@@ -77,6 +77,14 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   final ValueNotifier<TtuPosition?> _backChip = ValueNotifier(null);
   Timer? _backChipTimer;
 
+  /// The chip leads back from a followed link, which leaves a visit to a
+  /// memo or term as it was.
+  bool _backFromLink = false;
+
+  /// Where the reader was before following a link that reopened the book,
+  /// offered once the target is on screen.
+  TtuPosition? _linkBack;
+
   bool _flashPending = false;
   bool _chipPending = false;
   bool _leaving = false;
@@ -730,7 +738,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     );
   }
 
-  void _showBackChip(TtuPosition back) {
+  void _showBackChip(TtuPosition back, {bool fromLink = false}) {
+    _backFromLink = fromLink;
     _backChip.value = back;
     _backChipTimer?.cancel();
     _backChipTimer = Timer(const Duration(seconds: 6), () {
@@ -740,17 +749,54 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     });
   }
 
-  /// Goes back to where the reader was before jumping to a memo.
-  void _goBack(TtuPosition back) {
+  /// Goes back to where the reader was before jumping to a memo, or before
+  /// following a link.
+  Future<void> _goBack(TtuPosition back) async {
     TtuLaunch? launch = _launch;
-    if (launch == null) {
+    TtuBook? book = launch?.book ?? await _currentBook();
+    if (book == null) {
       return;
     }
     _backChipTimer?.cancel();
     _backChip.value = null;
-    _wentBack = true;
-    mediaSource.returnPositions.remove(launch.book.key);
-    _reloadAt(launch.book, back, _MaskKind.returning);
+    if (!_backFromLink && launch != null) {
+      _wentBack = true;
+      mediaSource.returnPositions.remove(launch.book.key);
+    }
+    await _reloadAt(book, back, _MaskKind.returning);
+  }
+
+  /// Follows a link in the book to where it points, offering the way back.
+  /// In a scrolling book with the target on the page, the page scrolls
+  /// there; otherwise the book opens at the target, as for a search result.
+  Future<void> _followLink(Map<String, dynamic> message) async {
+    TtuBook? book = await _currentBook();
+    InAppWebViewController? controller = _controller;
+    if (book == null || controller == null || !mounted) {
+      return;
+    }
+    TtuPosition? back = await _capturePosition();
+    if (message['inPage'] == true) {
+      await controller.evaluateJavascript(
+        source: 'window.__jdj && '
+            'window.__jdj.followInPage(${jsonEncode(message['id'])});',
+      );
+      if (back != null && mounted) {
+        _showBackChip(back, fromLink: true);
+      }
+      return;
+    }
+    _linkBack = back;
+    await _reloadAt(
+      book,
+      TtuPosition(
+        characters: ((message['characters'] as num?) ?? 0).toInt(),
+        progress: ((message['progress'] as num?) ?? 0).toDouble(),
+      ),
+      _MaskKind.jumping,
+      flash: message['flash'] as String?,
+      reveal: true,
+    );
   }
 
   /// Opens [book] again at [position], behind the loading screen. With a
@@ -988,6 +1034,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _settingsChanged = false;
     List<String> fonts = await _userFonts();
     mediaSource.rememberUserFonts(_language, fonts);
+    TtuBook? book = await _currentBook();
+    ({bool links, bool fonts})? traits = await _bookTraits();
     if (!mounted) {
       return;
     }
@@ -1007,6 +1055,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         extraFonts: fonts,
         onPresetChanged: _onPresetChanged,
         onOptionsChanged: _onOptionsChanged,
+        book: book,
+        bookTraits: traits,
+        onBookOptionsChanged: _onBookOptionsChanged,
       ),
     );
     _isRecursiveSearching = false;
@@ -1015,6 +1066,45 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       await _applySettings();
     }
     _focusNode.requestFocus();
+  }
+
+  /// What the open book has that its own settings change: links, and
+  /// fonts of its own. Null when the page cannot tell.
+  Future<({bool links, bool fonts})?> _bookTraits() async {
+    try {
+      CallAsyncJavaScriptResult? result = await _controller
+          ?.callAsyncJavaScript(
+            functionBody:
+                'return window.__jdj ? await window.__jdj.bookTraits() : null;',
+          )
+          .timeout(const Duration(seconds: 2));
+      Object? value = result?.value;
+      if (value is Map) {
+        return (links: value['links'] == true, fonts: value['fonts'] == true);
+      }
+    } catch (error) {
+      debugPrint('Could not read the book: $error');
+    }
+    return null;
+  }
+
+  /// Shows a change to the book's own settings on the page at once. A change
+  /// of fonts reopens the book when the sheet closes, so ッツ lays it out
+  /// again.
+  Future<void> _onBookOptionsChanged({required bool relayout}) async {
+    TtuBook? book = await _currentBook();
+    if (book == null) {
+      return;
+    }
+    await _controller?.evaluateJavascript(
+      source: 'window.__jdjFit && '
+          'window.__jdjFit.bookStyle(${jsonEncode(_bookOptions(book))});',
+    );
+    if (relayout) {
+      _settingsChanged = true;
+    } else {
+      await _refreshPageScripts();
+    }
   }
 
   void _onPresetChanged(TtuPagePreset preset, {required bool structural}) {
@@ -1072,6 +1162,18 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     await _reloadAt(book, position, _MaskKind.applying);
   }
 
+  /// The reader's choices for [book], as fit.js reads them.
+  Map<String, bool> _bookOptions(TtuBook book) => {
+        'followLinks': mediaSource.followsLinks(book),
+        'bookFonts': mediaSource.keepsBookFonts(book),
+      };
+
+  /// Sets the reader's choices for [book] before anything in the page runs,
+  /// so ッツ lays the book out with them.
+  String _bookOptionsScript(TtuBook? book) => book == null
+      ? ''
+      : 'window.__jdjBookOptions = ${jsonEncode(_bookOptions(book))};';
+
   /// Gives the page scripts for its next load. While a place is kept, ッツ
   /// does not save its position by itself.
   Future<void> _refreshPageScripts() async {
@@ -1084,10 +1186,15 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       darkMode: appModel.isDarkMode,
       keepPlace: _keepPlace,
     );
+    String bookOptions = _bookOptionsScript(await _currentBook());
     await controller.removeAllUserScripts();
     await controller.addUserScripts(userScripts: [
       UserScript(
         source: _settingsScript ?? '',
+        injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      ),
+      UserScript(
+        source: bookOptions,
         injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
       ),
       UserScript(
@@ -1439,6 +1546,10 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
           injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         ),
         UserScript(
+          source: _bookOptionsScript(_launch?.book),
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+        ),
+        UserScript(
           source: _fitScript ?? '',
           injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
         ),
@@ -1489,6 +1600,8 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
               _onMenuTap();
             } else if (message is Map && message['type'] == 'memo') {
               _openMemo((message['id'] as num?)?.toInt());
+            } else if (message is Map && message['type'] == 'link') {
+              _followLink(Map<String, dynamic>.from(message));
             }
             return null;
           },
@@ -1620,6 +1733,11 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (_chipPending && back != null) {
       _chipPending = false;
       _showBackChip(back);
+    }
+    TtuPosition? linkBack = _linkBack;
+    if (linkBack != null) {
+      _linkBack = null;
+      _showBackChip(linkBack, fromLink: true);
     }
   }
 

@@ -1,7 +1,7 @@
 /*
  * jidoujisho bridge for ッツ Ebook Reader's book page (b.html).
  *
- * Injected once per page load. Handles tap-to-lookup, the lookup highlight,
+ * Injected once per page load. Handles tap-to-lookup and links, the lookup highlight,
  * reading and saving ッツ's position, and the short highlight shown after
  * jumping to a memo. Messages go to Flutter through the "jidoujisho"
  * JavaScript handler.
@@ -188,7 +188,30 @@
       return;
     }
 
-    var hit = hitTest(e.clientX, e.clientY);
+    /* ッツ's own jump on a link is never left to run: it went off along
+     * with a lookup, and moved the reader's place with no way back. A link
+     * into the book is followed through the app when the reader follows
+     * links; any other tap on a link looks the word up. */
+    var link = target.closest('a[href]');
+    if (link) {
+      e.preventDefault();
+      e.stopPropagation();
+      var options = window.__jdjBookOptions || {};
+      var id = options.followLinks === false ? null : linkTarget(link);
+      if (id) {
+        dismiss(e);
+        followLink(id, e.clientX, e.clientY);
+        return;
+      }
+    }
+    lookupAt(e.clientX, e.clientY);
+  }
+
+  /* Looks up the word under [x], [y], or closes the popup when there is
+   * none, or when it is the word already shown. */
+  function lookupAt(x, y) {
+    var e = { clientX: x, clientY: y };
+    var hit = hitTest(x, y);
     if (!hit) {
       dismiss(e);
       return;
@@ -228,6 +251,158 @@
   }
 
   document.addEventListener('click', onTap, true);
+
+  /* ---------- links ---------- */
+
+  /* The id a link points to inside the book, or null for a link out of it.
+   * ッツ writes links into the book as `b.html##id`, so every leading # goes. */
+  function linkTarget(link) {
+    var href = link.getAttribute('href') || '';
+    var hash = href.indexOf('#');
+    if (hash < 0) {
+      return null;
+    }
+    var id = href.slice(hash).replace(/^#+/, '');
+    try {
+      id = decodeURIComponent(id);
+    } catch (_) {
+      /* Kept as written. */
+    }
+    if (!id || /^[a-z][a-z0-9+.-]*:/i.test(id)) {
+      return null;
+    }
+    return id;
+  }
+
+  /* The start of the text at [at] in the book, to flash once it shows. */
+  function excerptAt(index, at) {
+    var text = index.text;
+    while (at < text.length && (text[at] === BREAK || /\s/.test(text[at]))) {
+      at++;
+    }
+    var end = text.indexOf(BREAK, at);
+    if (end < 0) {
+      end = text.length;
+    }
+    return text.slice(at, Math.min(end, at + 12));
+  }
+
+  /*
+   * Follows a link to [id]. In a scrolling book with the target on the page,
+   * the app keeps the place and the page scrolls there; otherwise the app
+   * opens the book at the target's position. A target the book does not
+   * have is looked up as a word instead.
+   */
+  function followLink(id, x, y) {
+    var root = document.querySelector('.book-content');
+    var el = document.getElementById(id);
+    if (el && root && root.contains(el) && !isPaginated()) {
+      post({ type: 'link', id: id, inPage: true });
+      return;
+    }
+    var book = bookId();
+    if (isNaN(book)) {
+      lookupAt(x, y);
+      return;
+    }
+    searchIndexFor(book).then(function (index) {
+      var at = index && index.ids ? index.ids[id] : undefined;
+      if (at === undefined) {
+        lookupAt(x, y);
+        return;
+      }
+      var characters = countAt(index, at);
+      post({
+        type: 'link',
+        id: id,
+        inPage: false,
+        characters: characters,
+        progress: index.characters > 0 ? Math.min(1, characters / index.characters) : 0,
+        flash: excerptAt(index, at),
+      });
+    }, function () {
+      lookupAt(x, y);
+    });
+  }
+
+  /* The text at the start of [el], or after it when it has none. */
+  function textFrom(el) {
+    var own = textNodesOf(el).map(function (n) {
+      return n.textContent;
+    }).join('').trim();
+    if (own) {
+      return own;
+    }
+    var root = document.querySelector('.book-content') || document.body;
+    var nodes = textNodesOf(root);
+    for (var i = 0; i < nodes.length; i++) {
+      if (el.compareDocumentPosition(nodes[i]) & Node.DOCUMENT_POSITION_FOLLOWING &&
+        nodes[i].textContent.trim()) {
+        return nodes[i].textContent.trim();
+      }
+    }
+    return '';
+  }
+
+  /* Scrolls a scrolling book to the link target [id] and flashes it. */
+  jdj.followInPage = function (id) {
+    var el = document.getElementById(id);
+    if (!el) {
+      return Promise.resolve(false);
+    }
+    el.scrollIntoView({ block: 'center', inline: 'center' });
+    var text = textFrom(el).slice(0, 12);
+    return sleep(150).then(function () {
+      return jdj.flash(text, false);
+    });
+  };
+
+  /* Whether the book sets fonts of its own, read with the reader's font
+   * choice for the book set aside. */
+  function bookSetsFonts() {
+    var root = document.querySelector('.book-content');
+    if (!root) {
+      return false;
+    }
+    var style = document.getElementById('jdj-book-style');
+    var sheet = style && style.sheet;
+    if (sheet) {
+      sheet.disabled = true;
+    }
+    var base = getComputedStyle(root).fontFamily;
+    var found = false;
+    var els = root.querySelectorAll('p, div, span, li, td, th, blockquote, h1, h2, h3, h4, h5, h6, a, em, i, b, strong');
+    for (var i = 0; i < els.length && i < 3000; i++) {
+      var el = els[i];
+      if (el.closest('code, kbd, samp, pre, tt, rt, [data-ttu-spoiler-img]')) {
+        continue;
+      }
+      if (getComputedStyle(el).fontFamily !== base) {
+        found = true;
+        break;
+      }
+    }
+    if (sheet) {
+      sheet.disabled = false;
+    }
+    return found;
+  }
+
+  /* What the book has that the reader's choices for it change: links, and
+   * fonts of its own. */
+  jdj.bookTraits = function () {
+    var fonts = bookSetsFonts();
+    var book = bookId();
+    if (isNaN(book)) {
+      return Promise.resolve({ links: false, fonts: fonts });
+    }
+    return readBookData(book).then(function (data) {
+      var html = (data && data.elementHtml) || '';
+      return { links: /<a\b[^>]*\bhref\s*=/i.test(html), fonts: fonts };
+    }, function () {
+      return { links: false, fonts: fonts };
+    });
+  };
 
   /* ---------- lookup highlight ---------- */
 
@@ -1377,6 +1552,8 @@
     var length = 0;
     var counted = 0;
     var lastBreak = true;
+    /* Where each element with an id starts, for links into the book. */
+    var ids = Object.create(null);
     var piece = function (raw, isBreak) {
       starts.push(length);
       counts.push(counted);
@@ -1407,6 +1584,9 @@
           if (block) {
             paragraphBreak();
           }
+          if (n.id && !(n.id in ids)) {
+            ids[n.id] = length;
+          }
           walk(n);
           if (block) {
             paragraphBreak();
@@ -1421,6 +1601,7 @@
       folded: folded.join(''),
       starts: starts,
       counts: counts,
+      ids: ids,
       characters: book.characters || counted,
     };
   }
@@ -1582,6 +1763,9 @@
       css += 'html,body{background-color:' + p.background + '!important}';
     }
     style.textContent = css;
+    if (window.__jdjFit && window.__jdjFit.mendBackgrounds) {
+      window.__jdjFit.mendBackgrounds();
+    }
     if (root) {
       var classes = root.classList;
       classes.toggle('book-content--hide-spoiler-image', !!p.blurImages);

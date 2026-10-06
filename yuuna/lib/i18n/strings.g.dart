@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 673
+/// Strings: 679
 ///
-/// Built on 2026-10-06 at 20:07 UTC
+/// Built on 2026-10-06 at 22:38 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -817,6 +817,12 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_delete_group => 'Delete group';
 	String get ttu_group_info => 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
 	String get ttu_group_by_info => 'Favourites always come first. Tap a heading to fold it away.';
+	String get ttu_this_book => 'This book';
+	String get ttu_follow_links => 'Follow links';
+	String get ttu_follow_links_info => 'On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.';
+	String get ttu_book_fonts => 'Book\'s own fonts';
+	String get ttu_book_fonts_info => 'Off, your font is used all through the book. Code keeps its fixed-width font.';
+	String ttu_repaired_partly({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 }
 
 // Path: retrying_in
@@ -1528,6 +1534,12 @@ extension on _StringsEn {
 			case 'ttu_delete_group': return 'Delete group';
 			case 'ttu_group_info': return 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
 			case 'ttu_group_by_info': return 'Favourites always come first. Tap a heading to fold it away.';
+			case 'ttu_this_book': return 'This book';
+			case 'ttu_follow_links': return 'Follow links';
+			case 'ttu_follow_links_info': return 'On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.';
+			case 'ttu_book_fonts': return 'Book\'s own fonts';
+			case 'ttu_book_fonts_info': return 'Off, your font is used all through the book. Code keeps its fixed-width font.';
+			case 'ttu_repaired_partly': return ({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 			default: return null;
 		}
 	}

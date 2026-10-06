@@ -6,7 +6,9 @@
  * and marked; tapping one shows it at full size in a viewer above the page.
  * Long code lines wrap instead. ッツ's own header over a book is hidden too,
  * since the app's menu replaces it, and the empty band above the text is
- * made as tall as the strip that opens that menu.
+ * made as tall as the strip that opens that menu. The reader's choices for
+ * the book, links as plain text and their own font, are applied here, and
+ * book backgrounds that would hide the text are toned down.
  *
  * Runs at document start so the fix is in place before ッツ lays out a book.
  */
@@ -177,6 +179,113 @@
     return fitted.length;
   };
 
+  /* ---------- the reader's choices for this book ---------- */
+
+  /*
+   * Set by the app before this script runs, and again from its settings:
+   * links drawn as plain text, and the reader's font in place of the book's
+   * own, with code left in its monospace. The ids in :not() only raise the
+   * rules above a book's own, which often name an id.
+   */
+  var BOOK_STYLE_ID = 'jdj-book-style';
+  var OVER_BOOK = ':not(#jdj-a):not(#jdj-b):not(#jdj-c)';
+  var LINKS_AS_TEXT = '.book-content a[href]' + OVER_BOOK + '{color:inherit!important;' +
+    'text-decoration:none!important;border-bottom:0!important;cursor:text}';
+  var READER_FONT = '.book-content ' + OVER_BOOK +
+    ':not(code,kbd,samp,pre,tt,var,code *,kbd *,samp *,pre *,[data-ttu-spoiler-img] *){font-family:inherit!important}';
+
+  fit.bookStyle = function (options) {
+    options = options || {};
+    window.__jdjBookOptions = options;
+    var style = document.getElementById(BOOK_STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = BOOK_STYLE_ID;
+      (document.head || document.documentElement).appendChild(style);
+    }
+    style.textContent = (options.followLinks === false ? LINKS_AS_TEXT : '') +
+      (options.bookFonts === false ? READER_FONT : '');
+  };
+
+  /* ---------- book backgrounds ---------- */
+
+  /*
+   * A book's own background on a box, such as a light grey sidebar, can
+   * hide the reader's text in another theme: white on light grey. Such a
+   * background becomes a faint tint of the text colour, so the box stays
+   * and the text reads. Each element is checked once, and all again when
+   * the text colour changes.
+   */
+  var MENDED = 'data-jdj-bg';
+  var mendedFor = null;
+  var looked = new WeakSet();
+
+  function channels(value) {
+    var match = /rgba?\(([^)]+)\)/.exec(value || '');
+    if (!match) {
+      return null;
+    }
+    var parts = match[1].split(/[\s,/]+/).filter(Boolean).map(parseFloat);
+    return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+  }
+
+  function luminance(c) {
+    var linear = function (v) {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * linear(c.r) + 0.7152 * linear(c.g) + 0.0722 * linear(c.b);
+  }
+
+  function contrast(a, b) {
+    var x = luminance(a);
+    var y = luminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+
+  fit.mendBackgrounds = function () {
+    var root = document.querySelector('.book-content');
+    if (!root) {
+      return 0;
+    }
+    var color = getComputedStyle(root).color;
+    if (color !== mendedFor) {
+      mendedFor = color;
+      looked = new WeakSet();
+      var mended = root.querySelectorAll('[' + MENDED + ']');
+      for (var m = 0; m < mended.length; m++) {
+        mended[m].style.removeProperty('background-color');
+        mended[m].removeAttribute(MENDED);
+      }
+    }
+    var count = 0;
+    var all = root.getElementsByTagName('*');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      if (looked.has(el)) {
+        continue;
+      }
+      looked.add(el);
+      if (/jdj-/.test(el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className)) {
+        continue;
+      }
+      var cs = getComputedStyle(el);
+      var back = channels(cs.backgroundColor);
+      if (!back || back.a < 0.2) {
+        continue;
+      }
+      var text = channels(cs.color);
+      if (!text || contrast(text, back) >= 2.5) {
+        continue;
+      }
+      el.style.setProperty('background-color',
+        'rgba(' + text.r + ',' + text.g + ',' + text.b + ',0.08)', 'important');
+      el.setAttribute(MENDED, '');
+      count++;
+    }
+    return count;
+  };
+
   var scheduled = false;
   function schedule() {
     if (scheduled) {
@@ -186,6 +295,7 @@
     requestAnimationFrame(function () {
       scheduled = false;
       fit.run();
+      fit.mendBackgrounds();
     });
   }
 
@@ -294,6 +404,9 @@
 
   function start() {
     addStyle();
+    if (window.__jdjBookOptions) {
+      fit.bookStyle(window.__jdjBookOptions);
+    }
     new MutationObserver(function (records) {
       if (relevant(records)) {
         schedule();
