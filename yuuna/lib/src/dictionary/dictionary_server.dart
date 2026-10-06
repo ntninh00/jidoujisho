@@ -136,7 +136,9 @@ class CatalogMetaLine {
   const CatalogMetaLine({
     required this.term,
     required this.reading,
+    required this.mode,
     required this.text,
+    this.downsteps = const [],
   });
 
   /// The word or character.
@@ -145,8 +147,14 @@ class CatalogMetaLine {
   /// Its reading, when the data gives one.
   final String reading;
 
+  /// `freq`, `pitch` or `ipa`.
+  final String mode;
+
   /// The data itself, such as `#120` or `/haʊs/ 🇺🇸`.
   final String text;
+
+  /// For pitch data, where each pitch accent drops, to draw like the popup.
+  final List<int> downsteps;
 }
 
 /// What a search of one dictionary found.
@@ -287,6 +295,17 @@ class CatalogResults {
       return '$data';
     }
 
+    List<int> downsteps(
+            String mode, Object? data) =>
+        mode == 'pitch' && data is Map
+            ? (data['pitches'] as List? ?? const [])
+                .whereType<Map>()
+                .map((pitch) => pitch['position'])
+                .whereType<num>()
+                .map((position) => position.toInt())
+                .toList()
+            : const [];
+
     return [
       for (List<dynamic> row in [...termMeta, ...kanjiMeta])
         CatalogMetaLine(
@@ -294,7 +313,9 @@ class CatalogResults {
           reading: row[2] is Map && (row[2] as Map)['reading'] is String
               ? (row[2] as Map)['reading'] as String
               : '',
+          mode: '${row[1]}',
           text: describe('${row[1]}', row[2]),
+          downsteps: downsteps('${row[1]}', row[2]),
         ),
     ];
   }

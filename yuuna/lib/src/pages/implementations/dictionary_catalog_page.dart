@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show FontFeature;
 
+import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:yuuna/dictionary.dart';
+import 'package:yuuna/language.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
@@ -1330,39 +1332,90 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
           Divider(height: 24, color: theme.dividerColor.withOpacity(0.3)),
         ],
         for (CatalogMetaLine line in meta)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  line.term,
-                  style: theme.textTheme.titleMedium!
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
-                if (line.reading.isNotEmpty && line.reading != line.term) ...[
-                  const SizedBox(width: 6),
+          if (line.downsteps.isNotEmpty)
+            _PreviewPitch(
+              line: line,
+              languageCode: widget.dictionary.sourceLanguage,
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
                   Text(
-                    line.reading,
-                    style: theme.textTheme.bodyMedium!.copyWith(color: muted),
+                    line.term,
+                    style: theme.textTheme.titleMedium!
+                        .copyWith(fontWeight: FontWeight.bold),
                   ),
-                ],
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    line.text,
-                    textAlign: TextAlign.right,
-                    style: theme.textTheme.bodyMedium!.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      fontFamilyFallback: const [AppModel.ipaFontFamily],
+                  if (line.reading.isNotEmpty && line.reading != line.term) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      line.reading,
+                      style: theme.textTheme.bodyMedium!.copyWith(color: muted),
+                    ),
+                  ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      line.text,
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodyMedium!.copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontFamilyFallback: const [AppModel.ipaFontFamily],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
       ],
+    );
+  }
+}
+
+/// Pitch accent drawn the way the popup draws it, one diagram per accent.
+class _PreviewPitch extends ConsumerWidget {
+  const _PreviewPitch({required this.line, required this.languageCode});
+
+  final CatalogMetaLine line;
+  final String? languageCode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    AppModel appModel = ref.watch(appProvider);
+    Language language = appModel.languages.values
+            .firstWhereOrNull((l) => l.languageCode == languageCode) ??
+        JapaneseLanguage.instance;
+    String reading = line.reading.isNotEmpty ? line.reading : line.term;
+    ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            line.term,
+            style: theme.textTheme.titleMedium!
+                .copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            children: [
+              for (int downstep in line.downsteps)
+                language.getPitchWidget(
+                  appModel: appModel,
+                  context: context,
+                  reading: reading,
+                  downstep: downstep,
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
