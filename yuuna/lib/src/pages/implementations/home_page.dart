@@ -2,6 +2,7 @@ import 'package:change_notifier_builder/change_notifier_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:spaces/spaces.dart';
 import 'package:yuuna/media.dart';
+import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
@@ -63,6 +64,7 @@ class _HomePageState extends BasePageState<HomePage>
       } else {
         _openQuickSearch();
       }
+      AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
     });
   }
 
@@ -101,6 +103,7 @@ class _HomePageState extends BasePageState<HomePage>
       _pausedAt = DateTime.now();
     }
     if (AppLifecycleState.resumed == state) {
+      AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
       DateTime? pausedAt = _pausedAt;
       _pausedAt = null;
       if (pausedAt != null &&
@@ -224,9 +227,35 @@ class _HomePageState extends BasePageState<HomePage>
 
   List<Widget> buildActions() {
     return [
+      buildAutoBackupIndicator(),
       buildCreatorButton(),
       buildShowMenuButton(),
     ];
+  }
+
+  /// A small spinner while the backup file is being updated, which opens
+  /// the backup page.
+  Widget buildAutoBackupIndicator() {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AutoBackup.running,
+      builder: (context, running, _) => running
+          ? IconButton(
+              tooltip: t.auto_backup_running,
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BackupPage()),
+              ),
+              icon: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
   }
 
   Widget buildResumeButton() {

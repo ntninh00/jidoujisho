@@ -183,6 +183,8 @@ class _BackupPageState extends BasePageState<BackupPage> {
           children: [
             buildBackUpCard(),
             const SizedBox(height: 12),
+            buildAutoBackupCard(),
+            const SizedBox(height: 12),
             buildRestoreCard(),
           ],
         ),
@@ -329,6 +331,233 @@ class _BackupPageState extends BasePageState<BackupPage> {
         else
           _button(t.backup_make, _busy ? null : _makeBackup),
       ],
+    );
+  }
+
+  Future<void> _chooseAutoBackup() async {
+    try {
+      if (!await AutoBackup.choose(appModelNoUpdate)) {
+        return;
+      }
+    } on BackupException catch (error) {
+      Fluttertoast.showToast(
+          msg: error.message, toastLength: Toast.LENGTH_LONG);
+      return;
+    } catch (error) {
+      Fluttertoast.showToast(msg: '$error', toastLength: Toast.LENGTH_LONG);
+      return;
+    }
+    if (mounted) {
+      setState(() {});
+    }
+    await _updateAutoBackup();
+  }
+
+  Future<void> _updateAutoBackup() async {
+    await Wakelock.enable();
+    try {
+      await AutoBackup.run(appModelNoUpdate, ref);
+    } finally {
+      await Wakelock.disable();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _turnOffAutoBackup() async {
+    await AutoBackup.turnOff(appModelNoUpdate);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// One backup file kept up to date somewhere the user chose.
+  Widget buildAutoBackupCard() {
+    Color muted = theme.unselectedWidgetColor;
+    String? uri = appModel.autoBackupUri;
+    return ValueListenableBuilder<bool>(
+      valueListenable: AutoBackup.running,
+      builder: (context, running, _) {
+        List<Widget> children;
+        if (uri == null) {
+          children = [
+            _button(t.auto_backup_choose, _busy ? null : _chooseAutoBackup),
+          ];
+        } else {
+          DateTime? last = appModel.lastAutoBackup;
+          String? error = appModel.autoBackupError;
+          String status = error != null
+              ? t.auto_backup_failed(reason: error)
+              : last == null
+                  ? t.auto_backup_never
+                  : t.auto_backup_updated(
+                      date: DateFormat.yMMMd().add_Hm().format(last));
+          children = [
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: running || _busy ? null : _chooseAutoBackup,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            appModel.autoBackupName ?? t.auto_backup_file,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodyMedium!
+                                .copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            status,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall!.copyWith(
+                              color: error != null
+                                  ? theme.colorScheme.error
+                                  : muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Ui.angleRight, size: 18, color: muted),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: [
+                for ((int, String) every in [
+                  (1, t.auto_backup_daily),
+                  (7, t.auto_backup_weekly),
+                ])
+                  ChoiceChip(
+                    label: Text(
+                      every.$2,
+                      style: TextStyle(
+                        color: appModel.autoBackupDays == every.$1
+                            ? theme.colorScheme.primary
+                            : null,
+                        fontWeight: appModel.autoBackupDays == every.$1
+                            ? FontWeight.w600
+                            : null,
+                      ),
+                    ),
+                    selected: appModel.autoBackupDays == every.$1,
+                    showCheckmark: false,
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: appModel.autoBackupDays == every.$1
+                            ? theme.colorScheme.primary
+                            : theme.dividerColor.withOpacity(0.25),
+                        width: appModel.autoBackupDays == every.$1 ? 1.5 : 1,
+                      ),
+                    ),
+                    backgroundColor: Colors.transparent,
+                    selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+                    onSelected: (_) async {
+                      await appModelNoUpdate.setAutoBackupDays(every.$1);
+                      setState(() {});
+                    },
+                  ),
+              ],
+            ),
+            InkWell(
+              onTap: () async {
+                await appModelNoUpdate.setAutoBackupIncludesOwnDictionaries(
+                    include: !appModel.autoBackupIncludesOwnDictionaries);
+                setState(() {});
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: t.auto_backup_own_dictionaries),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: JidoujishoInfoButton(
+                              message: t.auto_backup_own_dictionaries_info,
+                            ),
+                          ),
+                        ],
+                      ),
+                      style: textTheme.bodyMedium,
+                    ),
+                  ),
+                  Switch(
+                    value: appModel.autoBackupIncludesOwnDictionaries,
+                    onChanged: (include) async {
+                      await appModelNoUpdate
+                          .setAutoBackupIncludesOwnDictionaries(
+                              include: include);
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (running)
+              ValueListenableBuilder<BackupProgress?>(
+                valueListenable: AutoBackup.progress,
+                builder: (context, progress, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      progress?.step ?? t.auto_backup_writing,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodyMedium!
+                          .copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        minHeight: 5,
+                        value: progress?.fraction,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _button(
+                      t.auto_backup_now,
+                      _busy ? null : _updateAutoBackup,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: _busy ? null : _turnOffAutoBackup,
+                    child: Text(
+                      t.auto_backup_off,
+                      style: TextStyle(color: muted),
+                    ),
+                  ),
+                ],
+              ),
+          ];
+        }
+        return _card(
+          icon: Ui.refresh,
+          title: t.auto_backup_title,
+          hint: t.auto_backup_hint,
+          children: children,
+        );
+      },
     );
   }
 

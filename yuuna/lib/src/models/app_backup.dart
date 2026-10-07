@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:archive/archive_io.dart';
 import 'package:collection/collection.dart';
@@ -237,7 +238,13 @@ class AppBackup {
 
   /// Writes a backup to a file in the app's temporary folder, ready to be
   /// saved elsewhere.
-  Future<File> create(void Function(BackupProgress) onProgress) async {
+  ///
+  /// Without [includeOwnDictionaries], dictionaries the user added from
+  /// files are left out; those from the server are always listed.
+  Future<File> create(
+    void Function(BackupProgress) onProgress, {
+    bool includeOwnDictionaries = true,
+  }) async {
     DateTime now = DateTime.now();
     String stamp = now.toIso8601String().substring(0, 19).replaceAll(':', '-');
     Directory work =
@@ -278,8 +285,9 @@ class AppBackup {
           },
       ]);
 
-      ({int included, int online}) dictionaries =
-          await _backUpDictionaries(work, onProgress);
+      ({int included, int online}) dictionaries = await _backUpDictionaries(
+          work, onProgress,
+          includeOwn: includeOwnDictionaries);
 
       Map<String, int> books = {};
       for (Language language in _ttu.shelfLanguages) {
@@ -314,10 +322,7 @@ class AppBackup {
       if (file.existsSync()) {
         file.deleteSync();
       }
-      ZipFileEncoder encoder = ZipFileEncoder()
-        ..create(file.path, level: Deflate.BEST_SPEED);
-      await encoder.addDirectory(work, includeDirName: false);
-      encoder.close();
+      await _zipFolder(work.path, file.path, level: Deflate.BEST_SPEED);
       return file;
     } finally {
       if (work.existsSync()) {
@@ -326,12 +331,23 @@ class AppBackup {
     }
   }
 
+  /// Zips the folder at [from] into [to] on another isolate, so the app
+  /// stays smooth while a large backup is packed.
+  static Future<void> _zipFolder(String from, String to, {int? level}) {
+    return Isolate.run(() async {
+      ZipFileEncoder encoder = ZipFileEncoder()..create(to, level: level);
+      await encoder.addDirectory(Directory(from), includeDirName: false);
+      encoder.close();
+    });
+  }
+
   /// Lists every dictionary with its place, and either where to download it
   /// again or the file it travels as.
   Future<({int included, int online})> _backUpDictionaries(
     Directory work,
-    void Function(BackupProgress) onProgress,
-  ) async {
+    void Function(BackupProgress) onProgress, {
+    bool includeOwn = true,
+  }) async {
     DictionaryServer? server = appModel.dictionaryServer;
     List<CatalogDictionary>? catalog;
     try {
@@ -362,6 +378,9 @@ class AppBackup {
           entry.isReady &&
           entry.title == dictionary.name &&
           (revision == null || entry.revision == revision));
+      if (!includeOwn && (server == null || remote == null)) {
+        continue;
+      }
 
       Map<String, dynamic> source;
       if (server != null && remote != null) {
@@ -384,10 +403,7 @@ class AppBackup {
         } else if (format != AbbyyLingvoFormat.instance.uniqueKey &&
             _hasFiles(files)) {
           name = 'dictionaries/$i.zip';
-          ZipFileEncoder zip = ZipFileEncoder()
-            ..create(path.join(work.path, name));
-          await zip.addDirectory(files, includeDirName: false);
-          zip.close();
+          await _zipFolder(files.path, path.join(work.path, name));
         } else {
           name = 'dictionaries/$i.zip';
           format = YomichanFormat.instance.uniqueKey;

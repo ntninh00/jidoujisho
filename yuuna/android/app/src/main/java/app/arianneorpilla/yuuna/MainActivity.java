@@ -9,6 +9,11 @@ import android.os.Handler;
 import android.os.Looper;
 import androidx.annotation.NonNull;
 import android.net.Uri;
+import android.database.Cursor;
+import android.content.UriPermission;
+import android.provider.OpenableColumns;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.plugin.common.MethodChannel;
@@ -46,6 +51,10 @@ public class MainActivity extends AudioServiceActivity {
 
     /// Waits for the user to choose where a new file is saved.
     private MethodChannel.Result pendingCreateDocument;
+
+    /// The file being picked is to be written again later, so access to it
+    /// is kept across restarts.
+    private boolean keepCreatedDocument;
 
     private Activity context;
     private AnkiDroidHelper mAnkiDroid;
@@ -271,10 +280,16 @@ public class MainActivity extends AudioServiceActivity {
                                 pendingCreateDocument.success(null);
                             }
                             pendingCreateDocument = result;
+                            keepCreatedDocument = Boolean.TRUE.equals(call.argument("keep"));
                             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                             intent.addCategory(Intent.CATEGORY_OPENABLE);
                             intent.setType(call.argument("mimeType"));
                             intent.putExtra(Intent.EXTRA_TITLE, (String) call.argument("name"));
+                            if (keepCreatedDocument) {
+                                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                    | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+                            }
                             try {
                                 startActivityForResult(intent, CREATE_DOCUMENT_REQUEST);
                             } catch (Exception e) {
@@ -301,11 +316,52 @@ public class MainActivity extends AudioServiceActivity {
                                 }
                             }).start();
                             break;
+                        case "uriStatus": {
+                            // Whether a kept file can still be written, and its name.
+                            Uri uri = Uri.parse((String) call.argument("uri"));
+                            boolean writable = false;
+                            for (UriPermission permission
+                                    : getContentResolver().getPersistedUriPermissions()) {
+                                if (permission.getUri().equals(uri) && permission.isWritePermission()) {
+                                    writable = true;
+                                }
+                            }
+                            Map<String, Object> status = new HashMap<>();
+                            status.put("writable", writable);
+                            status.put("name", writable ? displayName(uri) : null);
+                            result.success(status);
+                            break;
+                        }
+                        case "releaseUri": {
+                            Uri uri = Uri.parse((String) call.argument("uri"));
+                            try {
+                                getContentResolver().releasePersistableUriPermission(uri,
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                            } catch (Exception e) {
+                                // Already gone.
+                            }
+                            result.success(true);
+                            break;
+                        }
                         default:
                             result.notImplemented();
                     }
                 }
             );
+    }
+
+    /// The name a document shows under, where its provider tells.
+    private String displayName(Uri uri) {
+        try (Cursor cursor = getContentResolver().query(
+                uri, new String[] {OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                return cursor.getString(0);
+            }
+        } catch (Exception e) {
+            // The provider does not say.
+        }
+        return null;
     }
 
     /// Opens a picked document for writing, emptying it first where the
@@ -323,8 +379,26 @@ public class MainActivity extends AudioServiceActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == CREATE_DOCUMENT_REQUEST && pendingCreateDocument != null) {
             Uri uri = resultCode == Activity.RESULT_OK && data != null ? data.getData() : null;
-            pendingCreateDocument.success(uri == null ? null : uri.toString());
+            if (uri != null && keepCreatedDocument) {
+                boolean kept = false;
+                try {
+                    getContentResolver().takePersistableUriPermission(uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    kept = true;
+                } catch (Exception e) {
+                    // This place cannot be written again later.
+                }
+                Map<String, Object> picked = new HashMap<>();
+                picked.put("uri", uri.toString());
+                picked.put("kept", kept);
+                picked.put("name", displayName(uri));
+                pendingCreateDocument.success(picked);
+            } else {
+                pendingCreateDocument.success(uri == null ? null : uri.toString());
+            }
             pendingCreateDocument = null;
+            keepCreatedDocument = false;
         }
     }
 }

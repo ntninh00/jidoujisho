@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 697
+/// Strings: 714
 ///
-/// Built on 2026-10-07 at 01:52 UTC
+/// Built on 2026-10-07 at 03:00 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -841,6 +841,23 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_font_unsupported => 'Fonts can be .ttf, .otf, .woff or .woff2 files.';
 	String get ttu_font_failed => 'The font could not be added.';
 	String ttu_remove_font({required Object name}) => 'Remove ${name}';
+	String get auto_backup_title => 'Keep a backup up to date';
+	String get auto_backup_hint => 'One backup file, in a place you choose such as Google Drive, written over when it is due, so only the newest is kept. It updates while the app is open, a little after you open it.';
+	String get auto_backup_choose => 'Choose where to keep it';
+	String get auto_backup_file => 'Backup file';
+	String get auto_backup_daily => 'Every day';
+	String get auto_backup_weekly => 'Every week';
+	String get auto_backup_own_dictionaries => 'Include dictionaries I added myself';
+	String get auto_backup_own_dictionaries_info => 'They can make the file large. Dictionaries from your server are always listed and download again when restoring.';
+	String get auto_backup_now => 'Update now';
+	String get auto_backup_off => 'Turn off';
+	String auto_backup_updated({required Object date}) => 'Updated ${date}';
+	String get auto_backup_never => 'Not updated yet';
+	String auto_backup_failed({required Object reason}) => 'Last update failed: ${reason}';
+	String get auto_backup_lost => 'The backup file can no longer be reached. Choose where to keep it again.';
+	String get auto_backup_writing => 'Writing the backup file';
+	String get auto_backup_cannot_keep => 'That place can\'t be written to again later. Choose another, such as a folder or Google Drive.';
+	String get auto_backup_running => 'Updating the backup file';
 }
 
 // Path: retrying_in
@@ -1576,6 +1593,23 @@ extension on _StringsEn {
 			case 'ttu_font_unsupported': return 'Fonts can be .ttf, .otf, .woff or .woff2 files.';
 			case 'ttu_font_failed': return 'The font could not be added.';
 			case 'ttu_remove_font': return ({required Object name}) => 'Remove ${name}';
+			case 'auto_backup_title': return 'Keep a backup up to date';
+			case 'auto_backup_hint': return 'One backup file, in a place you choose such as Google Drive, written over when it is due, so only the newest is kept. It updates while the app is open, a little after you open it.';
+			case 'auto_backup_choose': return 'Choose where to keep it';
+			case 'auto_backup_file': return 'Backup file';
+			case 'auto_backup_daily': return 'Every day';
+			case 'auto_backup_weekly': return 'Every week';
+			case 'auto_backup_own_dictionaries': return 'Include dictionaries I added myself';
+			case 'auto_backup_own_dictionaries_info': return 'They can make the file large. Dictionaries from your server are always listed and download again when restoring.';
+			case 'auto_backup_now': return 'Update now';
+			case 'auto_backup_off': return 'Turn off';
+			case 'auto_backup_updated': return ({required Object date}) => 'Updated ${date}';
+			case 'auto_backup_never': return 'Not updated yet';
+			case 'auto_backup_failed': return ({required Object reason}) => 'Last update failed: ${reason}';
+			case 'auto_backup_lost': return 'The backup file can no longer be reached. Choose where to keep it again.';
+			case 'auto_backup_writing': return 'Writing the backup file';
+			case 'auto_backup_cannot_keep': return 'That place can\'t be written to again later. Choose another, such as a folder or Google Drive.';
+			case 'auto_backup_running': return 'Updating the backup file';
 			default: return null;
 		}
 	}

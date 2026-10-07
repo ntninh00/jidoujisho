@@ -729,5 +729,22 @@
     "ttu_add_font": "Add font",
     "ttu_font_unsupported": "Fonts can be .ttf, .otf, .woff or .woff2 files.",
     "ttu_font_failed": "The font could not be added.",
-    "ttu_remove_font": "Remove $name"
+    "ttu_remove_font": "Remove $name",
+    "auto_backup_title": "Keep a backup up to date",
+    "auto_backup_hint": "One backup file, in a place you choose such as Google Drive, written over when it is due, so only the newest is kept. It updates while the app is open, a little after you open it.",
+    "auto_backup_choose": "Choose where to keep it",
+    "auto_backup_file": "Backup file",
+    "auto_backup_daily": "Every day",
+    "auto_backup_weekly": "Every week",
+    "auto_backup_own_dictionaries": "Include dictionaries I added myself",
+    "auto_backup_own_dictionaries_info": "They can make the file large. Dictionaries from your server are always listed and download again when restoring.",
+    "auto_backup_now": "Update now",
+    "auto_backup_off": "Turn off",
+    "auto_backup_updated": "Updated $date",
+    "auto_backup_never": "Not updated yet",
+    "auto_backup_failed": "Last update failed: $reason",
+    "auto_backup_lost": "The backup file can no longer be reached. Choose where to keep it again.",
+    "auto_backup_writing": "Writing the backup file",
+    "auto_backup_cannot_keep": "That place can't be written to again later. Choose another, such as a folder or Google Drive.",
+    "auto_backup_running": "Updating the backup file"
 }

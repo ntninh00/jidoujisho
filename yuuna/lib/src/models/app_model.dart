@@ -1713,6 +1713,73 @@ class AppModel with ChangeNotifier {
     }
   }
 
+  /* ---------- automatic backup ---------- */
+
+  /// Settings of the automatic backup, which stay with this device: a
+  /// restored backup keeps them as they are here.
+  static const String _autoBackupPrefix = 'auto_backup_';
+
+  /// The file the automatic backup is kept in, as the system's address
+  /// for it. Null when the automatic backup is off.
+  String? get autoBackupUri =>
+      _preferences.get('${_autoBackupPrefix}uri') as String?;
+
+  /// The name the file shows under, where its place says.
+  String? get autoBackupName =>
+      _preferences.get('${_autoBackupPrefix}name') as String?;
+
+  /// Days between automatic backups: 1 or 7.
+  int get autoBackupDays =>
+      _preferences.get('${_autoBackupPrefix}days', defaultValue: 7) as int;
+
+  /// Whether automatic backups carry the dictionaries the user added
+  /// from files, which can be large. Off by default.
+  bool get autoBackupIncludesOwnDictionaries =>
+      _preferences.get('${_autoBackupPrefix}own', defaultValue: false) as bool;
+
+  /// When the automatic backup was last written.
+  DateTime? get lastAutoBackup {
+    int? millis = _preferences.get('${_autoBackupPrefix}last') as int?;
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  /// Why the last automatic backup failed, if it did.
+  String? get autoBackupError =>
+      _preferences.get('${_autoBackupPrefix}error') as String?;
+
+  /// Keeps the automatic backup in the file at [uri], or turns it off.
+  Future<void> setAutoBackupFile(String? uri, {String? name}) async {
+    if (uri == null) {
+      for (String key in ['uri', 'name', 'last', 'error']) {
+        await _preferences.delete('$_autoBackupPrefix$key');
+      }
+      return;
+    }
+    await _preferences.put('${_autoBackupPrefix}uri', uri);
+    await _preferences.put('${_autoBackupPrefix}name', name);
+    await _preferences.delete('${_autoBackupPrefix}last');
+    await _preferences.delete('${_autoBackupPrefix}error');
+  }
+
+  /// Sets the days between automatic backups.
+  Future<void> setAutoBackupDays(int days) =>
+      _preferences.put('${_autoBackupPrefix}days', days);
+
+  /// Sets whether automatic backups carry the user's own dictionaries.
+  Future<void> setAutoBackupIncludesOwnDictionaries({required bool include}) =>
+      _preferences.put('${_autoBackupPrefix}own', include);
+
+  /// Records an automatic backup: written now, or failed with [error].
+  Future<void> recordAutoBackup({String? error}) async {
+    if (error == null) {
+      await _preferences.put(
+          '${_autoBackupPrefix}last', DateTime.now().millisecondsSinceEpoch);
+      await _preferences.delete('${_autoBackupPrefix}error');
+    } else {
+      await _preferences.put('${_autoBackupPrefix}error', error);
+    }
+  }
+
   /// The folder a dictionary's files were unpacked into when it was
   /// imported, which a backup carries instead of the original file.
   Directory dictionaryFilesOf(Dictionary dictionary) => Directory(
@@ -1737,8 +1804,14 @@ class AppModel with ChangeNotifier {
       Map<String, Map<dynamic, dynamic>> stores) async {
     Map<dynamic, dynamic>? app = stores['app'];
     if (app != null) {
+      Map<dynamic, dynamic> mine = Map.fromEntries(_preferences
+          .toMap()
+          .entries
+          .where((entry) => '${entry.key}'.startsWith(_autoBackupPrefix)));
       await _preferences.clear();
-      await _preferences.putAll(app);
+      await _preferences.putAll(Map.fromEntries(app.entries
+          .where((entry) => !'${entry.key}'.startsWith(_autoBackupPrefix))));
+      await _preferences.putAll(mine);
     }
     Map<dynamic, dynamic>? history = stores['dictionaryHistory'];
     if (history != null) {
