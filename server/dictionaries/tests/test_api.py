@@ -164,6 +164,53 @@ def test_relabel_languages(client):
     assert bad.status_code == 400
 
 
+def test_admins_describe_dictionaries(client):
+    entry = added(client, ja_en(description="From the index"))
+    url = f"/api/dictionaries/{entry['id']}"
+    assert entry["note"] is None
+    guessed = entry["languagesGuessed"]
+    response = client.patch(url, json={"note": "  Best for N3 reading.  "}, headers=auth(ADMIN))
+    assert response.status_code == 200
+    body = response.json()
+    assert body["note"] == "Best for N3 reading."
+    assert body["description"] == "From the index"
+    assert body["languagesGuessed"] == guessed
+    listed = client.get("/api/dictionaries", headers=auth(READER)).json()
+    assert listed[0]["note"] == "Best for N3 reading."
+    assert client.patch(url, json={"note": "x"}, headers=auth(READER)).status_code == 403
+    assert client.patch(url, json={"note": "x" * 1001}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"note": 5}, headers=auth(ADMIN)).status_code == 400
+    relabelled = client.patch(url, json={"targetLanguage": "vi"}, headers=auth(ADMIN)).json()
+    assert relabelled["note"] == "Best for N3 reading."
+    cleared = client.patch(url, json={"note": "   "}, headers=auth(ADMIN)).json()
+    assert cleared["note"] is None
+    assert cleared["targetLanguage"] == "vi"
+
+
+def test_older_catalogs_get_notes(settings):
+    import sqlite3
+
+    from dictserver.store import Catalog
+
+    settings.catalog_path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(settings.catalog_path) as db:
+        db.execute(
+            """CREATE TABLE dictionaries (id TEXT PRIMARY KEY, title TEXT NOT NULL,
+               revision TEXT NOT NULL, format INTEGER NOT NULL, author TEXT, url TEXT,
+               description TEXT, attribution TEXT, source_language TEXT, target_language TEXT,
+               languages_guessed INTEGER NOT NULL DEFAULT 0, kinds TEXT NOT NULL DEFAULT '[]',
+               counts TEXT NOT NULL DEFAULT '{}', size INTEGER NOT NULL, sha256 TEXT NOT NULL,
+               file_name TEXT, uploaded_at REAL NOT NULL, status TEXT NOT NULL, error TEXT)"""
+        )
+        db.execute(
+            """INSERT INTO dictionaries (id, title, revision, format, size, sha256,
+               uploaded_at, status) VALUES ('0123456789ab', 'Old', '1', 3, 1, 'x', 0, 'ready')"""
+        )
+    catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
+    assert catalog.get("0123456789ab")["note"] is None
+    assert catalog.set_note("0123456789ab", "kept")["note"] == "kept"
+
+
 def test_delete_removes_files(client, settings):
     entry = added(client, ja_en())
     assert client.delete(f"/api/dictionaries/{entry['id']}", headers=auth(ADMIN)).status_code == 204

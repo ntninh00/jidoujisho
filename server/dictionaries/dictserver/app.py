@@ -13,7 +13,7 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
     GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
-    PATCH  /api/dictionaries/{id}                -> {"sourceLanguage", "targetLanguage"}
+    PATCH  /api/dictionaries/{id}                -> any of {"sourceLanguage", "targetLanguage", "note"}
     DELETE /api/dictionaries/{id}
 """
 
@@ -47,6 +47,7 @@ from .store import Catalog
 ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_STYLES_BYTES = 1024 * 1024
+MAX_NOTE_LENGTH = 1000
 FAILURE_WINDOW = 600
 MAX_FAILURES = 10
 
@@ -309,22 +310,38 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             upload_lock.release()
             temp.unlink(missing_ok=True)
 
-    async def relabel(request: Request) -> Response:
+    async def update(request: Request) -> Response:
+        """Relabels a dictionary's languages, or sets the admin's own
+        description of it. Only what is sent changes."""
         require_admin(request)
         entry = dictionary_of(request, ready=False)
         try:
             body = await request.json()
         except ValueError:
-            raise Problem(400, "Send the languages as JSON.") from None
+            raise Problem(400, "Send the changes as JSON.") from None
         if not isinstance(body, dict):
-            raise Problem(400, "Send the languages as a JSON object.")
-        values = []
-        for key in ("sourceLanguage", "targetLanguage"):
-            value = body.get(key, entry[key])
-            if value is not None and (not isinstance(value, str) or not LANGUAGE.match(value)):
-                raise Problem(400, f"{key} should be a language code such as ja or en.")
-            values.append(value)
-        return JSONResponse(catalog.set_languages(entry["id"], *values))
+            raise Problem(400, "Send the changes as a JSON object.")
+        note = entry["note"]
+        if "note" in body:
+            note = body["note"]
+            if note is not None and not isinstance(note, str):
+                raise Problem(400, "The description should be text.")
+            note = (note or "").strip() or None
+            if note is not None and len(note) > MAX_NOTE_LENGTH:
+                raise Problem(400, f"A description can be up to {MAX_NOTE_LENGTH} characters.")
+        languages = None
+        if "sourceLanguage" in body or "targetLanguage" in body:
+            languages = []
+            for key in ("sourceLanguage", "targetLanguage"):
+                value = body.get(key, entry[key])
+                if value is not None and (not isinstance(value, str) or not LANGUAGE.match(value)):
+                    raise Problem(400, f"{key} should be a language code such as ja or en.")
+                languages.append(value)
+        if languages is not None:
+            catalog.set_languages(entry["id"], *languages)
+        if "note" in body:
+            catalog.set_note(entry["id"], note)
+        return JSONResponse(catalog.get(entry["id"]))
 
     def delete(request: Request) -> Response:
         require_admin(request)
@@ -339,7 +356,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
 
     async def item(request: Request) -> Response:
         if request.method == "PATCH":
-            return await relabel(request)
+            return await update(request)
         if request.method == "DELETE":
             return await run_in_threadpool(delete, request)
         return await run_in_threadpool(get_one, request)

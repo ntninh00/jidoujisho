@@ -366,9 +366,9 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
       context: context,
       builder: (_) => _CatalogManageSheet(
         dictionary: dictionary,
-        onRelabel: (source, target) async {
+        onSave: (changes) async {
           try {
-            await server.relabel(dictionary.id, source: source, target: target);
+            await server.update(dictionary.id, changes);
             await _load(quietly: true);
           } on DictionaryServerException catch (error) {
             _say(error.message);
@@ -1002,6 +1002,15 @@ class _CatalogTile extends StatelessWidget {
                         style: theme.textTheme.bodyLarge!
                             .copyWith(fontWeight: FontWeight.w600),
                       ),
+                      if (dictionary.note != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          dictionary.note!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
                       const SizedBox(height: 2),
                       Text(
                         detail,
@@ -1275,6 +1284,19 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
               ],
             ),
           ),
+          if (dictionary.note != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  dictionary.note!,
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
             child: TextField(
@@ -1507,12 +1529,12 @@ class _PreviewEntry extends StatelessWidget {
 class _CatalogManageSheet extends StatefulWidget {
   const _CatalogManageSheet({
     required this.dictionary,
-    required this.onRelabel,
+    required this.onSave,
     required this.onDelete,
   });
 
   final CatalogDictionary dictionary;
-  final Future<void> Function(String? source, String? target) onRelabel;
+  final Future<void> Function(CatalogChanges changes) onSave;
   final Future<void> Function() onDelete;
 
   @override
@@ -1522,8 +1544,28 @@ class _CatalogManageSheet extends StatefulWidget {
 class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   late String? _source = widget.dictionary.sourceLanguage;
   late String? _target = widget.dictionary.targetLanguage;
+  late final TextEditingController _note =
+      TextEditingController(text: widget.dictionary.note ?? '');
   bool _confirming = false;
   bool _busy = false;
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  /// What the admin changed, which is all that is sent.
+  CatalogChanges get _changes {
+    CatalogDictionary dictionary = widget.dictionary;
+    bool languages = _source != dictionary.sourceLanguage ||
+        _target != dictionary.targetLanguage;
+    String note = _note.text.trim();
+    return CatalogChanges(
+      languages: languages ? (source: _source, target: _target) : null,
+      note: note != (dictionary.note ?? '') ? note : null,
+    );
+  }
 
   List<String?> get _options {
     List<String?> options = [..._languageNames.keys];
@@ -1572,10 +1614,14 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
     CatalogDictionary dictionary = widget.dictionary;
-    bool changed = _source != dictionary.sourceLanguage ||
-        _target != dictionary.targetLanguage;
+    CatalogChanges changes = _changes;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        16 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1609,6 +1655,29 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
             ],
           ),
           const SizedBox(height: 16),
+          TextField(
+            controller: _note,
+            minLines: 2,
+            maxLines: 5,
+            maxLength: 1000,
+            buildCounter: (_,
+                    {required currentLength, required isFocused, maxLength}) =>
+                null,
+            textCapitalization: TextCapitalization.sentences,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: t.catalog_description,
+              hintText: t.catalog_description_hint,
+              alignLabelWithHint: true,
+              filled: true,
+              fillColor: theme.dividerColor.withOpacity(0.08),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
           Row(
             children: [
               TextButton.icon(
@@ -1634,11 +1703,11 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: changed && !_busy
+                onPressed: !changes.isEmpty && !_busy
                     ? () async {
                         setState(() => _busy = true);
                         Navigator.pop(context);
-                        await widget.onRelabel(_source, _target);
+                        await widget.onSave(changes);
                       }
                     : null,
                 child: Text(t.catalog_save),

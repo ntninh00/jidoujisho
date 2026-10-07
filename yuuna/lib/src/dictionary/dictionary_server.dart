@@ -36,6 +36,7 @@ class CatalogDictionary {
         description = json['description'] as String?,
         attribution = json['attribution'] as String?,
         url = json['url'] as String?,
+        note = json['note'] as String?,
         sourceLanguage = json['sourceLanguage'] as String?,
         targetLanguage = json['targetLanguage'] as String?,
         languagesGuessed = json['languagesGuessed'] as bool? ?? false,
@@ -68,6 +69,9 @@ class CatalogDictionary {
 
   /// See [author].
   final String? url;
+
+  /// What the server's admin wrote about the dictionary, if anything.
+  final String? note;
 
   /// Language of the words looked up, such as `ja`.
   final String? sourceLanguage;
@@ -337,6 +341,31 @@ class DictionaryServerException implements Exception {
   String toString() => message;
 }
 
+/// What an admin changes about a dictionary on the server. Only what is set
+/// is sent, so the rest stays as it is.
+class CatalogChanges {
+  /// Describe the changes.
+  const CatalogChanges({this.languages, this.note});
+
+  /// The language of the words looked up and of the definitions.
+  final ({String? source, String? target})? languages;
+
+  /// The admin's own description; empty clears it.
+  final String? note;
+
+  /// Whether anything changes.
+  bool get isEmpty => languages == null && note == null;
+
+  /// The changes as the server reads them.
+  Map<String, Object?> toJson() => {
+        if (languages != null) ...{
+          'sourceLanguage': languages!.source,
+          'targetLanguage': languages!.target,
+        },
+        if (note != null) 'note': note,
+      };
+}
+
 /// The app's side of the dictionary server: browse, preview, download, and
 /// with an admin token, upload, relabel and delete.
 class DictionaryServer {
@@ -512,16 +541,12 @@ class DictionaryServer {
             Map<String, dynamic>.from(response.data));
       });
 
-  /// Corrects the languages of a dictionary.
-  Future<CatalogDictionary> relabel(
-    String id, {
-    required String? source,
-    required String? target,
-  }) =>
+  /// Corrects the languages of a dictionary, or sets its description.
+  Future<CatalogDictionary> update(String id, CatalogChanges changes) =>
       _guard(() async {
         Response response = await _dio.patch(
           'dictionaries/$id',
-          data: {'sourceLanguage': source, 'targetLanguage': target},
+          data: changes.toJson(),
         );
         return CatalogDictionary.fromJson(
             Map<String, dynamic>.from(response.data));

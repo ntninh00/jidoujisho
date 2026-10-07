@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
@@ -123,11 +124,12 @@ void main() {
     expect(received, babylon.size);
     target.deleteSync();
 
-    CatalogDictionary relabelled =
-        await server.relabel(babylon.id, source: 'vi', target: 'fr');
+    CatalogDictionary relabelled = await server.update(babylon.id,
+        const CatalogChanges(languages: (source: 'vi', target: 'fr')));
     expect(relabelled.targetLanguage, 'fr');
     expect(relabelled.languagesGuessed, isFalse);
-    await server.relabel(babylon.id, source: 'vi', target: 'en');
+    await server.update(babylon.id,
+        const CatalogChanges(languages: (source: 'vi', target: 'en')));
 
     if (dump != null) {
       Dio raw = Dio(BaseOptions(
@@ -160,4 +162,50 @@ void main() {
     List<CatalogDictionary> after = await readServer().list();
     expect(after.map((entry) => entry.id), isNot(contains(extra.id)));
   }, skip: skip, timeout: const Timeout(Duration(minutes: 10)));
+
+  test('admins describe dictionaries', () async {
+    DictionaryServer server = adminServer();
+    String title = 'jdj note test ${DateTime.now().millisecondsSinceEpoch}';
+    Archive archive = Archive();
+    void add(String name, Object json) {
+      List<int> bytes = utf8.encode(jsonEncode(json));
+      archive.addFile(ArchiveFile(name, bytes.length, bytes));
+    }
+
+    add('index.json', {
+      'title': title,
+      'revision': '1',
+      'format': 3,
+      'description': 'From the index',
+    });
+    add('term_bank_1.json', [
+      ['猫', 'ねこ', '', '', 0, ['cat'], 1, ''],
+    ]);
+    File zip = File(path.join(Directory.systemTemp.path, 'jdj-note.zip'))
+      ..writeAsBytesSync(ZipEncoder().encode(archive)!);
+    CatalogDictionary added = await settled((await server.upload(zip)).id);
+    zip.deleteSync();
+    expect(added.note, isNull);
+    expect(added.description, 'From the index');
+
+    CatalogDictionary described = await server.update(
+        added.id, const CatalogChanges(note: '  Small, for testing.  '));
+    expect(described.note, 'Small, for testing.');
+    expect(described.languagesGuessed, added.languagesGuessed);
+    expect(named(await readServer().list(), title).note, 'Small, for testing.');
+    await expectLater(
+      readServer().update(added.id, const CatalogChanges(note: 'x')),
+      throwsA(isA<DictionaryServerException>()
+          .having((e) => e.statusCode, 'status', 403)),
+    );
+
+    CatalogDictionary relabelled = await server.update(
+        added.id, const CatalogChanges(languages: (source: 'ja', target: 'vi')));
+    expect(relabelled.note, 'Small, for testing.');
+    CatalogDictionary cleared =
+        await server.update(added.id, const CatalogChanges(note: ''));
+    expect(cleared.note, isNull);
+    expect(cleared.targetLanguage, 'vi');
+    await server.delete(added.id);
+  }, skip: skip, timeout: const Timeout(Duration(minutes: 2)));
 }

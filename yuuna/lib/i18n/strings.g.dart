@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 679
+/// Strings: 681
 ///
-/// Built on 2026-10-06 at 22:38 UTC
+/// Built on 2026-10-06 at 23:22 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -823,6 +823,8 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_book_fonts => 'Book\'s own fonts';
 	String get ttu_book_fonts_info => 'Off, your font is used all through the book. Code keeps its fixed-width font.';
 	String ttu_repaired_partly({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
+	String get catalog_description => 'Description';
+	String get catalog_description_hint => 'What it\'s good for, or who it\'s for';
 }
 
 // Path: retrying_in
@@ -1540,6 +1542,8 @@ extension on _StringsEn {
 			case 'ttu_book_fonts': return 'Book\'s own fonts';
 			case 'ttu_book_fonts_info': return 'Off, your font is used all through the book. Code keeps its fixed-width font.';
 			case 'ttu_repaired_partly': return ({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
+			case 'catalog_description': return 'Description';
+			case 'catalog_description_hint': return 'What it\'s good for, or who it\'s for';
 			default: return null;
 		}
 	}

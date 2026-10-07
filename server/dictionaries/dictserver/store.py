@@ -36,9 +36,14 @@ class Catalog:
                     file_name TEXT,
                     uploaded_at REAL NOT NULL,
                     status TEXT NOT NULL,
-                    error TEXT
+                    error TEXT,
+                    note TEXT
                 )"""
             )
+            # Catalogs from before notes get the column.
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(dictionaries)")}
+            if "note" not in columns:
+                db.execute("ALTER TABLE dictionaries ADD COLUMN note TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self._path, timeout=10)
@@ -66,6 +71,7 @@ class Catalog:
             "url": row["url"],
             "description": row["description"],
             "attribution": row["attribution"],
+            "note": row["note"],
             "sourceLanguage": row["source_language"],
             "targetLanguage": row["target_language"],
             "languagesGuessed": bool(row["languages_guessed"]),
@@ -158,6 +164,13 @@ class Catalog:
                    languages_guessed = 0 WHERE id = ?""",
                 (source, target, dictionary_id),
             )
+        return self.get(dictionary_id)
+
+    def set_note(self, dictionary_id: str, note: str | None) -> dict | None:
+        """The admin's own description, kept apart from the one the
+        dictionary came with."""
+        with self._lock, self._connect() as db:
+            db.execute("UPDATE dictionaries SET note = ? WHERE id = ?", (note, dictionary_id))
         return self.get(dictionary_id)
 
     def delete(self, dictionary_id: str) -> bool:
