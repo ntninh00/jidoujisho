@@ -65,6 +65,7 @@ class _HomePageState extends BasePageState<HomePage>
         _openQuickSearch();
       }
       AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
+      appModelNoUpdate.refreshAppStrings();
     });
   }
 

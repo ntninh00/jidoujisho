@@ -1515,13 +1515,119 @@ class AppModel with ChangeNotifier {
     return dictionaryFormats[lastDictionaryFormatName]!;
   }
 
-  /// Get the current app locale from persisted preferences.
+  /// Get the current app locale from persisted preferences. It may be a
+  /// language this build doesn't have, from the dictionary server.
   Locale get appLocale {
     String defaultLocaleTag = locales.values.first.toLanguageTag();
     String localeTag =
         _preferences.get('app_locale', defaultValue: defaultLocaleTag);
 
-    return locales[localeTag]!;
+    Locale? locale = locales[localeTag];
+    if (locale != null) {
+      return locale;
+    }
+    if (serverAppLanguages.containsKey(localeTag)) {
+      return Locale(localeTag);
+    }
+    return locales[defaultLocaleTag]!;
+  }
+
+  /// The locales Flutter's own text may be shown in: the ones this build
+  /// has, and the one from the dictionary server when that is in use.
+  List<Locale> get supportedAppLocales => [
+        ...locales.values,
+        if (!locales.containsValue(appLocale)) appLocale,
+      ];
+
+  /// The languages the app's own text can be shown in, by locale tag, with
+  /// their names: the ones this build has, then the dictionary server's.
+  Map<String, String> get appLanguageNames => {
+        ...JidoujishoLocalisations.localeNames,
+        ...serverAppLanguages,
+      };
+
+  /// Languages for the app's own text that this build doesn't have but the
+  /// dictionary server does, by code, with their names. Kept from the last
+  /// time the server was asked.
+  Map<String, String> get serverAppLanguages {
+    Object? saved =
+        jsonDecode(_preferences.get('server_app_languages', defaultValue: '{}'));
+    return saved is Map
+        ? saved.map((code, name) => MapEntry('$code', '$name'))
+        : <String, String>{};
+  }
+
+  /// The dictionary server's wording for the app in [code], over what this
+  /// build has, by string key.
+  Map<String, String> serverStringsOf(String code) {
+    Object? saved =
+        jsonDecode(_preferences.get('server_strings_$code', defaultValue: '{}'));
+    return saved is Map
+        ? saved.map((key, value) => MapEntry('$key', '$value'))
+        : <String, String>{};
+  }
+
+  /// Keeps [value] under [key] unless it is what is there; says whether it
+  /// changed anything.
+  Future<bool> _putJson(String key, Object value) async {
+    String encoded = jsonEncode(value);
+    if (_preferences.get(key, defaultValue: '{}') == encoded) {
+      return false;
+    }
+    await _preferences.put(key, encoded);
+    return true;
+  }
+
+  /// This build's strings for [code], if it has them.
+  static AppLocale? _builtInLocaleOf(String code) => AppLocale.values
+      .firstWhereOrNull((locale) => locale.languageCode == code);
+
+  /// Asks the dictionary server which languages it has for the app's own
+  /// text, and for its wording of English and of the language the app is
+  /// in, and shows what changed. Keeps what it had when the server can't be
+  /// reached.
+  Future<void> refreshAppStrings() async {
+    DictionaryServer? server = dictionaryServer;
+    if (server == null) {
+      return;
+    }
+    try {
+      List<AppLanguage> languages = await server.appLanguages();
+      bool changed = await _putJson('server_app_languages', {
+        for (AppLanguage language in languages)
+          if (_builtInLocaleOf(language.code) == null)
+            language.code: language.name,
+      });
+      String code = appLocale.languageCode;
+      for (String wanted in {'en', code}) {
+        changed |= await _putJson(
+            'server_strings_$wanted', await server.appStrings(wanted));
+      }
+      if (changed) {
+        _applyAppLocale();
+        notifyListeners();
+      }
+    } on DictionaryServerException catch (error) {
+      debugPrint('Could not refresh the app strings: $error');
+    }
+  }
+
+  /// Shows the app in [code], a language from the dictionary server, after
+  /// fetching its strings. Throws when they can't be fetched and none are
+  /// kept from before.
+  Future<void> useServerAppLanguage(String code) async {
+    DictionaryServer? server = dictionaryServer;
+    try {
+      if (server == null) {
+        throw DictionaryServerException(t.catalog_connect_title);
+      }
+      await _putJson('server_strings_$code', await server.appStrings(code));
+    } on DictionaryServerException {
+      if (serverStringsOf(code).isEmpty) {
+        rethrow;
+      }
+    }
+    await setAppLocale(code);
   }
 
   /// Get the last selected model from persisted preferences.
@@ -1576,10 +1682,33 @@ class AppModel with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Shows the app's own text, dates and numbers in [appLocale].
+  /// Shows the app's own text, dates and numbers in [appLocale], with the
+  /// dictionary server's wording on top. A language this build doesn't
+  /// have takes English's place.
   void _applyAppLocale() {
-    LocaleSettings.setLocaleRaw(appLocale.languageCode);
-    intl.Intl.defaultLocale = appLocale.languageCode;
+    String code = appLocale.languageCode;
+    AppLocale? builtIn = _builtInLocaleOf(code);
+    try {
+      LocaleSettings.overrideTranslationsFromMap(
+        locale: AppLocale.en,
+        isFlatMap: true,
+        map: {
+          ...serverStringsOf('en'),
+          if (builtIn == null) ...serverStringsOf(code),
+        },
+      );
+      if (builtIn != null && builtIn != AppLocale.en) {
+        LocaleSettings.overrideTranslationsFromMap(
+          locale: builtIn,
+          isFlatMap: true,
+          map: serverStringsOf(code),
+        );
+      }
+    } catch (error) {
+      debugPrint('Could not apply the wording from the server: $error');
+    }
+    LocaleSettings.setLocale(builtIn ?? AppLocale.en);
+    intl.Intl.defaultLocale = intl.DateFormat.localeExists(code) ? code : 'en';
   }
 
   /// Persist a new last selected dictionary format. This is called when the

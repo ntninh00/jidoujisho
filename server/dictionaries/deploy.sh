@@ -10,11 +10,22 @@ HOST="${DICT_HOST:-ninh@100.67.210.114}"
 DIR="jdj-dictionaries"
 URL="${DICT_URL:-https://dict.health-journal.duckdns.org}"
 here="$(cd "$(dirname "$0")" && pwd)"
+repo="$(cd "$here/../.." && pwd)"
 
-tar -C "$here" --exclude='__pycache__' -czf - \
-  Dockerfile docker-compose.yml requirements.txt dictserver \
+# The app's strings files go along, so the strings page edits what the app
+# was built with.
+stage="$(mktemp -d)"
+trap 'rm -rf "$stage"' EXIT
+mkdir "$stage/strings"
+cp "$repo"/yuuna/lib/i18n/strings*.i18n.json "$stage/strings/"
+tar -C "$here" --exclude='__pycache__' -cf "$stage/upload.tar" \
+  Dockerfile docker-compose.yml requirements.txt dictserver
+tar -C "$stage" -rf "$stage/upload.tar" strings
+
+gzip -c "$stage/upload.tar" \
   | ssh "$HOST" "set -e
       mkdir -p ~/$DIR/data
+      rm -rf ~/$DIR/strings
       tar -xzf - -C ~/$DIR
       cd ~/$DIR
       if [ ! -f .env ]; then echo 'Missing ~/$DIR/.env with DICT_ADMIN_TOKENS' >&2; exit 1; fi

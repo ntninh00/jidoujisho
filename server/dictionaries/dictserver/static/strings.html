@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>jidoujisho strings</title>
+<link rel="stylesheet" href="/strings/page.css">
+<script src="/strings/page.js" defer></script>
+</head>
+<body>
+
+<div id="gate" class="gate" hidden>
+  <form id="gate-form" class="gate-card">
+    <p class="eyebrow">jidoujisho</p>
+    <h1>Strings</h1>
+    <p class="gate-text">The app's wording, every language. Paste the token you use for the dictionary server in the app.</p>
+    <label class="field">
+      <span>Token</span>
+      <input id="gate-token" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="primary" type="submit">Open</button>
+    <p id="gate-error" class="error" hidden></p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="bar">
+    <div class="bar-row">
+      <div class="brand">
+        <span class="brand-name">Strings</span>
+        <span class="brand-sub">jidoujisho</span>
+      </div>
+      <label class="language">
+        <span class="visually-hidden">Language</span>
+        <select id="language"></select>
+      </label>
+      <div class="bar-actions">
+        <button id="open-add" class="ghost" type="button" aria-expanded="false">Add language</button>
+        <button id="open-prompts" class="ghost" type="button" aria-expanded="false">Prompts</button>
+        <button id="download" class="ghost" type="button">Download</button>
+      </div>
+    </div>
+  </header>
+  <div class="tools">
+    <div class="bar-row">
+      <label class="search">
+        <span class="visually-hidden">Search</span>
+        <input id="search" type="search" placeholder="Search keys, English or the translation" autocomplete="off">
+      </label>
+      <div class="filters" role="group" aria-label="Show">
+        <button type="button" class="filter" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="filter" data-filter="todo" aria-pressed="false">Not translated</button>
+        <button type="button" class="filter" data-filter="edited" aria-pressed="false">Edited</button>
+      </div>
+      <span id="count" class="count"></span>
+    </div>
+  </div>
+
+  <section id="panel-add" class="panel" hidden>
+    <h2>Add or update a language</h2>
+    <p class="panel-text">Upload your translating model's replies, both parts together. The JSON in each reply is picked out; the glossary and notes around it are skipped. Strings you edited here stay as you left them.</p>
+    <div class="field-row">
+      <label class="field narrow">
+        <span>Code</span>
+        <input id="up-code" placeholder="zh" maxlength="3" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span>Name in the app</span>
+        <input id="up-name" placeholder="From the strings if empty" autocomplete="off">
+      </label>
+    </div>
+    <label class="files">
+      <input id="up-files" type="file" multiple accept=".txt,.json,.md,text/plain,application/json">
+      <span id="up-chosen">Choose reply files</span>
+    </label>
+    <label class="field">
+      <span>Or paste a reply</span>
+      <textarea id="up-paste" rows="3" spellcheck="false"></textarea>
+    </label>
+    <div class="panel-actions">
+      <button id="up-go" class="primary" type="button">Upload</button>
+      <button id="remove-language" class="danger-text" type="button" hidden></button>
+    </div>
+    <div id="up-report" class="report" hidden></div>
+  </section>
+
+  <section id="panel-prompts" class="panel" hidden>
+    <h2>Prompts for a new language</h2>
+    <p class="panel-text">Give the model the system prompt for both runs. Send message 1, then message 2 with the glossary from the first reply pasted in where it says. Upload both replies under Add language.</p>
+    <label class="field">
+      <span>Target language</span>
+      <input id="pr-language" placeholder="Indonesian" autocomplete="off">
+    </label>
+    <div class="panel-actions">
+      <button class="secondary" type="button" data-prompt="system">System prompt</button>
+      <button class="secondary" type="button" data-prompt="0">Message 1</button>
+      <button class="secondary" type="button" data-prompt="1">Message 2</button>
+    </div>
+  </section>
+
+  <main id="rows" class="rows" aria-live="polite"></main>
+  <p id="empty" class="empty" hidden>Nothing matches.</p>
+</div>
+
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

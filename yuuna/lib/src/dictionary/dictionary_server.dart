@@ -359,6 +359,24 @@ class DictionaryServerException implements Exception {
   String toString() => message;
 }
 
+/// A language the dictionary server has for the app's own text.
+class AppLanguage {
+  /// Read a language from the server's JSON.
+  AppLanguage.fromJson(Map<String, dynamic> json)
+      : code = json['code'] as String,
+        name = json['name'] as String? ?? (json['code'] as String),
+        builtIn = json['builtIn'] as bool? ?? false;
+
+  /// Its code, such as `vi`.
+  final String code;
+
+  /// Its name, as it writes it.
+  final String name;
+
+  /// Whether the app was built with it, so the server only fixes it up.
+  final bool builtIn;
+}
+
 /// What an admin changes about a dictionary on the server. Only what is set
 /// is sent, so the rest stays as it is.
 class CatalogChanges {
@@ -575,5 +593,25 @@ class DictionaryServer {
   /// Removes a dictionary from the server.
   Future<void> delete(String id) => _guard(() async {
         await _dio.delete('dictionaries/$id');
+      });
+
+  /// The languages the server has for the app's own text: the ones the app
+  /// was built with, and any added on its strings page.
+  Future<List<AppLanguage>> appLanguages() => _guard(() async {
+        Response response = await _dio.get('strings');
+        return ((response.data as Map)['languages'] as List)
+            .map((json) => AppLanguage.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+      });
+
+  /// The app's wording in [code] where the server's differs from what the
+  /// app was built with, by string key; for a language the app wasn't built
+  /// with, every string the server has.
+  Future<Map<String, String>> appStrings(String code) => _guard(() async {
+        Response response = await _dio.get('strings/$code/changes');
+        Object? strings = (response.data as Map)['strings'];
+        return strings is Map
+            ? strings.map((key, value) => MapEntry('$key', '$value'))
+            : <String, String>{};
       });
 }

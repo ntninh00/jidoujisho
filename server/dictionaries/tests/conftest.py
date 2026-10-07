@@ -18,6 +18,21 @@ PNG = bytes.fromhex(
 )
 
 
+# A small copy of the app's strings files.
+ENGLISH = {
+    "back": "Back",
+    "import_name": "Importing 『$name』...",
+    "retrying_in": {"seconds": {"one": "Retrying in $n second...", "other": "Retrying in $n seconds..."}},
+    "language_names": {"vi": "Vietnamese", "zh": "Chinese"},
+    "addons": {"field": {"term": {"label": "Term"}}},
+}
+VIETNAMESE = {
+    "back": "Quay lại",
+    "import_name": "Đang nhập 『$name』...",
+    "language_names": {"vi": "Tiếng Việt"},
+}
+
+
 def make_zip(files: dict[str, object], *, compression=zipfile.ZIP_DEFLATED) -> bytes:
     """A zip of [files]; values that aren't bytes are written as JSON."""
     buffer = io.BytesIO()
@@ -78,7 +93,12 @@ def format_one() -> bytes:
 def settings(tmp_path):
     from dictserver import config
 
+    strings_dir = tmp_path / "strings"
+    strings_dir.mkdir()
+    (strings_dir / "strings.i18n.json").write_text(json.dumps(ENGLISH, ensure_ascii=False), encoding="utf-8")
+    (strings_dir / "strings_vi.i18n.json").write_text(json.dumps(VIETNAMESE, ensure_ascii=False), encoding="utf-8")
     return config.Settings(
+        strings_dir=strings_dir,
         data_dir=tmp_path / "data",
         admin_tokens=(ADMIN,),
         read_tokens=(READER,),

@@ -368,7 +368,7 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: appModel.locales.values,
+      supportedLocales: appModel.supportedAppLocales,
       themeMode: themeMode,
       theme: appModel.theme,
       darkTheme: appModel.darkTheme,

@@ -47,6 +47,8 @@ class Settings:
     max_bank_bytes: int
     max_entries: int
     min_free_bytes: int
+    # The app's strings files, copied here on deploy.
+    strings_dir: Path = Path("strings")
 
     @property
     def incoming_dir(self) -> Path:
@@ -73,4 +75,5 @@ def load(env_file: Path | None = None) -> Settings:
         max_bank_bytes=_megabytes("DICT_MAX_BANK_MB", 96),
         max_entries=int(os.environ.get("DICT_MAX_ENTRIES", 60000)),
         min_free_bytes=_megabytes("DICT_MIN_FREE_MB", 5120),
+        strings_dir=Path(os.environ.get("DICT_STRINGS_DIR", "strings")),
     )

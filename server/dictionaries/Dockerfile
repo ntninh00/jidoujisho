@@ -7,6 +7,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY dictserver ./dictserver
+# The app's strings files, for the strings page.
+COPY strings ./strings
 
 USER 1000:1000
 EXPOSE 8000

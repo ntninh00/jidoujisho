@@ -16,11 +16,25 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     PATCH  /api/dictionaries/{id}                -> any of {"sourceLanguage", "targetLanguage",
                                                     "notes": {"en": "...", "vi": null}}
     DELETE /api/dictionaries/{id}
+
+The app's own wording, which both kinds of token can change (see strings.py):
+
+    GET    /strings                              -> the page to search and edit it
+    GET    /api/strings                          -> {"languages": [...]}
+    GET    /api/strings/prompts?language=        -> prompts to translate the app
+    POST   /api/strings/upload                   -> {"code", "name", "texts": [model replies]}
+    GET    /api/strings/{code}                   -> every string, with its English
+    GET    /api/strings/{code}/changes           -> what differs from the app's build
+    GET    /api/strings/{code}/export            -> a strings file
+    DELETE /api/strings/{code}                   -> drop uploads and edits (admin)
+    PUT    /api/strings/{code}/{key}             -> {"value"}
+    DELETE /api/strings/{code}/{key}             -> back to the original
 """
 
 import asyncio
 import hashlib
 import hmac
+import json
 import os
 import queue
 import re
@@ -45,12 +59,21 @@ from starlette.routing import Route
 from . import config, indexer, search
 from .checks import LANGUAGE, MEDIA_TYPES, Limits, Rejected, check_zip
 from .store import Catalog
+from .strings import CODE, Invalid, Strings
 
 ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_STYLES_BYTES = 1024 * 1024
 MAX_NOTE_LENGTH = 1000
 MAX_NOTE_LANGUAGES = 20
+MAX_STRINGS_UPLOAD_BYTES = 2 * 1024 * 1024
+STATIC = Path(__file__).parent / "static"
+TRANSLATE_PROMPT = Path(__file__).parent / "translate_prompt.md"
+# The strings page runs its own script and talks only to this server.
+PAGE_POLICY = (
+    "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+    "img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+)
 # An upload that sends nothing for this long is given up, so its slot is
 # free again: a phone that changes network can leave the connection open.
 UPLOAD_STALL_SECONDS = 60
@@ -102,6 +125,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
     settings = settings or config.load()
     settings.incoming_dir.mkdir(parents=True, exist_ok=True)
     catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
+    strings = Strings(settings.strings_dir, settings.data_dir / "strings.sqlite")
     limits = Limits(
         max_entries=settings.max_entries,
         max_uncompressed_bytes=settings.max_uncompressed_bytes,
@@ -388,6 +412,104 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             return await run_in_threadpool(delete, request)
         return await run_in_threadpool(get_one, request)
 
+    # ---------- the app's wording ----------
+
+    def page(name: str, media_type: str):
+        async def serve(request: Request) -> Response:
+            return FileResponse(
+                STATIC / name,
+                media_type=media_type,
+                headers={"Content-Security-Policy": PAGE_POLICY, "Cache-Control": "no-cache"},
+            )
+        return serve
+
+    def code_of(request: Request) -> str:
+        code = request.path_params["code"]
+        if not CODE.match(code):
+            raise Problem(404, "No such language.")
+        return code
+
+    async def json_body(request: Request, limit: int = 64 * 1024) -> dict:
+        if int(request.headers.get("content-length") or 0) > limit:
+            raise Problem(413, "That's more than the page should ever send.")
+        body = await request.body()
+        if len(body) > limit:
+            raise Problem(413, "That's more than the page should ever send.")
+        try:
+            value = json.loads(body or b"{}")
+        except ValueError:
+            raise Problem(400, "Send the change as JSON.") from None
+        if not isinstance(value, dict):
+            raise Problem(400, "Send the change as a JSON object.")
+        return value
+
+    def string_languages(request: Request) -> Response:
+        role_of(request)
+        return JSONResponse({"base": "en", "languages": strings.languages()})
+
+    def string_rows(request: Request) -> Response:
+        role_of(request)
+        code = code_of(request)
+        if not strings.exists(code):
+            raise Problem(404, "There are no strings in this language yet. Upload some first.")
+        return JSONResponse({"code": code, "name": strings.name_of(code), "strings": strings.rows(code)})
+
+    def string_changes(request: Request) -> Response:
+        role_of(request)
+        return JSONResponse(strings.changes(code_of(request)))
+
+    def string_export(request: Request) -> Response:
+        role_of(request)
+        code = code_of(request)
+        if not strings.exists(code):
+            raise Problem(404, "There are no strings in this language yet.")
+        return JSONResponse(strings.export(code))
+
+    def string_prompts(request: Request) -> Response:
+        role_of(request)
+        language = request.query_params.get("language", "").strip()
+        if not language or len(language) > 60:
+            raise Problem(400, "Name the language to translate into.")
+        return JSONResponse(strings.prompts(language, TRANSLATE_PROMPT.read_text(encoding="utf-8")))
+
+    async def string_upload(request: Request) -> Response:
+        role_of(request)
+        body = await json_body(request, MAX_STRINGS_UPLOAD_BYTES)
+        texts = body.get("texts")
+        if not isinstance(texts, list) or not texts or not all(isinstance(text, str) for text in texts):
+            raise Problem(400, "Send the replies as a list of texts.")
+        code, name = body.get("code"), body.get("name")
+        if (code is not None and not isinstance(code, str)) or (name is not None and not isinstance(name, str)):
+            raise Problem(400, "The code and name should be text.")
+        if name and len(name) > 60:
+            raise Problem(400, "Keep the name under 60 characters.")
+        try:
+            return JSONResponse(await run_in_threadpool(strings.upload, code, name, texts))
+        except Invalid as error:
+            raise Problem(400, str(error)) from None
+
+    async def string_language(request: Request) -> Response:
+        if request.method == "DELETE":
+            if role_of(request) != "admin":
+                raise Problem(403, "Only an admin token can remove a language.")
+            await run_in_threadpool(strings.remove, code_of(request))
+            return Response(status_code=204)
+        return await run_in_threadpool(string_rows, request)
+
+    async def string_item(request: Request) -> Response:
+        role_of(request)
+        code = code_of(request)
+        key = request.path_params["key"]
+        if key not in strings.english:
+            raise Problem(404, "The app has no such string.")
+        if request.method == "DELETE":
+            return JSONResponse(await run_in_threadpool(strings.revert, code, key))
+        body = await json_body(request)
+        try:
+            return JSONResponse(await run_in_threadpool(strings.set, code, key, body.get("value")))
+        except Invalid as error:
+            raise Problem(400, str(error)) from None
+
     async def problem(request: Request, error: Problem) -> Response:
         return JSONResponse({"error": error.message}, status_code=error.status)
 
@@ -401,12 +523,23 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             Route("/api/dictionaries/{id}/download", download),
             Route("/api/dictionaries/{id}/media", media),
             Route("/api/dictionaries/{id}/styles", styles),
+            Route("/strings", page("strings.html", "text/html; charset=utf-8")),
+            Route("/strings/page.js", page("strings.js", "text/javascript; charset=utf-8")),
+            Route("/strings/page.css", page("strings.css", "text/css; charset=utf-8")),
+            Route("/api/strings", string_languages),
+            Route("/api/strings/prompts", string_prompts),
+            Route("/api/strings/upload", string_upload, methods=["POST"]),
+            Route("/api/strings/{code}", string_language, methods=["GET", "DELETE"]),
+            Route("/api/strings/{code}/changes", string_changes),
+            Route("/api/strings/{code}/export", string_export),
+            Route("/api/strings/{code}/{key}", string_item, methods=["PUT", "DELETE"]),
         ],
         middleware=[Middleware(SecurityHeaders)],
         exception_handlers={Problem: problem},
         lifespan=lifespan,
     )
     app.state.catalog = catalog
+    app.state.strings = strings
     app.state.jobs = jobs
     return app
 

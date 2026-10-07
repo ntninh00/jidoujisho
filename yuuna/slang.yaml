@@ -1,3 +1,7 @@
 # Strings missing from a translation show in English instead of failing
 # the build.
 fallback_strategy: base_locale
+
+# Wording fixed on the dictionary server's strings page is applied on top
+# while the app runs.
+translation_overrides: true

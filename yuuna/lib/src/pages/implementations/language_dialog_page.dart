@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:spaces/spaces.dart';
+import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
@@ -21,6 +23,32 @@ class LanguageDialogPage extends BasePage {
 }
 
 class _LanguageDialogPageState extends BasePageState<LanguageDialogPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Languages added on the dictionary server show up here too.
+    appModelNoUpdate.refreshAppStrings().then((_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  Future<void> _setAppLanguage(String tag) async {
+    if (JidoujishoLocalisations.localeNames.containsKey(tag)) {
+      await appModel.setAppLocale(tag);
+    } else {
+      try {
+        await appModel.useServerAppLanguage(tag);
+      } on DictionaryServerException catch (error) {
+        Fluttertoast.showToast(msg: error.message);
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -107,14 +135,12 @@ class _LanguageDialogPageState extends BasePageState<LanguageDialogPage> {
                 ),
               ),
               JidoujishoDropdown<String>(
-                options: JidoujishoLocalisations.localeNames.keys.toList(),
+                key: ValueKey(appModel.appLanguageNames.length),
+                options: appModel.appLanguageNames.keys.toList(),
                 initialOption: appModel.appLocale.toLanguageTag(),
                 generateLabel: (languageTag) =>
-                    JidoujishoLocalisations.localeNames[languageTag]!,
-                onChanged: (languageTag) {
-                  appModel.setAppLocale(languageTag!);
-                  setState(() {});
-                },
+                    appModel.appLanguageNames[languageTag] ?? languageTag,
+                onChanged: (languageTag) => _setAppLanguage(languageTag!),
               ),
               const Space.small(),
               ListTile(
