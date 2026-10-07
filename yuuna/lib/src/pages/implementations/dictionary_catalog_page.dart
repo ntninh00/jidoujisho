@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:wakelock/wakelock.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/models.dart';
@@ -231,6 +232,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     });
 
     bool done = false;
+    await Wakelock.enable();
     try {
       int shown = -1;
       await server.download(
@@ -253,11 +255,11 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     } on DioError {
       // Cancelled.
     } finally {
+      _downloads.remove(dictionary.id);
+      _cancels.remove(dictionary.id);
+      await _releaseScreen();
       if (mounted) {
-        setState(() {
-          _downloads.remove(dictionary.id);
-          _cancels.remove(dictionary.id);
-        });
+        setState(() {});
       }
     }
 
@@ -336,6 +338,13 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     }
   }
 
+  /// Lets the screen go off once nothing is uploading or downloading.
+  Future<void> _releaseScreen() async {
+    if (_upload == null && _downloads.isEmpty) {
+      await Wakelock.disable();
+    }
+  }
+
   Future<void> _uploadOne(File file, {bool replace = false}) async {
     DictionaryServer? server = _server;
     if (server == null || _upload != null) {
@@ -344,6 +353,10 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     String name = path.basename(file.path);
     CancelToken cancel = CancelToken();
     setState(() => _upload = (name: name, progress: 0, cancel: cancel));
+
+    /// Android may freeze the app when the screen goes off, which stops an
+    /// upload partway; the screen stays on while one runs.
+    await Wakelock.enable();
     try {
       int shown = -1;
       CatalogDictionary added = await server.upload(
@@ -373,8 +386,10 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     } on DioError {
       // Cancelled.
     } finally {
+      _upload = null;
+      await _releaseScreen();
       if (mounted) {
-        setState(() => _upload = null);
+        setState(() {});
       }
     }
     await _load(quietly: true);

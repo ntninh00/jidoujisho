@@ -288,7 +288,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
                     except StopAsyncIteration:
                         break
                     except asyncio.TimeoutError:
-                        raise Problem(408, "The upload stopped arriving. Try again.") from None
+                        raise Problem(408, "The upload stopped arriving. Keep the app open while it uploads, then try again.") from None
                     received += len(chunk)
                     if received > declared or received > settings.max_upload_bytes:
                         raise Problem(413, "The upload is larger than it said it would be.")
