@@ -436,4 +436,6 @@ class Ui {
       IconData(0xe7be, fontFamily: _regular); // eye-crossed
   static const IconData fileImport =
       IconData(0xe84f, fontFamily: _regular); // file-import
+  static const IconData tags =
+      IconData(0xf37b, fontFamily: _regular); // tags
 }

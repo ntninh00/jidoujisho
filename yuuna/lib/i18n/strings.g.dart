@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 714
+/// Strings: 719
 ///
-/// Built on 2026-10-07 at 03:00 UTC
+/// Built on 2026-10-07 at 03:51 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -858,6 +858,11 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get auto_backup_writing => 'Writing the backup file';
 	String get auto_backup_cannot_keep => 'That place can\'t be written to again later. Choose another, such as a folder or Google Drive.';
 	String get auto_backup_running => 'Updating the backup file';
+	String get ttu_tags => 'Tags';
+	String get ttu_add_tag => 'Add a tag';
+	String get ttu_tags_none => 'No tags yet';
+	String get ttu_tags_used_before => 'Used before';
+	String get ttu_tags_info => 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
 }
 
 // Path: retrying_in
@@ -1610,6 +1615,11 @@ extension on _StringsEn {
 			case 'auto_backup_writing': return 'Writing the backup file';
 			case 'auto_backup_cannot_keep': return 'That place can\'t be written to again later. Choose another, such as a folder or Google Drive.';
 			case 'auto_backup_running': return 'Updating the backup file';
+			case 'ttu_tags': return 'Tags';
+			case 'ttu_add_tag': return 'Add a tag';
+			case 'ttu_tags_none': return 'No tags yet';
+			case 'ttu_tags_used_before': return 'Used before';
+			case 'ttu_tags_info': return 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
 			default: return null;
 		}
 	}

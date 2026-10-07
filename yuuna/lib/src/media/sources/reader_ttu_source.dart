@@ -224,10 +224,52 @@ class ReaderTtuSource extends ReaderMediaSource {
       getPreference<List?>(key: 'shelf_groups', defaultValue: null) ??
           const []);
 
+  /// Tags on [book], in the order they were added.
+  List<String> tagsOf(TtuBook book) => List<String>.from(
+      getPreference<List?>(key: 'book_tags_${book.key}', defaultValue: null) ??
+          const []);
+
+  /// Every tag on some book, the most used first: suggestions when tagging.
+  List<String> get allTags {
+    Map<String, int> uses = {};
+    preferencesForBackup().forEach((key, value) {
+      if ('$key'.startsWith('book_tags_') && value is List) {
+        for (Object? tag in value) {
+          if (tag is String) {
+            uses[tag] = (uses[tag] ?? 0) + 1;
+          }
+        }
+      }
+    });
+    return uses.keys.toList()
+      ..sort((a, b) => uses[a] != uses[b]
+          ? uses[b]!.compareTo(uses[a]!)
+          : a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
+  /// Puts [tags] on [book]: trimmed, without repeats in any case.
+  Future<void> setTagsOf(TtuBook book, List<String> tags) async {
+    List<String> clean = [];
+    for (String tag in tags) {
+      String name = tag.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (name.isNotEmpty &&
+          !clean.any((kept) => kept.toLowerCase() == name.toLowerCase())) {
+        clean.add(name);
+      }
+    }
+    if (clean.isEmpty) {
+      await deletePreference(key: 'book_tags_${book.key}');
+    } else {
+      await setPreference<List<String>>(
+          key: 'book_tags_${book.key}', value: clean);
+    }
+    _shelfChanged();
+  }
+
   /// The group [book] is in, if any.
   String? groupOf(TtuBook book) {
-    String? group =
-        getPreference<String?>(key: 'book_group_${book.key}', defaultValue: null);
+    String? group = getPreference<String?>(
+        key: 'book_group_${book.key}', defaultValue: null);
     return group != null && shelfGroups.contains(group) ? group : null;
   }
 
@@ -711,6 +753,7 @@ class ReaderTtuSource extends ReaderMediaSource {
           key: 'book_language_${book.key}',
           value: null,
         );
+        await deletePreference(key: 'book_tags_${book.key}');
         await clearOverrideValues(appModel: appModel, item: book.toMediaItem());
         String? coverPath = book.coverPath;
         if (coverPath != null && File(coverPath).existsSync()) {

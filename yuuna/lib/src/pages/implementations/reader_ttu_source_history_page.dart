@@ -253,6 +253,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                           key: ValueKey(book.key),
                           book: book,
                           favourite: favourites.contains(book.key),
+                          tags: mediaSource.tagsOf(book),
                           memos: memosByBook[book.key] ?? const [],
                           onOpen: () => _open(book),
                           onDetails: () => _showDetails(
@@ -644,6 +645,7 @@ class _BookTile extends BasePage {
     required this.onOpen,
     required this.onDetails,
     this.favourite = false,
+    this.tags = const [],
     super.key,
   });
 
@@ -651,6 +653,9 @@ class _BookTile extends BasePage {
 
   /// Marked with a star.
   final bool favourite;
+
+  /// The user's tags, shown as pills on the cover.
+  final List<String> tags;
   final List<ReaderMemo> memos;
   final VoidCallback onOpen;
   final VoidCallback onDetails;
@@ -735,6 +740,16 @@ class _BookTileState extends BasePageState<_BookTile> {
                     ),
                   ),
                 ),
+                if (widget.tags.isNotEmpty)
+                  Positioned(
+                    top: 5,
+                    left: 5,
+                    right: 26,
+                    child: Align(
+                      alignment: Alignment.topLeft,
+                      child: TtuCoverTags(tags: widget.tags),
+                    ),
+                  ),
                 if (widget.favourite)
                   Positioned(
                     top: 4,

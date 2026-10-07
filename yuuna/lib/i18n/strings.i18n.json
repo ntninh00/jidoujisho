@@ -746,5 +746,10 @@
     "auto_backup_lost": "The backup file can no longer be reached. Choose where to keep it again.",
     "auto_backup_writing": "Writing the backup file",
     "auto_backup_cannot_keep": "That place can't be written to again later. Choose another, such as a folder or Google Drive.",
-    "auto_backup_running": "Updating the backup file"
+    "auto_backup_running": "Updating the backup file",
+    "ttu_tags": "Tags",
+    "ttu_add_tag": "Add a tag",
+    "ttu_tags_none": "No tags yet",
+    "ttu_tags_used_before": "Used before",
+    "ttu_tags_info": "Tags show on the book's cover. Pick one you used before or type a new one."
 }

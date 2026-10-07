@@ -588,7 +588,8 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
             child: Text(
               t.ttu_undo.toUpperCase(),
               style: TextStyle(
-                color: Color.lerp(theme.colorScheme.primary, Colors.white, 0.45),
+                color:
+                    Color.lerp(theme.colorScheme.primary, Colors.white, 0.45),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1072,6 +1073,60 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
     }
   }
 
+  Future<void> _editTags() async {
+    await showTtuSheet<void>(
+      context: context,
+      builder: (_) => TtuTagsSheet(book: widget.book),
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// The book's tags, which open the tags sheet.
+  Widget _tagsRow() {
+    Color muted = theme.unselectedWidgetColor;
+    List<String> tags = ReaderTtuSource.instance.tagsOf(widget.book);
+    return Material(
+      color: theme.dividerColor.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(ttuCardRadius),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(ttuCardRadius),
+        onTap: _editTags,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+          child: Row(
+            children: [
+              Icon(Ui.tags, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                t.ttu_tags,
+                style: textTheme.labelMedium!.copyWith(color: muted),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: tags.isEmpty
+                    ? Text(
+                        t.ttu_add_tag,
+                        style: textTheme.bodyMedium!.copyWith(color: muted),
+                      )
+                    : Wrap(
+                        spacing: 5,
+                        runSpacing: 5,
+                        children: [
+                          for (String tag in tags)
+                            TtuTagPill(tag: tag, maxWidth: 150),
+                        ],
+                      ),
+              ),
+              Icon(Ui.angleRight, size: 18, color: muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// The group the book is in, which opens the group picker.
   Widget _groupRow() {
     Color muted = theme.unselectedWidgetColor;
@@ -1337,6 +1392,8 @@ class _TtuBookDetailsSheetState extends BasePageState<TtuBookDetailsSheet> {
           ),
           const SizedBox(height: 8),
           _groupRow(),
+          const SizedBox(height: 8),
+          _tagsRow(),
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -1606,28 +1663,28 @@ class _TtuReaderSettingsSheetState
                       ? () => _offerRemoveFont(font.key, chip)
                       : null,
                   child: ChoiceChip(
-                label: Text(
-                  font.value,
-                  style: TextStyle(
-                    fontFamily: _previewFamilyOf(font.key),
-                    fontWeight: FontWeight.w600,
-                    color: font.key == selected ? accent : null,
-                  ),
-                ),
-                selected: font.key == selected,
-                showCheckmark: false,
-                shape: StadiumBorder(
-                  side: BorderSide(
-                    color: font.key == selected
-                        ? accent
-                        : theme.dividerColor.withOpacity(0.25),
-                    width: font.key == selected ? 1.5 : 1,
-                  ),
-                ),
-                backgroundColor: Colors.transparent,
-                selectedColor: accent.withOpacity(0.12),
-                onSelected: (_) =>
-                    _update((preset) => preset.fontFamily = font.key),
+                    label: Text(
+                      font.value,
+                      style: TextStyle(
+                        fontFamily: _previewFamilyOf(font.key),
+                        fontWeight: FontWeight.w600,
+                        color: font.key == selected ? accent : null,
+                      ),
+                    ),
+                    selected: font.key == selected,
+                    showCheckmark: false,
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: font.key == selected
+                            ? accent
+                            : theme.dividerColor.withOpacity(0.25),
+                        width: font.key == selected ? 1.5 : 1,
+                      ),
+                    ),
+                    backgroundColor: Colors.transparent,
+                    selectedColor: accent.withOpacity(0.12),
+                    onSelected: (_) =>
+                        _update((preset) => preset.fontFamily = font.key),
                   ),
                 ),
               ),
