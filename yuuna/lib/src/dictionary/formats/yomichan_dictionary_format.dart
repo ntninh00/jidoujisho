@@ -35,6 +35,7 @@ class YomichanFormat extends DictionaryFormat {
           prepareTags: prepareTagsYomichanFormat,
           preparePitches: preparePitchesYomichanFormat,
           prepareFrequencies: prepareFrequenciesYomichanFormat,
+          writesInBatches: true,
         );
 
   /// Get the singleton instance of this dictionary format.
@@ -176,33 +177,87 @@ Future<String> prepareNameYomichanFormat(PrepareDirectoryParams params) async {
   return dictionaryName;
 }
 
+/// Entries written to the database at a time while importing.
+const int _importBatch = 1000;
+
 /// Top-level function for use in compute. See [DictionaryFormat] for details.
+///
+/// Each bank is read once; the total shown while importing is estimated
+/// from the banks' sizes until all are read. Entries and their headings go
+/// to the database a thousand at a time, each batch committed on its own,
+/// and a heading is written fresh
+/// rather than read first: its id comes from its term and reading, and
+/// writing it adds tags without touching the links it has.
 void prepareEntriesYomichanFormat({
   required PrepareDictionaryParams params,
   required Isar isar,
 }) {
-  final List<FileSystemEntity> entities = params.resourceDirectory.listSync();
-  final Iterable<File> files = entities.whereType<File>();
+  final List<File> files =
+      params.resourceDirectory.listSync().whereType<File>().where((file) {
+    String name = path.basename(file.path);
+    return name.startsWith('term_bank') || name.startsWith('kanji_bank');
+  }).toList();
 
+  int totalBytes = files.fold(0, (sum, file) => sum + file.lengthSync());
+  int readBytes = 0;
+  int readItems = 0;
   int n = 0;
   int total = 0;
 
-  for (File file in files) {
-    String filename = path.basename(file.path);
-    if (filename.startsWith('term_bank') || filename.startsWith('kanji_bank')) {
-      String json = file.readAsStringSync();
-      List<dynamic> items = jsonDecode(json);
-      total += items.length;
+  /// The total so far, or an estimate from the share of bytes read.
+  int estimate() => readBytes == 0
+      ? 0
+      : readBytes >= totalBytes
+          ? readItems
+          : (readItems * totalBytes / readBytes).round();
 
-      params.send(t.import_found_entry(count: total));
+  void progress({bool last = false}) {
+    if (last || n % _importBatch == 0) {
+      params.send(t.import_write_entry(count: n, total: total));
     }
+  }
+
+  /// Tags of this dictionary by id, read once each.
+  Map<int, DictionaryTag?> tags = {};
+  List<DictionaryTag> tagsNamed(List<String> names) {
+    List<DictionaryTag> found = [];
+    for (String name in names) {
+      int id =
+          DictionaryTag.hash(dictionaryId: params.dictionary.id, name: name);
+      DictionaryTag? tag =
+          tags.putIfAbsent(id, () => isar.dictionaryTags.getSync(id));
+      if (tag != null) {
+        found.add(tag);
+      }
+    }
+    return found;
+  }
+
+  List<DictionaryEntry> entries = [];
+  Map<int, DictionaryHeading> headings = {};
+  void flush() {
+    if (entries.isEmpty) {
+      return;
+    }
+    List<DictionaryHeading> batch = headings.values.toList();
+    List<DictionaryEntry> written = entries;
+    isar.writeTxnSync(() {
+      isar.dictionaryHeadings.putAllSync(batch);
+      isar.dictionaryEntrys.putAllSync(written);
+    });
+    entries = [];
+    headings = {};
   }
 
   for (File file in files) {
     String filename = path.basename(file.path);
-    if (filename.startsWith('term_bank')) {
-      List<dynamic> items = jsonDecode(file.readAsStringSync());
+    String json = file.readAsStringSync();
+    List<dynamic> items = jsonDecode(json);
+    readBytes += file.lengthSync();
+    readItems += items.length;
+    total = estimate();
 
+    if (filename.startsWith('term_bank')) {
       for (List<dynamic> item in items) {
         final String term = item[0];
         final String reading = item[1];
@@ -234,120 +289,98 @@ void prepareEntriesYomichanFormat({
           headingTagNames: headingTagNames,
         );
 
-        List<int> entryTagHashes = entryTagNames.map((name) {
-          int dictionaryId = params.dictionary.id;
-          return DictionaryTag.hash(dictionaryId: dictionaryId, name: name);
-        }).toList();
+        DictionaryHeading heading = headings.putIfAbsent(
+          headingId,
+          () => DictionaryHeading(term: term, reading: reading),
+        );
+        heading.tags.addAll(tagsNamed(headingTagNames));
 
-        List<DictionaryTag> entryTags = isar.dictionaryTags
-            .getAllSync(entryTagHashes)
-            .whereType<DictionaryTag>()
-            .toList();
-
-        List<int> headingTagHashes = headingTagNames.map((name) {
-          int dictionaryId = params.dictionary.id;
-          return DictionaryTag.hash(dictionaryId: dictionaryId, name: name);
-        }).toList();
-
-        List<DictionaryTag> headingTags = isar.dictionaryTags
-            .getAllSync(headingTagHashes)
-            .whereType<DictionaryTag>()
-            .toList();
-
-        DictionaryHeading heading =
-            isar.dictionaryHeadings.getSync(headingId) ??
-                DictionaryHeading(term: term, reading: reading);
-
-        entry.tags.addAll(entryTags);
+        entry.tags.addAll(tagsNamed(entryTagNames));
         entry.heading.value = heading;
         entry.dictionary.value = params.dictionary;
-        isar.dictionaryEntrys.putSync(entry);
-
-        heading.entries.add(entry);
-        heading.tags.addAll(headingTags);
-        isar.dictionaryHeadings.putSync(heading);
+        entries.add(entry);
 
         n++;
-        params.send(t.import_write_entry(
-          count: n,
-          total: total,
-        ));
+        if (entries.length >= _importBatch) {
+          flush();
+        }
+        progress();
       }
+      flush();
     } else if (filename.startsWith('kanji_bank')) {
-      List<dynamic> items = jsonDecode(file.readAsStringSync());
+      isar.writeTxnSync(() {
+        for (List<dynamic> item in items) {
+          String term = item[0] as String;
+          List<String> onyomis = (item[1] as String).split(' ');
+          List<String> kunyomis = (item[2] as String).split(' ');
+          List<String> headingTagNames = (item[3] as String).split(' ');
+          List<String> meanings = List<String>.from(item[4]);
 
-      for (List<dynamic> item in items) {
-        String term = item[0] as String;
-        List<String> onyomis = (item[1] as String).split(' ');
-        List<String> kunyomis = (item[2] as String).split(' ');
-        List<String> headingTagNames = (item[3] as String).split(' ');
-        List<String> meanings = List<String>.from(item[4]);
-
-        StringBuffer buffer = StringBuffer();
-        if (onyomis.join().trim().isNotEmpty) {
-          buffer.write('音読み\n');
-          for (String onyomi in onyomis) {
-            buffer.write('  • $onyomi\n');
+          StringBuffer buffer = StringBuffer();
+          if (onyomis.join().trim().isNotEmpty) {
+            buffer.write('音読み\n');
+            for (String onyomi in onyomis) {
+              buffer.write('  • $onyomi\n');
+            }
+            buffer.write('\n');
           }
-          buffer.write('\n');
-        }
-        if (kunyomis.join().trim().isNotEmpty) {
-          buffer.write('訓読み\n');
-          for (String kun in kunyomis) {
-            buffer.write('  • $kun\n');
+          if (kunyomis.join().trim().isNotEmpty) {
+            buffer.write('訓読み\n');
+            for (String kun in kunyomis) {
+              buffer.write('  • $kun\n');
+            }
+            buffer.write('\n');
           }
-          buffer.write('\n');
-        }
-        if (meanings.isNotEmpty) {
-          buffer.write('意味\n');
-          for (String meaning in meanings) {
-            buffer.write('  • $meaning\n');
+          if (meanings.isNotEmpty) {
+            buffer.write('意味\n');
+            for (String meaning in meanings) {
+              buffer.write('  • $meaning\n');
+            }
+            buffer.write('\n');
           }
-          buffer.write('\n');
+
+          String definition = buffer.toString().trim();
+
+          if (definition.isNotEmpty) {
+            int headingId = DictionaryHeading.hash(term: term, reading: '');
+
+            final entry = DictionaryEntry(
+              definitions: [definition],
+              popularity: 0,
+              headingTagNames: headingTagNames,
+            );
+
+            DictionaryHeading heading =
+                isar.dictionaryHeadings.getSync(headingId) ??
+                    DictionaryHeading(term: term);
+
+            entry.heading.value = heading;
+            entry.dictionary.value = params.dictionary;
+            List<int> headingTagHashes = headingTagNames.map((name) {
+              int dictionaryId = params.dictionary.id;
+              return DictionaryTag.hash(dictionaryId: dictionaryId, name: name);
+            }).toList();
+
+            List<DictionaryTag> headingTags = isar.dictionaryTags
+                .getAllSync(headingTagHashes)
+                .whereType<DictionaryTag>()
+                .toList();
+
+            isar.dictionaryEntrys.putSync(entry);
+
+            heading.entries.add(entry);
+            heading.tags.addAll(headingTags);
+            isar.dictionaryHeadings.putSync(heading);
+
+            n++;
+            progress();
+          }
         }
-
-        String definition = buffer.toString().trim();
-
-        if (definition.isNotEmpty) {
-          int headingId = DictionaryHeading.hash(term: term, reading: '');
-
-          final entry = DictionaryEntry(
-            definitions: [definition],
-            popularity: 0,
-            headingTagNames: headingTagNames,
-          );
-
-          DictionaryHeading heading =
-              isar.dictionaryHeadings.getSync(headingId) ??
-                  DictionaryHeading(term: term);
-
-          entry.heading.value = heading;
-          entry.dictionary.value = params.dictionary;
-          List<int> headingTagHashes = headingTagNames.map((name) {
-            int dictionaryId = params.dictionary.id;
-            return DictionaryTag.hash(dictionaryId: dictionaryId, name: name);
-          }).toList();
-
-          List<DictionaryTag> headingTags = isar.dictionaryTags
-              .getAllSync(headingTagHashes)
-              .whereType<DictionaryTag>()
-              .toList();
-
-          isar.dictionaryEntrys.putSync(entry);
-
-          heading.entries.add(entry);
-          heading.tags.addAll(headingTags);
-          isar.dictionaryHeadings.putSync(heading);
-
-          n++;
-          params.send(t.import_write_entry(
-            count: n,
-            total: total,
-          ));
-        }
-      }
+      });
     }
   }
+  total = n;
+  progress(last: true);
 }
 
 /// Top-level function for use in compute. See [DictionaryFormat] for details.

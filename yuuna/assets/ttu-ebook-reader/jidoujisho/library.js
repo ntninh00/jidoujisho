@@ -339,4 +339,66 @@
       });
     });
   };
+  /* ---------- the user's fonts ---------- */
+
+  /*
+   * Fonts the user added, stored the way ッツ's settings page stores them:
+   * the file in the `ttu-userfonts` cache under /userfonts/<file>, and
+   * {name, path, fileName} in localStorage, which ッツ loads them from.
+   */
+  var FONT_CACHE = 'ttu-userfonts';
+
+  function storedFonts() {
+    try {
+      var fonts = JSON.parse(localStorage.getItem('userfonts') || '[]');
+      return Array.isArray(fonts) ? fonts : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  L.fonts = function () {
+    return storedFonts().map(function (font) {
+      return font.name;
+    });
+  };
+
+  /* Stores the staged file [key] as the font [name], replacing one of the
+   * same name or file. */
+  L.addFont = function (name, fileName, key) {
+    var parts = staged[key] || [];
+    delete staged[key];
+    var blob = new Blob(parts);
+    var path = '/userfonts/' + fileName;
+    var type = 'font/' + fileName.split('.').pop().toLowerCase();
+    var others = storedFonts().filter(function (font) {
+      return font.name !== name && font.fileName !== fileName;
+    });
+    return caches.open(FONT_CACHE).then(function (cache) {
+      return cache.put(path, new Response(blob, {
+        headers: { 'Content-Type': type, 'Content-Length': String(blob.size) },
+      }));
+    }).then(function () {
+      others.push({ name: name, path: path, fileName: fileName });
+      localStorage.setItem('userfonts', JSON.stringify(others));
+      return true;
+    });
+  };
+
+  L.removeFont = function (name) {
+    var fonts = storedFonts();
+    var gone = fonts.filter(function (font) {
+      return font.name === name;
+    });
+    localStorage.setItem('userfonts', JSON.stringify(fonts.filter(function (font) {
+      return font.name !== name;
+    })));
+    return caches.open(FONT_CACHE).then(function (cache) {
+      return Promise.all(gone.map(function (font) {
+        return cache.delete(font.path);
+      }));
+    }).then(function () {
+      return true;
+    });
+  };
 })();

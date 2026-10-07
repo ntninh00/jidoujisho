@@ -426,4 +426,14 @@ class Ui {
       IconData(0xf2e0, fontFamily: _solid); // star
   static const IconData layers =
       IconData(0xebd4, fontFamily: _regular); // layers
+  static const IconData refresh =
+      IconData(0xf05e, fontFamily: _regular); // refresh
+  static const IconData grip =
+      IconData(0xe9c2, fontFamily: _regular); // grip-lines
+  static const IconData eye =
+      IconData(0xe7bb, fontFamily: _regular); // eye
+  static const IconData eyeCrossed =
+      IconData(0xe7be, fontFamily: _regular); // eye-crossed
+  static const IconData fileImport =
+      IconData(0xe84f, fontFamily: _regular); // file-import
 }

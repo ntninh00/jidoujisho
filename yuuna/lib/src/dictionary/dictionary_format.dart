@@ -27,7 +27,12 @@ abstract class DictionaryFormat {
     required this.prepareTags,
     required this.preparePitches,
     required this.prepareFrequencies,
+    this.writesInBatches = false,
   });
+
+  /// Whether [prepareEntries] commits its own writes a batch at a time,
+  /// rather than being run inside one transaction.
+  final bool writesInBatches;
 
   /// This is used to distinguish dictionary formats from one another, and to
   /// allow editing of the display name easily without having to worry about

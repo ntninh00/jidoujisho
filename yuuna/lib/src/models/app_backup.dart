@@ -223,8 +223,15 @@ class AppBackup {
     }
   }
 
+  /// Whether [folder] still holds the banks the dictionary was imported
+  /// from. Imports now remove them once they are in the database, keeping
+  /// only pictures and the like, so such dictionaries are rebuilt from the
+  /// database instead.
   static bool _hasFiles(Directory folder) =>
-      folder.existsSync() && folder.listSync().isNotEmpty;
+      folder.existsSync() &&
+      folder.listSync().any((entity) =>
+          entity is File &&
+          RegExp(r'^\w+_bank_\d+\.json$').hasMatch(path.basename(entity.path)));
 
   /* ---------- making a backup ---------- */
 

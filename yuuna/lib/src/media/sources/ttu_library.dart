@@ -635,6 +635,68 @@ class TtuLibrary {
     return books;
   }
 
+  /// Stores [file] as a font called [name] for the copy of ッツ on [port],
+  /// as ッツ's own settings page would. Resolves to the fonts stored now.
+  static Future<List<String>> addFont({
+    required int port,
+    required File file,
+    required String name,
+  }) {
+    return _onPage(
+      port: port,
+      page: 'manage.html',
+      timeout: const Duration(minutes: 2),
+      action: (controller) async {
+        await controller.evaluateJavascript(source: await libraryScript);
+        Uint8List bytes = await file.readAsBytes();
+        const int chunk = 3 * 128 * 1024;
+        for (int start = 0; start < bytes.length; start += chunk) {
+          await _call(
+            controller,
+            'return window.jdjLibrary.stage(key, chunk);',
+            {
+              'key': 'font',
+              'chunk': base64Encode(
+                bytes.sublist(start, min(start + chunk, bytes.length)),
+              ),
+            },
+          );
+        }
+        await _call(
+          controller,
+          'return await window.jdjLibrary.addFont(name, fileName, key);',
+          {'name': name, 'fileName': path.basename(file.path), 'key': 'font'},
+        );
+        Object? fonts =
+            await _call(controller, 'return window.jdjLibrary.fonts();', {});
+        return fonts is List ? fonts.whereType<String>().toList() : const [];
+      },
+    );
+  }
+
+  /// Removes the font called [name] from the copy of ッツ on [port].
+  /// Resolves to the fonts stored now.
+  static Future<List<String>> removeFont({
+    required int port,
+    required String name,
+  }) {
+    return _onPage(
+      port: port,
+      page: 'manage.html',
+      action: (controller) async {
+        await controller.evaluateJavascript(source: await libraryScript);
+        await _call(
+          controller,
+          'return await window.jdjLibrary.removeFont(name);',
+          {'name': name},
+        );
+        Object? fonts =
+            await _call(controller, 'return window.jdjLibrary.fonts();', {});
+        return fonts is List ? fonts.whereType<String>().toList() : const [];
+      },
+    );
+  }
+
   /// Hands [files] to ッツ's own importer. Returns the ids of the new books.
   static Future<List<int>> importFiles({
     required int port,

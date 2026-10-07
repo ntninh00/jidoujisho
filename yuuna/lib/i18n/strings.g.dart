@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 681
+/// Strings: 697
 ///
-/// Built on 2026-10-06 at 23:22 UTC
+/// Built on 2026-10-07 at 01:52 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -825,6 +825,22 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String ttu_repaired_partly({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 	String get catalog_description => 'Description';
 	String get catalog_description_hint => 'What it\'s good for, or who it\'s for';
+	String import_replacing({required Object name}) => 'Replacing the older ${name}…';
+	String get catalog_update => 'Update to this revision';
+	String get dictionary_about => 'About';
+	String dictionary_by({required Object author}) => 'By ${author}';
+	String get dictionary_delete_all => 'Delete all dictionaries';
+	String get dictionary_import => 'Import';
+	String get dictionary_collapsed => 'Starts collapsed';
+	String get dictionary_show_in_results => 'Show in results';
+	String get dictionary_start_collapsed => 'Start collapsed in results';
+	String get dictionary_from_server => 'Downloaded';
+	String get dictionary_from_file => 'Imported from a file';
+	String get dictionary_delete => 'Delete dictionary';
+	String get ttu_add_font => 'Add font';
+	String get ttu_font_unsupported => 'Fonts can be .ttf, .otf, .woff or .woff2 files.';
+	String get ttu_font_failed => 'The font could not be added.';
+	String ttu_remove_font({required Object name}) => 'Remove ${name}';
 }
 
 // Path: retrying_in
@@ -1544,6 +1560,22 @@ extension on _StringsEn {
 			case 'ttu_repaired_partly': return ({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 			case 'catalog_description': return 'Description';
 			case 'catalog_description_hint': return 'What it\'s good for, or who it\'s for';
+			case 'import_replacing': return ({required Object name}) => 'Replacing the older ${name}…';
+			case 'catalog_update': return 'Update to this revision';
+			case 'dictionary_about': return 'About';
+			case 'dictionary_by': return ({required Object author}) => 'By ${author}';
+			case 'dictionary_delete_all': return 'Delete all dictionaries';
+			case 'dictionary_import': return 'Import';
+			case 'dictionary_collapsed': return 'Starts collapsed';
+			case 'dictionary_show_in_results': return 'Show in results';
+			case 'dictionary_start_collapsed': return 'Start collapsed in results';
+			case 'dictionary_from_server': return 'Downloaded';
+			case 'dictionary_from_file': return 'Imported from a file';
+			case 'dictionary_delete': return 'Delete dictionary';
+			case 'ttu_add_font': return 'Add font';
+			case 'ttu_font_unsupported': return 'Fonts can be .ttf, .otf, .woff or .woff2 files.';
+			case 'ttu_font_failed': return 'The font could not be added.';
+			case 'ttu_remove_font': return ({required Object name}) => 'Remove ${name}';
 			default: return null;
 		}
 	}

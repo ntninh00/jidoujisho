@@ -713,5 +713,21 @@
     "ttu_book_fonts_info": "Off, your font is used all through the book. Code keeps its fixed-width font.",
     "ttu_repaired_partly": "Parts of $title were missing from the file. The rest was added.",
     "catalog_description": "Description",
-    "catalog_description_hint": "What it's good for, or who it's for"
+    "catalog_description_hint": "What it's good for, or who it's for",
+    "import_replacing": "Replacing the older $name…",
+    "catalog_update": "Update to this revision",
+    "dictionary_about": "About",
+    "dictionary_by": "By $author",
+    "dictionary_delete_all": "Delete all dictionaries",
+    "dictionary_import": "Import",
+    "dictionary_collapsed": "Starts collapsed",
+    "dictionary_show_in_results": "Show in results",
+    "dictionary_start_collapsed": "Start collapsed in results",
+    "dictionary_from_server": "Downloaded",
+    "dictionary_from_file": "Imported from a file",
+    "dictionary_delete": "Delete dictionary",
+    "ttu_add_font": "Add font",
+    "ttu_font_unsupported": "Fonts can be .ttf, .otf, .woff or .woff2 files.",
+    "ttu_font_failed": "The font could not be added.",
+    "ttu_remove_font": "Remove $name"
 }

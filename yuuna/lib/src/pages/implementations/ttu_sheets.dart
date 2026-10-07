@@ -3,6 +3,9 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' show FontFeature;
 
+import 'package:file_picker/file_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:path/path.dart' as path;
 import 'package:flutter/gestures.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
@@ -1407,7 +1410,6 @@ class TtuReaderSettingsSheet extends BasePage {
   /// Create the sheet. [languages] are the languages that have books.
   const TtuReaderSettingsSheet({
     required this.languages,
-    this.onOpenTtuPage,
     this.onPresetChanged,
     this.onOptionsChanged,
     this.extraFonts = const [],
@@ -1419,10 +1421,6 @@ class TtuReaderSettingsSheet extends BasePage {
 
   /// Languages with books on the shelf. A switch appears when there are two.
   final List<Language> languages;
-
-  /// Opens one of ッツ's own pages, such as `manage.html`, for a language.
-  /// Without it, as over an open book, those links are left out.
-  final void Function(Language language, String page)? onOpenTtuPage;
 
   /// Set over an open book: shows each page change on the book itself. The
   /// flag is true for changes ッツ must lay the book out again for, such as
@@ -1466,6 +1464,95 @@ class _TtuReaderSettingsSheetState
           : widget.languages.first;
   late TtuPagePreset _preset = source.presetFor(_language);
 
+  /// Fonts the user added for the language shown.
+  late List<String> _userFonts = widget.extraFonts.isNotEmpty
+      ? widget.extraFonts
+      : source.userFontsFor(_language);
+  bool _addingFont = false;
+
+  /// Adds a font file the user picks, and reads with it. Over a book, ッツ
+  /// loads it when the book reopens.
+  Future<void> _addFont() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    String? picked = result?.files.single.path;
+    if (picked == null) {
+      return;
+    }
+    if (!const ['.ttf', '.otf', '.woff', '.woff2']
+        .contains(path.extension(picked).toLowerCase())) {
+      Fluttertoast.showToast(msg: t.ttu_font_unsupported);
+      return;
+    }
+    String name = path.basenameWithoutExtension(picked);
+    setState(() => _addingFont = true);
+    try {
+      List<String> fonts = await source.addUserFont(
+        language: _language,
+        file: File(picked),
+        name: name,
+        ref: ref,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => _userFonts = fonts);
+      _update((preset) => preset.fontFamily = name);
+      widget.onPresetChanged?.call(_preset, structural: true);
+    } catch (error) {
+      debugPrint('Could not add font: $error');
+      Fluttertoast.showToast(msg: t.ttu_font_failed);
+    } finally {
+      if (mounted) {
+        setState(() => _addingFont = false);
+      }
+    }
+  }
+
+  /// Offers to remove one of the user's fonts.
+  Future<void> _offerRemoveFont(String name, BuildContext chip) async {
+    RenderBox box = chip.findRenderObject()! as RenderBox;
+    Offset corner = box.localToGlobal(Offset(0, box.size.height));
+    bool? remove = await showMenu<bool>(
+      context: context,
+      position: RelativeRect.fromLTRB(corner.dx, corner.dy, corner.dx, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      items: [
+        PopupMenuItem(
+          value: true,
+          child: Row(
+            children: [
+              Icon(Ui.trash, size: 18, color: theme.colorScheme.error),
+              const SizedBox(width: 10),
+              Text(
+                t.ttu_remove_font(name: name),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (remove != true) {
+      return;
+    }
+    try {
+      List<String> fonts = await source.removeUserFont(
+        language: _language,
+        name: name,
+        ref: ref,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() => _userFonts = fonts);
+      if (_preset.fontFamily == name) {
+        _update((preset) => preset.fontFamily = '');
+      }
+    } catch (error) {
+      debugPrint('Could not remove font: $error');
+    }
+  }
+
   void _toggle(void Function() change) async {
     change();
     setState(() {});
@@ -1494,10 +1581,7 @@ class _TtuReaderSettingsSheetState
         MapEntry('Shippori Mincho', t.ttu_font_mincho),
         MapEntry('Klee One', t.ttu_font_klee),
         MapEntry('Genei Koburi Mincho v5', t.ttu_font_genei),
-        for (String font in widget.extraFonts.isNotEmpty
-            ? widget.extraFonts
-            : source.userFontsFor(_language))
-          MapEntry(font, font),
+        for (String font in _userFonts) MapEntry(font, font),
       ];
 
   /// The fonts as a row of chips that scrolls when there are many.
@@ -1516,7 +1600,12 @@ class _TtuReaderSettingsSheetState
           for (MapEntry<String, String> font in _fonts)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
+              child: Builder(
+                builder: (chip) => GestureDetector(
+                  onLongPress: _userFonts.contains(font.key)
+                      ? () => _offerRemoveFont(font.key, chip)
+                      : null,
+                  child: ChoiceChip(
                 label: Text(
                   font.value,
                   style: TextStyle(
@@ -1539,8 +1628,25 @@ class _TtuReaderSettingsSheetState
                 selectedColor: accent.withOpacity(0.12),
                 onSelected: (_) =>
                     _update((preset) => preset.fontFamily = font.key),
+                  ),
+                ),
               ),
             ),
+          ActionChip(
+            avatar: _addingFont
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Ui.plus, size: 16, color: accent),
+            label: Text(t.ttu_add_font),
+            shape: StadiumBorder(
+              side: BorderSide(color: theme.dividerColor.withOpacity(0.25)),
+            ),
+            backgroundColor: Colors.transparent,
+            onPressed: _addingFont ? null : _addFont,
+          ),
         ],
       ),
     );
@@ -1942,8 +2048,6 @@ class _TtuReaderSettingsSheetState
     bool japanese = _language is JapaneseLanguage;
 
     bool live = widget.live;
-    void Function(Language language, String page)? openTtuPage =
-        widget.onOpenTtuPage;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -2023,6 +2127,7 @@ class _TtuReaderSettingsSheetState
                       onSelect: (language) => setState(() {
                         _language = language;
                         _preset = source.presetFor(language);
+                        _userFonts = source.userFontsFor(language);
                       }),
                     ),
                   ),
@@ -2232,31 +2337,6 @@ class _TtuReaderSettingsSheetState
                 ),
               ),
           ]),
-          if (openTtuPage != null) ...[
-            _group(t.ttu_more),
-            _card([
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Ui.cloud_upload_outlined),
-                title: Text(t.ttu_backup_sync),
-                trailing: const Icon(Ui.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  openTtuPage(_language, 'manage.html');
-                },
-              ),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                leading: const Icon(Ui.tune),
-                title: Text(t.ttu_all_settings),
-                trailing: const Icon(Ui.chevron_right),
-                onTap: () {
-                  Navigator.pop(context);
-                  openTtuPage(_language, 'settings.html');
-                },
-              ),
-            ]),
-          ],
         ],
       ),
     );

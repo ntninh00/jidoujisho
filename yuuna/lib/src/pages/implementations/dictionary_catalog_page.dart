@@ -136,6 +136,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     }
     try {
       List<CatalogDictionary> dictionaries = await server.list();
+      await appModel.refreshDictionaryNotes(server.url, dictionaries);
       if (!mounted) {
         return;
       }
@@ -198,9 +199,25 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     });
   }
 
+  /// Whether [dictionary] is a different revision of one installed, which
+  /// can be updated in place.
+  bool _isUpdate(CatalogDictionary dictionary) {
+    Dictionary? installed = appModel.dictionaryNamed(dictionary.title);
+    if (installed == null || !dictionary.isReady) {
+      return false;
+    }
+    String? revision = appModel.installedRevisionOf(installed);
+    return revision != null && revision != dictionary.revision;
+  }
+
   /* ---------- download and import ---------- */
 
-  Future<void> _download(CatalogDictionary dictionary) async {
+  /// Downloads and imports [dictionary]. With [replacing], an installed
+  /// older revision, the new one takes its place once it is in.
+  Future<void> _download(
+    CatalogDictionary dictionary, {
+    Dictionary? replacing,
+  }) async {
     DictionaryServer? server = _server;
     if (server == null || _downloads.containsKey(dictionary.id)) {
       return;
@@ -245,14 +262,18 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     }
 
     if (done && mounted) {
-      await _import(dictionary, file);
+      await _import(dictionary, file, replacing: replacing);
     }
     if (file.existsSync()) {
       file.deleteSync();
     }
   }
 
-  Future<void> _import(CatalogDictionary dictionary, File file) async {
+  Future<void> _import(
+    CatalogDictionary dictionary,
+    File file, {
+    Dictionary? replacing,
+  }) async {
     ValueNotifier<String> progress = ValueNotifier(t.import_start);
     ValueNotifier<int?> count = ValueNotifier(1);
     ValueNotifier<int?> total = ValueNotifier(1);
@@ -271,6 +292,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
       progressNotifier: progress,
       format: YomichanFormat.instance,
       onImportSuccess: () => imported = true,
+      replacing: replacing,
     );
     if (!mounted) {
       return;
@@ -285,6 +307,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
         'id': dictionary.id,
         'title': dictionary.title,
         'revision': dictionary.revision,
+        if (dictionary.note != null) 'note': dictionary.note,
       });
     }
     if (!mounted) {
@@ -366,6 +389,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
       context: context,
       builder: (_) => _CatalogManageSheet(
         dictionary: dictionary,
+        admin: _admin,
         onSave: (changes) async {
           try {
             await server.update(dictionary.id, changes);
@@ -562,12 +586,17 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
                 _CatalogTile(
                   dictionary: dictionary,
                   installed: appModel.hasDictionaryNamed(dictionary.title),
+                  updatable: _isUpdate(dictionary),
+                  onUpdate: () => _download(
+                    dictionary,
+                    replacing: appModel.dictionaryNamed(dictionary.title),
+                  ),
                   downloading: _downloads.containsKey(dictionary.id),
                   progress: _downloads[dictionary.id],
                   onTap: () => _preview(dictionary),
                   onDownload: () => _download(dictionary),
                   onCancel: () => _cancels[dictionary.id]?.cancel(),
-                  onManage: _admin ? () => _manage(dictionary) : null,
+                  onManage: () => _manage(dictionary),
                 ),
             ],
         ],
@@ -889,6 +918,8 @@ class _CatalogTile extends StatelessWidget {
   const _CatalogTile({
     required this.dictionary,
     required this.installed,
+    required this.updatable,
+    required this.onUpdate,
     required this.downloading,
     required this.progress,
     required this.onTap,
@@ -899,12 +930,16 @@ class _CatalogTile extends StatelessWidget {
 
   final CatalogDictionary dictionary;
   final bool installed;
+
+  /// An older revision is installed.
+  final bool updatable;
+  final VoidCallback onUpdate;
   final bool downloading;
   final double? progress;
   final VoidCallback onTap;
   final VoidCallback onDownload;
   final VoidCallback onCancel;
-  final VoidCallback? onManage;
+  final VoidCallback onManage;
 
   @override
   Widget build(BuildContext context) {
@@ -943,6 +978,12 @@ class _CatalogTile extends StatelessWidget {
             ],
           ),
         ),
+      );
+    } else if (updatable) {
+      trailing = IconButton(
+        tooltip: t.catalog_update,
+        icon: Icon(Ui.refresh, color: accent, size: 22),
+        onPressed: onUpdate,
       );
     } else if (installed) {
       trailing = Tooltip(
@@ -1529,11 +1570,16 @@ class _PreviewEntry extends StatelessWidget {
 class _CatalogManageSheet extends StatefulWidget {
   const _CatalogManageSheet({
     required this.dictionary,
+    required this.admin,
     required this.onSave,
     required this.onDelete,
   });
 
   final CatalogDictionary dictionary;
+
+  /// With an admin token, the description and languages can be changed and
+  /// the dictionary deleted; otherwise the sheet only shows them.
+  final bool admin;
   final Future<void> Function(CatalogChanges changes) onSave;
   final Future<void> Function() onDelete;
 
@@ -1613,108 +1659,164 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   @override
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
+    Color muted = theme.unselectedWidgetColor;
     CatalogDictionary dictionary = widget.dictionary;
     CatalogChanges changes = _changes;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        0,
-        20,
-        16 + MediaQuery.of(context).viewInsets.bottom,
+    bool admin = widget.admin;
+    String languages = dictionary.section == CatalogSection.bilingual
+        ? '${catalogLanguageName(dictionary.sourceLanguage)} → '
+            '${catalogLanguageName(dictionary.targetLanguage)}'
+        : catalogLanguageName(dictionary.sourceLanguage);
+    String detail = [
+      if (dictionary.revision.isNotEmpty) dictionary.revision,
+      languages,
+      _megabytes(dictionary.size),
+    ].join(' · ');
+    DictionaryAbout about = DictionaryAbout(
+      description: dictionary.description,
+      author: dictionary.author,
+      attribution: dictionary.attribution,
+      url: dictionary.url,
+    );
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const TtuSheetHandle(),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _Badge(dictionary: dictionary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  dictionary.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium!
-                      .copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              JidoujishoInfoButton(message: t.catalog_languages_hint),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _picker(t.catalog_words, _source,
-                  (code) => setState(() => _source = code)),
-              const SizedBox(width: 16),
-              _picker(t.catalog_definitions, _target,
-                  (code) => setState(() => _target = code)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _note,
-            minLines: 2,
-            maxLines: 5,
-            maxLength: 1000,
-            buildCounter: (_,
-                    {required currentLength, required isFocused, maxLength}) =>
-                null,
-            textCapitalization: TextCapitalization.sentences,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              labelText: t.catalog_description,
-              hintText: t.catalog_description_hint,
-              alignLabelWithHint: true,
-              filled: true,
-              fillColor: theme.dividerColor.withOpacity(0.08),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              TextButton.icon(
-                icon: Icon(Ui.trash, size: 18, color: theme.colorScheme.error),
-                label: Text(
-                  _confirming ? t.catalog_delete_confirm : t.catalog_delete,
-                  style: TextStyle(
-                    color: theme.colorScheme.error,
-                    fontWeight: _confirming ? FontWeight.bold : null,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const TtuSheetHandle(),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _Badge(dictionary: dictionary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dictionary.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium!
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            theme.textTheme.bodySmall!.copyWith(color: muted),
+                      ),
+                    ],
                   ),
                 ),
-                onPressed: _busy
-                    ? null
-                    : () async {
-                        if (!_confirming) {
-                          setState(() => _confirming = true);
-                          return;
-                        }
-                        setState(() => _busy = true);
-                        Navigator.pop(context);
-                        await widget.onDelete();
-                      },
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (admin)
+              TextField(
+                controller: _note,
+                minLines: 2,
+                maxLines: 5,
+                maxLength: 1000,
+                buildCounter: (_,
+                        {required currentLength,
+                        required isFocused,
+                        maxLength}) =>
+                    null,
+                textCapitalization: TextCapitalization.sentences,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: t.catalog_description,
+                  hintText: t.catalog_description_hint,
+                  alignLabelWithHint: true,
+                  filled: true,
+                  fillColor: theme.dividerColor.withOpacity(0.08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              )
+            else if (dictionary.note != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: SelectableText(
+                  dictionary.note!,
+                  style: theme.textTheme.bodyMedium,
+                ),
               ),
-              const Spacer(),
-              TextButton(
-                onPressed: !changes.isEmpty && !_busy
-                    ? () async {
-                        setState(() => _busy = true);
-                        Navigator.pop(context);
-                        await widget.onSave(changes);
-                      }
-                    : null,
-                child: Text(t.catalog_save),
+            if (!about.isEmpty) ...[
+              const SizedBox(height: 10),
+              about,
+            ],
+            if (admin) ...[
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  _picker(t.catalog_words, _source,
+                      (code) => setState(() => _source = code)),
+                  const SizedBox(width: 16),
+                  _picker(t.catalog_definitions, _target,
+                      (code) => setState(() => _target = code)),
+                  JidoujishoInfoButton(message: t.catalog_languages_hint),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  TextButton.icon(
+                    icon: Icon(Ui.trash,
+                        size: 18, color: theme.colorScheme.error),
+                    label: Text(
+                      _confirming ? t.catalog_delete_confirm : t.catalog_delete,
+                      style: TextStyle(
+                        color: theme.colorScheme.error,
+                        fontWeight: _confirming ? FontWeight.bold : null,
+                      ),
+                    ),
+                    onPressed: _busy
+                        ? null
+                        : () async {
+                            if (!_confirming) {
+                              setState(() => _confirming = true);
+                              return;
+                            }
+                            setState(() => _busy = true);
+                            Navigator.pop(context);
+                            await widget.onDelete();
+                          },
+                  ),
+                  const Spacer(),
+                  FilledButton(
+                    style: FilledButton.styleFrom(
+                      shape: const StadiumBorder(),
+                    ),
+                    onPressed: !changes.isEmpty && !_busy
+                        ? () async {
+                            setState(() => _busy = true);
+                            Navigator.pop(context);
+                            await widget.onSave(changes);
+                          }
+                        : null,
+                    child: Text(t.catalog_save),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

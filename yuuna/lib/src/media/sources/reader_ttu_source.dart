@@ -567,15 +567,7 @@ class ReaderTtuSource extends ReaderMediaSource {
 
     return showTtuSheet<void>(
       context: context,
-      builder: (_) => TtuReaderSettingsSheet(
-        languages: languages,
-        onOpenTtuPage: (language, page) => openTtuPage(
-          appModel: appModel,
-          ref: ref,
-          language: language,
-          page: page,
-        ),
-      ),
+      builder: (_) => TtuReaderSettingsSheet(languages: languages),
     );
   }
 
@@ -960,6 +952,40 @@ class ReaderTtuSource extends ReaderMediaSource {
       key: 'ttu_user_fonts_${language.languageCode}',
       value: fonts.join('\n'),
     );
+  }
+
+  /// Adds the font in [file], called [name], for books in [language].
+  /// Resolves to the user's fonts for that language.
+  Future<List<String>> addUserFont({
+    required Language language,
+    required File file,
+    required String name,
+    required WidgetRef ref,
+  }) async {
+    await ref.read(ttuServerProvider(language).future);
+    List<String> fonts = await TtuLibrary.addFont(
+      port: getPortForLanguage(language),
+      file: file,
+      name: name,
+    );
+    rememberUserFonts(language, fonts);
+    return fonts;
+  }
+
+  /// Removes the font called [name] from books in [language]. Resolves to
+  /// the user's fonts for that language.
+  Future<List<String>> removeUserFont({
+    required Language language,
+    required String name,
+    required WidgetRef ref,
+  }) async {
+    await ref.read(ttuServerProvider(language).future);
+    List<String> fonts = await TtuLibrary.removeFont(
+      port: getPortForLanguage(language),
+      name: name,
+    );
+    rememberUserFonts(language, fonts);
+    return fonts;
   }
 
   /// Hides the status and navigation bars while reading. Off by default, so

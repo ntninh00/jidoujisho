@@ -1346,6 +1346,9 @@ class AppModel with ChangeNotifier {
     hiveDirectory.createSync();
     dictionaryImportWorkingDirectory.createSync();
     dictionaryResourceDirectory.createSync();
+    unawaited(_removeOldImportLeftovers().catchError((error) {
+      debugPrint('Could not remove import leftovers: $error');
+    }));
 
     /// Inject open source licenses for non-Flutter dependencies that are
     /// included as assets.
@@ -1394,6 +1397,7 @@ class AppModel with ChangeNotifier {
       maxSizeMiB: 8192,
     );
     MyWords.rename(_database);
+    await _removeUnfinishedImport();
 
     /// Preloads the search database in memory.
     searchDictionary(
@@ -1611,8 +1615,73 @@ class AppModel with ChangeNotifier {
   }
 
   /// Whether a dictionary called [name] is already imported.
-  bool hasDictionaryNamed(String name) =>
-      _database.dictionarys.where().nameEqualTo(name).findFirstSync() != null;
+  bool hasDictionaryNamed(String name) => dictionaryNamed(name) != null;
+
+  /// The imported dictionary called [name], if there is one.
+  Dictionary? dictionaryNamed(String name) =>
+      _database.dictionarys.where().nameEqualTo(name).findFirstSync();
+
+  /// What a dictionary says about itself in its `index.json`: its title,
+  /// revision, author, description, attribution and address, where given.
+  /// Empty for formats without one.
+  Map<String, String> dictionaryIndexOf(Dictionary dictionary) {
+    File index =
+        File(path.join(dictionaryFilesOf(dictionary).path, 'index.json'));
+    if (!index.existsSync()) {
+      return const {};
+    }
+    try {
+      Map<dynamic, dynamic> json =
+          jsonDecode(index.readAsStringSync()) as Map<dynamic, dynamic>;
+      return {
+        for (String key in const [
+          'title',
+          'revision',
+          'author',
+          'description',
+          'attribution',
+          'url',
+        ])
+          if (json[key] != null && '${json[key]}'.trim().isNotEmpty)
+            key: '${json[key]}'.trim(),
+      };
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  /// The revision of [dictionary] as installed, when it is known.
+  String? installedRevisionOf(Dictionary dictionary) =>
+      dictionarySources[dictionary.name]?['revision'] as String? ??
+      dictionaryIndexOf(dictionary)['revision'];
+
+  /// What the server's admin wrote about [dictionary], when it came from a
+  /// server that describes it.
+  String? dictionaryNoteOf(Dictionary dictionary) =>
+      dictionarySources[dictionary.name]?['note'] as String?;
+
+  /// Keeps the descriptions of dictionaries installed from the server at
+  /// [url] as its [catalog] has them now.
+  Future<void> refreshDictionaryNotes(
+      String url, List<CatalogDictionary> catalog) async {
+    Map<String, Map<String, dynamic>> sources = dictionarySources;
+    bool changed = false;
+    sources.forEach((name, source) {
+      if (source['kind'] != 'server' || source['url'] != url) {
+        return;
+      }
+      CatalogDictionary? remote = catalog.firstWhereOrNull((entry) =>
+              entry.title == name && entry.revision == source['revision']) ??
+          catalog.firstWhereOrNull((entry) => entry.title == name);
+      if (remote != null && source['note'] != remote.note) {
+        source['note'] = remote.note;
+        changed = true;
+      }
+    });
+    if (changed) {
+      await _preferences.put('dictionary_sources', jsonEncode(sources));
+    }
+  }
 
   /* ---------- backups ---------- */
 
@@ -1664,7 +1733,8 @@ class AppModel with ChangeNotifier {
 
   /// Replaces settings stores with those of a backup. Stores the backup
   /// doesn't have are left as they are.
-  Future<void> restoreSettings(Map<String, Map<dynamic, dynamic>> stores) async {
+  Future<void> restoreSettings(
+      Map<String, Map<dynamic, dynamic>> stores) async {
     Map<dynamic, dynamic>? app = stores['app'];
     if (app != null) {
       await _preferences.clear();
@@ -1752,7 +1822,8 @@ class AppModel with ChangeNotifier {
         if (dictionary == null) {
           continue;
         }
-        dictionary.order = (saved['order'] as num?)?.toInt() ?? dictionary.order;
+        dictionary.order =
+            (saved['order'] as num?)?.toInt() ?? dictionary.order;
         dictionary.hiddenLanguages =
             List<String>.from(saved['hiddenLanguages'] as List? ?? const []);
         dictionary.collapsedLanguages =
@@ -1799,8 +1870,7 @@ class AppModel with ChangeNotifier {
   /// Show the dictionary menu. This should be callable from many parts of the
   /// app, so it is appropriately handled by the model.
   Future<void> showDictionaryMenu() async {
-    await showDialog(
-      barrierDismissible: true,
+    await showTtuSheet<void>(
       context: navigatorKey.currentContext!,
       builder: (context) => const DictionaryDialogPage(),
     );
@@ -1847,6 +1917,7 @@ class AppModel with ChangeNotifier {
     required ValueNotifier<String> progressNotifier,
     required Function() onImportSuccess,
     DictionaryFormat? format,
+    Dictionary? replacing,
   }) async {
     /// New results may be wrong after dictionary is added so this has to be
     /// done.
@@ -1875,6 +1946,7 @@ class AppModel with ChangeNotifier {
     /// If any [Exception] occurs, the process is aborted with a message as
     /// shown below. A dialog is shown to show the progress of the dictionary
     /// file import, with messages pertaining to the above [ValueNotifier].
+    Directory? importDirectory;
     try {
       String charset = '';
 
@@ -1902,6 +1974,7 @@ class AppModel with ChangeNotifier {
       }
 
       resourceDirectory.createSync(recursive: true);
+      importDirectory = resourceDirectory;
 
       PrepareDirectoryParams prepareDirectoryParams = PrepareDirectoryParams(
         file: file,
@@ -1922,9 +1995,12 @@ class AppModel with ChangeNotifier {
           .anyOrder()
           .findFirstSync();
 
+      /// A new revision of [replacing] is imported under a name of its own,
+      /// and takes the old one's name and place once it is in.
+      bool updating = replacing != null && replacing.name == name;
       Dictionary? sameNameDictionary =
           _database.dictionarys.where().nameEqualTo(name).findFirstSync();
-      if (sameNameDictionary != null) {
+      if (sameNameDictionary != null && !updating) {
         throw Exception(t.import_duplicate(name: name));
       }
 
@@ -1933,7 +2009,9 @@ class AppModel with ChangeNotifier {
       Dictionary dictionary = Dictionary(
         id: id,
         order: order,
-        name: name,
+        name: updating
+            ? '$name (update ${DateTime.now().millisecondsSinceEpoch})'
+            : name,
         formatKey: dictionaryFormat.uniqueKey,
       );
 
@@ -1946,19 +2024,133 @@ class AppModel with ChangeNotifier {
         alertSendPort: alertReceivePort.sendPort,
       );
 
-      await compute(depositDictionaryDataHelper, prepareDictionaryParams);
+      /// Should the app be closed while entries are written, the next start
+      /// removes what was written. See [_removeUnfinishedImport].
+      await _preferences.put(_importInProgress, id);
+      try {
+        await compute(depositDictionaryDataHelper, prepareDictionaryParams);
+      } finally {
+        await _preferences.delete(_importInProgress);
+      }
+      removeImportLeftovers(resourceDirectory);
+
+      if (updating) {
+        progressNotifier.value = t.import_replacing(name: name);
+        await deleteDictionary(replacing);
+        Dictionary fresh = _database.dictionarys.getSync(id)!;
+        _database.writeTxnSync(() {
+          _database.dictionarys.putSync(Dictionary(
+            id: fresh.id,
+            name: name,
+            formatKey: fresh.formatKey,
+            order: replacing.order,
+            hiddenLanguages: replacing.hiddenLanguages,
+            collapsedLanguages: replacing.collapsedLanguages,
+          ));
+        });
+      }
 
       progressNotifier.value = t.import_complete;
       onImportSuccess();
       await Future.delayed(const Duration(seconds: 1), () {});
     } catch (e) {
+      /// Nothing of this import is in the database, so nothing of its files
+      /// is needed either.
+      if (importDirectory != null && importDirectory.existsSync()) {
+        try {
+          importDirectory.deleteSync(recursive: true);
+        } catch (_) {}
+      }
       progressNotifier.value = '$e';
       await Future.delayed(const Duration(seconds: 3), () {});
       progressNotifier.value = t.import_failed;
       await Future.delayed(const Duration(seconds: 1), () {});
     } finally {
       receivePort.close();
+      alertReceivePort.close();
     }
+  }
+
+  /// The id of a dictionary whose entries are being written.
+  static const String _importInProgress = 'import_in_progress';
+
+  /// Removes what an import wrote when the app was closed before it
+  /// finished: entries are written in batches, so part of the dictionary
+  /// would otherwise be left.
+  Future<void> _removeUnfinishedImport() async {
+    Object? id = _preferences.get(_importInProgress);
+    if (id is! int) {
+      return;
+    }
+    debugPrint('Removing the unfinished import of dictionary $id');
+    ReceivePort port = ReceivePort();
+    try {
+      await compute(
+        deleteDictionaryHelper,
+        DeleteDictionaryParams(
+          dictionaryId: id,
+          directoryPath: _databaseDirectory.path,
+          sendPort: port.sendPort,
+        ),
+      );
+      Directory files =
+          Directory(path.join(dictionaryResourceDirectory.path, '$id'));
+      if (files.existsSync()) {
+        files.deleteSync(recursive: true);
+      }
+    } catch (error) {
+      debugPrint('Could not remove the unfinished import: $error');
+    } finally {
+      port.close();
+      await _preferences.delete(_importInProgress);
+    }
+  }
+
+  /// Files an import unpacks only to read into the database: Yomitan's
+  /// banks and a Lingvo dictionary's text. Jitendex alone leaves over half a
+  /// gigabyte of them. Pictures, `index.json` and `styles.css` stay, as
+  /// entries and backups use them.
+  static final RegExp _importLeftover =
+      RegExp(r'^(\w+_bank_\d+\.json|dictionary\.dsl)$');
+
+  /// Removes what an import left in [directory] that the dictionary no
+  /// longer needs. See [_importLeftover].
+  static void removeImportLeftovers(Directory directory) {
+    if (!directory.existsSync()) {
+      return;
+    }
+    for (FileSystemEntity entity in directory.listSync()) {
+      if (entity is File &&
+          _importLeftover.hasMatch(path.basename(entity.path))) {
+        try {
+          entity.deleteSync();
+        } catch (_) {}
+      }
+    }
+  }
+
+  /// Once, for dictionaries imported before leftovers were removed: their
+  /// leftovers, and the unused folder older versions imported through.
+  Future<void> _removeOldImportLeftovers() async {
+    const String key = 'import_leftovers_removed';
+    if (_preferences.get(key, defaultValue: false) as bool) {
+      return;
+    }
+    String resources = dictionaryResourceDirectory.path;
+    String working = dictionaryImportWorkingDirectory.path;
+    await Isolate.run(() {
+      for (FileSystemEntity folder in Directory(resources).listSync()) {
+        if (folder is Directory) {
+          removeImportLeftovers(folder);
+        }
+      }
+      for (FileSystemEntity entity in Directory(working).listSync()) {
+        try {
+          entity.deleteSync(recursive: true);
+        } catch (_) {}
+      }
+    });
+    await _preferences.put(key, true);
   }
 
   /// Toggle a dictionary's between collapsed and expanded state. This will
@@ -2017,7 +2209,7 @@ class AppModel with ChangeNotifier {
     dictionarySearchAgainNotifier.notifyListeners();
   }
 
-  /// Delete all dictionary data from the database.
+  /// Delete one dictionary and its data. Search history is kept.
   Future<void> deleteDictionary(Dictionary dictionary) async {
     /// New results may be wrong after dictionary is added so this has to be
     /// done.
@@ -2031,7 +2223,12 @@ class AppModel with ChangeNotifier {
     );
 
     await compute(deleteDictionaryHelper, params);
-    await _dictionaryHistory.clear();
+
+    /// History stays; results the dictionary alone filled are gone.
+    Set<int> kept = dictionaryHistory.map((result) => result.id!).toSet();
+    await _dictionaryHistory.deleteAll(_dictionaryHistory.keys
+        .where((key) => !kept.contains(_dictionaryHistory.get(key)))
+        .toList());
 
     final directory = Directory(
         path.join(dictionaryResourceDirectory.path, dictionary.id.toString()));

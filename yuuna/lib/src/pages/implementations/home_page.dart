@@ -1,7 +1,6 @@
 import 'package:change_notifier_builder/change_notifier_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:spaces/spaces.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
@@ -312,13 +311,6 @@ class _HomePageState extends BasePageState<HomePage>
     }
   }
 
-  void browseToGithub() async {
-    launchUrl(
-      Uri.parse('https://github.com/arianneorpilla/jidoujisho'),
-      mode: LaunchMode.externalApplication,
-    );
-  }
-
   void navigateToLicensePage() async {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -344,43 +336,14 @@ class _HomePageState extends BasePageState<HomePage>
     );
   }
 
+  /// The menu, most used first. User enhancements live in the card creator,
+  /// and the original project's repository is no link of this app's.
   List<PopupMenuItem<VoidCallback>> getMenuItems() {
     return [
-      buildPopupItem(
-        label: t.theme_menu,
-        icon: Ui.palette,
-        action: () => showModalBottomSheet(
-          context: context,
-          builder: (_) => const AppThemeSheet(),
-        ),
-      ),
-      // if ((appModel.androidDeviceInfo.version.sdkInt ?? 0) >= 33)
-      //   buildPopupItem(
-      //     label: optionsPipMode,
-      //     icon: Ui.picture_in_picture,
-      //     action: () {
-      //       appModel.usePictureInPicture(ref: ref);
-      //     },
-      //   ),
       buildPopupItem(
         label: t.options_dictionaries,
         icon: Ui.auto_stories_rounded,
         action: appModel.showDictionaryMenu,
-      ),
-      buildPopupItem(
-        label: t.options_enhancements,
-        icon: Ui.auto_fix_high,
-        action: appModel.openCreatorEnhancementsEditor,
-      ),
-      buildPopupItem(
-        label: t.options_language,
-        icon: Ui.translate,
-        action: appModel.showLanguageMenu,
-      ),
-      buildPopupItem(
-        label: t.options_profiles,
-        icon: Ui.switch_account,
-        action: appModel.showProfilesMenu,
       ),
       buildPopupItem(
         label: t.backup_menu,
@@ -391,9 +354,22 @@ class _HomePageState extends BasePageState<HomePage>
         ),
       ),
       buildPopupItem(
-        label: t.options_github,
-        icon: Ui.code,
-        action: browseToGithub,
+        label: t.theme_menu,
+        icon: Ui.palette,
+        action: () => showModalBottomSheet(
+          context: context,
+          builder: (_) => const AppThemeSheet(),
+        ),
+      ),
+      buildPopupItem(
+        label: t.options_language,
+        icon: Ui.translate,
+        action: appModel.showLanguageMenu,
+      ),
+      buildPopupItem(
+        label: t.options_profiles,
+        icon: Ui.switch_account,
+        action: appModel.showProfilesMenu,
       ),
       buildPopupItem(
         label: t.options_attribution,

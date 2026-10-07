@@ -1,17 +1,16 @@
 import 'dart:io';
 
-import 'package:change_notifier_builder/change_notifier_builder.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:reorderables/reorderables.dart';
-import 'package:spaces/spaces.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
-import 'package:collection/collection.dart';
 
-/// The content of the dialog used for managing dictionaries.
+/// The dictionaries on this device, as a sheet: their order in results,
+/// which are shown, and adding them from a file or the user's server. A
+/// dictionary's own sheet, from tapping or holding it, has its details and
+/// the rest of what can be done with it.
 class DictionaryDialogPage extends BasePage {
   /// Create an instance of this page.
   const DictionaryDialogPage({super.key});
@@ -20,574 +19,557 @@ class DictionaryDialogPage extends BasePage {
   BasePageState createState() => _DictionaryDialogPageState();
 }
 
-class _DictionaryDialogPageState extends BasePageState with ChangeNotifier {
-  final ScrollController _scrollController = ScrollController();
-  int? _selectedOrder;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      contentPadding: MediaQuery.of(context).orientation == Orientation.portrait
-          ? Spacing.of(context).insets.exceptBottom.big
-          : Spacing.of(context).insets.exceptBottom.normal.copyWith(
-                left: Spacing.of(context).spaces.semiBig,
-                right: Spacing.of(context).spaces.semiBig,
-              ),
-      actionsPadding: Spacing.of(context).insets.exceptBottom.normal.copyWith(
-            left: Spacing.of(context).spaces.normal,
-            right: Spacing.of(context).spaces.normal,
-            bottom: Spacing.of(context).spaces.normal,
-            top: Spacing.of(context).spaces.extraSmall,
-          ),
-      content: buildContent(),
-      actions: actions,
-    );
-  }
-
-  List<Widget> get actions => [
-        buildClearButton(),
-        buildOnlineButton(),
-        buildImportButton(),
-        buildCloseButton(),
-      ];
-
+class _DictionaryDialogPageState extends BasePageState {
   /// Opens the dictionaries on the user's server, and shows any imported
   /// from there on return.
-  Widget buildOnlineButton() {
-    return TextButton(
-      child: Text(t.catalog_open),
-      onPressed: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const DictionaryCatalogPage()),
-        );
-        if (mounted) {
-          setState(() {});
-        }
-      },
+  Future<void> _openOnline() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DictionaryCatalogPage()),
     );
-  }
-
-  Future<void> showDictionaryClearDialog() async {
-    Widget alertDialog = AlertDialog(
-      title: Text(t.dialog_title_dictionary_clear),
-      content: Text(
-        t.dialog_content_dictionary_clear,
-        textAlign: TextAlign.justify,
-      ),
-      actions: <Widget>[
-        TextButton(
-          child: Text(
-            t.dialog_clear,
-            style: TextStyle(color: theme.colorScheme.primary),
-          ),
-          onPressed: () async {
-            showDialog(
-              barrierDismissible: false,
-              context: context,
-              builder: (context) => const DictionaryDialogDeletePage(),
-            );
-
-            await appModel.deleteDictionaries();
-
-            if (mounted) {
-              Navigator.pop(context);
-            }
-
-            if (mounted) {
-              Navigator.pop(context);
-            }
-
-            _selectedOrder = -1;
-            setState(() {});
-          },
-        ),
-        TextButton(
-          child: Text(t.dialog_cancel),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => alertDialog,
-    );
-  }
-
-  Future<void> showDictionaryDeleteDialog(Dictionary dictionary) async {
-    Widget alertDialog = AlertDialog(
-      title: Text(t.dialog_title_dictionary_delete(name: dictionary.name)),
-      content: Text(
-        t.dialog_content_dictionary_delete,
-        textAlign: TextAlign.justify,
-      ),
-      actions: <Widget>[
-        TextButton(
-          child: Text(
-            t.dialog_delete,
-            style: TextStyle(color: theme.colorScheme.primary),
-          ),
-          onPressed: () async {
-            showDialog(
-              barrierDismissible: false,
-              context: context,
-              builder: (context) =>
-                  DictionaryDialogDeletePage(name: dictionary.name),
-            );
-
-            await appModel.deleteDictionary(dictionary);
-
-            if (mounted) {
-              Navigator.pop(context);
-            }
-
-            if (mounted) {
-              Navigator.pop(context);
-            }
-
-            _selectedOrder = -1;
-            setState(() {});
-          },
-        ),
-        TextButton(
-          child: Text(t.dialog_cancel),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => alertDialog,
-    );
-  }
-
-  Widget buildImportButton() {
-    return TextButton(
-      child: Text(t.dialog_import),
-      onPressed: () async {
-        /// A [ValueNotifier] that will update a message based on the progress
-        /// of the ongoing dictionary file import. See
-        /// [DictionaryImportProgressPage].
-        ValueNotifier<String> progressNotifier =
-            ValueNotifier<String>(t.import_start);
-        ValueNotifier<int?> countNotifier = ValueNotifier<int?>(null);
-        ValueNotifier<int?> totalNotifier = ValueNotifier<int?>(null);
-        progressNotifier.addListener(() {
-          debugPrint('[Dictionary Import] ${progressNotifier.value}');
-        });
-
-        await FilePicker.platform.clearTemporaryFiles();
-
-        FileType type = appModel.lastSelectedDictionaryFormat.fileType;
-        FilePickerResult? result = await FilePicker.platform.pickFiles(
-          /// Change when adding multiple dictionary formats.
-          type: type,
-          allowedExtensions: type == FileType.any
-              ? null
-              : appModel.lastSelectedDictionaryFormat.allowedExtensions,
-          allowMultiple: true,
-          onFileLoading: (status) {
-            if (status == FilePickerStatus.done) {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (context) => DictionaryDialogImportPage(
-                  progressNotifier: progressNotifier,
-                  countNotifier: countNotifier,
-                  totalNotifier: totalNotifier,
-                ),
-              );
-            }
-          },
-        );
-        if (result == null) {
-          if (mounted) {
-            Navigator.pop(context);
-          }
-          return;
-        }
-
-        totalNotifier.value = result.files.length;
-        for (int i = 0; i < result.files.length; i++) {
-          countNotifier.value = i + 1;
-
-          PlatformFile platformFile = result.files[i];
-          File file = File(platformFile.path!);
-
-          await appModel.importDictionary(
-            progressNotifier: progressNotifier,
-            file: file,
-            onImportSuccess: () {
-              _selectedOrder = appModel.dictionaries.last.order;
-              setState(() {});
-            },
-          );
-        }
-
-        await FilePicker.platform.clearTemporaryFiles();
-
-        if (mounted) {
-          Navigator.pop(context);
-        }
-      },
-    );
-  }
-
-  Widget buildClearButton() {
-    return TextButton(
-      onPressed: showDictionaryClearDialog,
-      child: Text(
-        t.dialog_clear,
-        style: const TextStyle(
-          color: Colors.red,
-        ),
-      ),
-    );
-  }
-
-  Widget buildCloseButton() {
-    return TextButton(
-      child: Text(t.dialog_close),
-      onPressed: () => Navigator.pop(context),
-    );
-  }
-
-  Widget buildContent() {
-    List<Dictionary> dictionaries = appModel.dictionaries;
-    ScrollController contentController = ScrollController();
-
-    return SizedBox(
-      width: double.maxFinite,
-      child: RawScrollbar(
-        thickness: 3,
-        thumbVisibility: true,
-        controller: contentController,
-        child: Padding(
-          padding: contentController.hasClients
-              ? Spacing.of(context).insets.onlyRight.normal
-              : EdgeInsets.zero,
-          child: SingleChildScrollView(
-            controller: contentController,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (dictionaries.isEmpty)
-                  buildEmptyMessage()
-                else
-                  Flexible(
-                    child: buildDictionaryList(dictionaries),
-                  ),
-                const JidoujishoDivider(),
-                buildImportDropdown(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildEmptyMessage() {
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: Spacing.of(context).spaces.normal,
-      ),
-      child: JidoujishoPlaceholderMessage(
-        icon: DictionaryMediaType.instance.outlinedIcon,
-        message: t.dictionaries_menu_empty,
-      ),
-    );
-  }
-
-  Map<Dictionary, ValueNotifier<bool>> _notifiersByDictionary = {};
-
-  Widget buildDictionaryList(List<Dictionary> dictionaries) {
-    _notifiersByDictionary = {};
-    _selectedOrder ??= dictionaries.firstOrNull?.order;
-
-    return RawScrollbar(
-      thickness: 3,
-      thumbVisibility: true,
-      controller: _scrollController,
-      child: ReorderableColumn(
-        scrollController: _scrollController,
-        children: List.generate(dictionaries.length, (index) {
-          Dictionary dictionary = dictionaries[index];
-
-          _notifiersByDictionary.putIfAbsent(
-            dictionaries[index],
-            () => ValueNotifier<bool>(dictionary.order == _selectedOrder),
-          );
-          return buildDictionaryTile(
-            dictionaries[index],
-            _notifiersByDictionary[dictionary]!,
-          );
-        }),
-        onReorder: (oldIndex, newIndex) {
-          List<Dictionary> cloneDictionaries = [];
-          cloneDictionaries.addAll(dictionaries);
-
-          Dictionary item = cloneDictionaries[oldIndex];
-          cloneDictionaries.remove(item);
-          cloneDictionaries.insert(newIndex, item);
-
-          cloneDictionaries.forEachIndexed((index, dictionary) {
-            dictionary.order = index;
-          });
-
-          _selectedOrder = newIndex;
-
-          appModel.updateDictionaryOrder(cloneDictionaries);
-          setState(() {});
-        },
-      ),
-    );
-  }
-
-  Icon getIcon({
-    required Dictionary dictionary,
-    required DictionaryFormat dictionaryFormat,
-  }) {
-    if (dictionary.isHidden(appModel.targetLanguage)) {
-      return Icon(
-        Ui.visibility_off,
-        size: textTheme.titleLarge?.fontSize,
-        color: theme.unselectedWidgetColor,
-      );
-    } else if (dictionary.isCollapsed(appModel.targetLanguage)) {
-      return Icon(
-        Ui.close_fullscreen,
-        size: textTheme.titleLarge?.fontSize,
-        color: theme.unselectedWidgetColor,
-      );
-    } else {
-      return Icon(
-        dictionaryFormat.icon,
-        size: textTheme.titleLarge?.fontSize,
-      );
+    if (mounted) {
+      setState(() {});
     }
   }
 
-  Widget buildDictionaryTile(
-    Dictionary dictionary,
-    ValueNotifier<bool> notifier,
-  ) {
-    DictionaryFormat dictionaryFormat =
-        appModel.dictionaryFormats[dictionary.formatKey]!;
+  /// Picks files in [format] and imports them one after another.
+  Future<void> _import(DictionaryFormat format) async {
+    appModel.setLastSelectedDictionaryFormat(format);
+    ValueNotifier<String> progressNotifier =
+        ValueNotifier<String>(t.import_start);
+    ValueNotifier<int?> countNotifier = ValueNotifier<int?>(null);
+    ValueNotifier<int?> totalNotifier = ValueNotifier<int?>(null);
+    progressNotifier.addListener(() {
+      debugPrint('[Dictionary Import] ${progressNotifier.value}');
+    });
 
-    return ValueListenableBuilder<bool>(
-      key: ValueKey(dictionary.name),
-      valueListenable: notifier,
-      builder: (context, value, _) {
-        return Material(
-          type: MaterialType.transparency,
-          child: ListTile(
-            selected: _selectedOrder == dictionary.order,
-            leading: getIcon(
-              dictionary: dictionary,
-              dictionaryFormat: dictionaryFormat,
+    await FilePicker.platform.clearTemporaryFiles();
+    bool showing = false;
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: format.fileType,
+      allowedExtensions:
+          format.fileType == FileType.any ? null : format.allowedExtensions,
+      allowMultiple: true,
+      onFileLoading: (status) {
+        if (status == FilePickerStatus.done && !showing && mounted) {
+          showing = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => DictionaryDialogImportPage(
+              progressNotifier: progressNotifier,
+              countNotifier: countNotifier,
+              totalNotifier: totalNotifier,
             ),
-            title: Row(
+          );
+        }
+      },
+    );
+    if (result == null) {
+      if (showing && mounted) {
+        Navigator.pop(context);
+      }
+      return;
+    }
+
+    totalNotifier.value = result.files.length;
+    for (int i = 0; i < result.files.length; i++) {
+      countNotifier.value = i + 1;
+      await appModel.importDictionary(
+        progressNotifier: progressNotifier,
+        file: File(result.files[i].path!),
+        format: format,
+        onImportSuccess: () {
+          if (mounted) {
+            setState(() {});
+          }
+        },
+      );
+    }
+    await FilePicker.platform.clearTemporaryFiles();
+    if (showing && mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  /// Asks which format to import, the one used last first.
+  Future<void> _chooseFormat(BuildContext anchor) async {
+    List<DictionaryFormat> formats = appModel.dictionaryFormats.values.toList();
+    DictionaryFormat last = appModel.lastSelectedDictionaryFormat;
+    formats
+      ..remove(last)
+      ..insert(0, last);
+    RenderBox box = anchor.findRenderObject()! as RenderBox;
+    Offset corner = box.localToGlobal(Offset(0, box.size.height + 4));
+    DictionaryFormat? format = await showMenu<DictionaryFormat>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        corner.dx,
+        corner.dy,
+        MediaQuery.of(context).size.width - corner.dx - box.size.width,
+        0,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: [
+        for (DictionaryFormat format in formats)
+          PopupMenuItem(
+            value: format,
+            child: Row(
               children: [
-                Expanded(
-                  child: Column(
+                Icon(format.icon, size: 18),
+                const SizedBox(width: 12),
+                Expanded(child: Text(format.name)),
+                if (format == last)
+                  Icon(Ui.check, size: 16, color: theme.colorScheme.primary),
+              ],
+            ),
+          ),
+      ],
+    );
+    if (format != null) {
+      await _import(format);
+    }
+  }
+
+  Future<void> _deleteAll() async {
+    bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(t.dialog_title_dictionary_clear),
+        content: Text(t.dialog_content_dictionary_clear),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.dialog_cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              t.dialog_clear,
+              style: TextStyle(color: theme.colorScheme.error),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (confirmed != true) {
+      return;
+    }
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => const DictionaryDialogDeletePage(),
+    );
+    await appModel.deleteDictionaries();
+    if (mounted) {
+      Navigator.pop(context);
+      setState(() {});
+    }
+  }
+
+  Future<void> _delete(Dictionary dictionary) async {
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) => DictionaryDialogDeletePage(name: dictionary.name),
+    );
+    await appModel.deleteDictionary(dictionary);
+    if (mounted) {
+      Navigator.pop(context);
+      setState(() {});
+    }
+  }
+
+  Future<void> _openDetails(Dictionary dictionary) async {
+    bool? delete = await showTtuSheet<bool>(
+      context: context,
+      builder: (_) => _DictionaryDetailsSheet(
+        dictionary: dictionary,
+        onChanged: () {
+          if (mounted) {
+            setState(() {});
+          }
+        },
+      ),
+    );
+    if (delete == true && mounted) {
+      await _delete(dictionary);
+    }
+  }
+
+  void _reorder(List<Dictionary> dictionaries, int from, int to) {
+    if (to > from) {
+      to -= 1;
+    }
+    Dictionary moved = dictionaries.removeAt(from);
+    dictionaries.insert(to, moved);
+    for (int i = 0; i < dictionaries.length; i++) {
+      dictionaries[i].order = i;
+    }
+    appModel.updateDictionaryOrder(dictionaries);
+    setState(() {});
+  }
+
+  Widget _header(int count) {
+    Color muted = theme.unselectedWidgetColor;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(text: t.dictionaries),
+                  if (count > 0)
+                    TextSpan(
+                      text: '  $count',
+                      style: textTheme.titleMedium!.copyWith(color: muted),
+                    ),
+                ],
+              ),
+              style:
+                  textTheme.titleLarge!.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          if (count > 0)
+            PopupMenuButton<void>(
+              tooltip: t.show_options,
+              icon: const Icon(Ui.menuDots),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              itemBuilder: (_) => [
+                PopupMenuItem<void>(
+                  onTap: () => WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _deleteAll()),
+                  child: Row(
                     children: [
-                      JidoujishoMarquee(
-                        text: dictionary.name,
-                        style: TextStyle(
-                          fontSize: textTheme.bodyMedium?.fontSize,
-                          color: dictionary.isHidden(appModel.targetLanguage)
-                              ? theme.unselectedWidgetColor
-                              : null,
-                        ),
-                      ),
-                      JidoujishoMarquee(
-                        text: dictionaryFormat.name,
-                        style: TextStyle(
-                          fontSize: textTheme.bodySmall?.fontSize,
-                          color: dictionary.isHidden(appModel.targetLanguage)
-                              ? theme.unselectedWidgetColor
-                              : null,
-                        ),
+                      Icon(Ui.trash, size: 18, color: theme.colorScheme.error),
+                      const SizedBox(width: 12),
+                      Text(
+                        t.dictionary_delete_all,
+                        style: TextStyle(color: theme.colorScheme.error),
                       ),
                     ],
                   ),
                 ),
-                const Space.normal(),
-                if (_selectedOrder == dictionary.order)
-                  buildDictionaryTileTrailing(dictionary)
               ],
             ),
-            onTap: () {
-              _selectedOrder = dictionary.order;
-
-              for (int i = 0; i < _notifiersByDictionary.length; i++) {
-                _notifiersByDictionary.entries.elementAt(i).value.value = false;
-              }
-              notifier.value = true;
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildDictionaryTileTrailing(Dictionary dictionary) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: Material(
-        color: Colors.transparent,
-        child: PopupMenuButton<VoidCallback>(
-          splashRadius: 20,
-          padding: EdgeInsets.zero,
-          tooltip: t.show_options,
-          color: Theme.of(context).popupMenuTheme.color,
-          onSelected: (value) => value(),
-          itemBuilder: (context) => getMenuItems(dictionary),
-          child: Container(
-            height: 30,
-            width: 30,
-            alignment: Alignment.center,
-            child: Icon(
-              Ui.more_vert,
-              color: theme.iconTheme.color,
-              size: 24,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  PopupMenuItem<VoidCallback> buildPopupItem({
-    required String label,
-    required Function() action,
-    IconData? icon,
-    Color? color,
-  }) {
-    return PopupMenuItem<VoidCallback>(
-      value: action,
-      child: Row(
-        children: [
-          if (icon != null)
-            Icon(
-              icon,
-              size: textTheme.bodyMedium?.fontSize,
-              color: color,
-            ),
-          if (icon != null) const Space.normal(),
-          Text(
-            label,
-            style: TextStyle(color: color),
+          IconButton(
+            tooltip: t.dialog_close,
+            icon: const Icon(Ui.cross),
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
     );
   }
 
-  void openDictionaryOptionsMenu(
-      {required TapDownDetails details, required Dictionary dictionary}) async {
-    RelativeRect position = RelativeRect.fromLTRB(
-        details.globalPosition.dx, details.globalPosition.dy, 0, 0);
-    Function()? selectedAction = await showMenu(
-      context: context,
-      position: position,
-      items: getMenuItems(dictionary),
+  Widget _actions() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.14),
+                foregroundColor: theme.colorScheme.primary,
+                shape: const StadiumBorder(),
+                minimumSize: const Size.fromHeight(44),
+              ),
+              icon: const Icon(Ui.cloudDownload, size: 18),
+              label: Text(t.catalog_open),
+              onPressed: _openOnline,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Builder(
+              builder: (anchor) => FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  shape: const StadiumBorder(),
+                  minimumSize: const Size.fromHeight(44),
+                ),
+                icon: const Icon(Ui.fileImport, size: 18),
+                label: Text(t.dictionary_import),
+                onPressed: () => _chooseFormat(anchor),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-
-    selectedAction?.call();
   }
 
-  List<PopupMenuItem<VoidCallback>> getMenuItems(Dictionary dictionary) {
-    return [
-      buildPopupItem(
-        label: dictionary.isCollapsed(appModel.targetLanguage)
-            ? t.options_expand
-            : t.options_collapse,
-        icon: dictionary.isCollapsed(appModel.targetLanguage)
-            ? Ui.open_in_full
-            : Ui.close_fullscreen,
-        action: () {
-          appModel.toggleDictionaryCollapsed(dictionary);
-          _notifiersByDictionary[dictionary]!.value =
-              !_notifiersByDictionary[dictionary]!.value;
-          _notifiersByDictionary[dictionary]!.value =
-              !_notifiersByDictionary[dictionary]!.value;
-        },
-      ),
-      buildPopupItem(
-        label: dictionary.isHidden(appModel.targetLanguage)
-            ? t.options_show
-            : t.options_hide,
-        icon: dictionary.isCollapsed(appModel.targetLanguage)
-            ? Ui.visibility
-            : Ui.visibility_off,
-        action: () {
-          appModel.toggleDictionaryHidden(dictionary);
-          _notifiersByDictionary[dictionary]!.value =
-              !_notifiersByDictionary[dictionary]!.value;
-          _notifiersByDictionary[dictionary]!.value =
-              !_notifiersByDictionary[dictionary]!.value;
-        },
-      ),
-      buildPopupItem(
-        label: t.options_delete,
-        icon: Ui.delete,
-        action: () {
-          showDictionaryDeleteDialog(dictionary);
-        },
-        color: theme.colorScheme.primary,
-      ),
-    ];
-  }
-
-  final _formatNotifier = ChangeNotifier();
-
-  Widget buildImportDropdown() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: Spacing.of(context).insets.onlyLeft.small,
-          child: Text(
-            t.import_format,
-            style: TextStyle(
-              fontSize: 10,
-              color: theme.unselectedWidgetColor,
+  Widget _row(Dictionary dictionary, int index) {
+    Color muted = theme.unselectedWidgetColor;
+    bool hidden = dictionary.isHidden(appModel.targetLanguage);
+    bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
+    String? note = appModel.dictionaryNoteOf(dictionary);
+    return Padding(
+      key: ValueKey(dictionary.id),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Material(
+        color: theme.dividerColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _openDetails(dictionary),
+          onLongPress: () => _openDetails(dictionary),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Icon(Ui.grip, size: 18, color: muted),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dictionary.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodyLarge!.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: hidden ? muted : null,
+                        ),
+                      ),
+                      if (note != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          note,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: textTheme.bodySmall!.copyWith(
+                            color: hidden ? muted : null,
+                          ),
+                        ),
+                      ],
+                      if (collapsed && !hidden) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          t.dictionary_collapsed,
+                          style: textTheme.bodySmall!.copyWith(color: muted),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: hidden ? t.options_show : t.options_hide,
+                  icon: Icon(
+                    hidden ? Ui.eyeCrossed : Ui.eye,
+                    size: 20,
+                    color: hidden ? muted : null,
+                  ),
+                  onPressed: () {
+                    appModel.toggleDictionaryHidden(dictionary);
+                    setState(() {});
+                  },
+                ),
+              ],
             ),
           ),
         ),
-        Stack(
-          alignment: Alignment.bottomCenter,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    List<Dictionary> dictionaries = appModel.dictionaries;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      builder: (context, controller) => ReorderableListView.builder(
+        scrollController: controller,
+        buildDefaultDragHandles: false,
+        padding: const EdgeInsets.only(bottom: 24),
+        header: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ChangeNotifierBuilder(
-              notifier: _formatNotifier,
-              builder: (_, __, ___) => JidoujishoDropdown<DictionaryFormat>(
-                options: appModel.dictionaryFormats.values.toList(),
-                initialOption: appModel.lastSelectedDictionaryFormat,
-                generateLabel: (format) => format.name,
-                onChanged: (format) {
-                  appModel.setLastSelectedDictionaryFormat(format!);
-                  _formatNotifier.notifyListeners();
-                },
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.fromBorderSide(
-                  BorderSide(
-                    width: 0.5,
-                    color: Theme.of(context).unselectedWidgetColor,
-                  ),
+            const TtuSheetHandle(),
+            _header(dictionaries.length),
+            _actions(),
+            if (dictionaries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                child: JidoujishoPlaceholderMessage(
+                  icon: DictionaryMediaType.instance.outlinedIcon,
+                  message: t.dictionaries_menu_empty,
                 ),
               ),
+          ],
+        ),
+        proxyDecorator: (child, index, animation) => Material(
+          color: Colors.transparent,
+          elevation: 6,
+          shadowColor: Colors.black38,
+          borderRadius: BorderRadius.circular(16),
+          child: child,
+        ),
+        itemCount: dictionaries.length,
+        itemBuilder: (context, index) => _row(dictionaries[index], index),
+        onReorder: (from, to) => _reorder(dictionaries, from, to),
+      ),
+    );
+  }
+}
+
+/// One dictionary's details and what can be done with it. Pops with true
+/// when the user chooses to delete it.
+class _DictionaryDetailsSheet extends BasePage {
+  const _DictionaryDetailsSheet({
+    required this.dictionary,
+    required this.onChanged,
+  });
+
+  final Dictionary dictionary;
+
+  /// Showing or collapsing it changed.
+  final VoidCallback onChanged;
+
+  @override
+  BasePageState<_DictionaryDetailsSheet> createState() =>
+      _DictionaryDetailsSheetState();
+}
+
+class _DictionaryDetailsSheetState
+    extends BasePageState<_DictionaryDetailsSheet> {
+  bool _confirming = false;
+
+  Widget _switch({
+    required String title,
+    required bool value,
+    required VoidCallback onToggle,
+  }) {
+    return InkWell(
+      onTap: onToggle,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 2, 6, 2),
+        child: Row(
+          children: [
+            Expanded(child: Text(title, style: textTheme.bodyMedium)),
+            Switch(value: value, onChanged: (_) => onToggle()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Dictionary dictionary = widget.dictionary;
+    Color muted = theme.unselectedWidgetColor;
+    Map<String, String> index = appModel.dictionaryIndexOf(dictionary);
+    Map<String, dynamic>? source = appModel.dictionarySources[dictionary.name];
+    String? note = source?['note'] as String?;
+    String? revision = appModel.installedRevisionOf(dictionary);
+    DictionaryFormat? format = appModel.dictionaryFormats[dictionary.formatKey];
+    String detail = [
+      if (revision != null) revision,
+      if (format != null) format.name,
+      if (source?['kind'] == 'server')
+        t.dictionary_from_server
+      else
+        t.dictionary_from_file,
+    ].join(' · ');
+    bool hidden = dictionary.isHidden(appModel.targetLanguage);
+    bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.85,
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const TtuSheetHandle(),
+            const SizedBox(height: 10),
+            Text(
+              dictionary.name,
+              style:
+                  textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+            ),
+            Text(detail, style: textTheme.bodySmall!.copyWith(color: muted)),
+            if (note != null) ...[
+              const SizedBox(height: 12),
+              SelectableText(note, style: textTheme.bodyMedium),
+            ],
+            if (index.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              DictionaryAbout(
+                description: index['description'],
+                author: index['author'],
+                attribution: index['attribution'],
+                url: index['url'],
+              ),
+            ],
+            const SizedBox(height: 12),
+            Material(
+              color: theme.dividerColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  _switch(
+                    title: t.dictionary_show_in_results,
+                    value: !hidden,
+                    onToggle: () {
+                      appModel.toggleDictionaryHidden(dictionary);
+                      setState(() {});
+                      widget.onChanged();
+                    },
+                  ),
+                  _switch(
+                    title: t.dictionary_start_collapsed,
+                    value: collapsed,
+                    onToggle: () {
+                      appModel.toggleDictionaryCollapsed(dictionary);
+                      setState(() {});
+                      widget.onChanged();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: Icon(Ui.trash, size: 18, color: theme.colorScheme.error),
+              label: Text(
+                _confirming ? t.catalog_delete_confirm : t.dictionary_delete,
+                style: TextStyle(
+                  color: theme.colorScheme.error,
+                  fontWeight: _confirming ? FontWeight.bold : null,
+                ),
+              ),
+              onPressed: () {
+                if (!_confirming) {
+                  setState(() => _confirming = true);
+                  return;
+                }
+                Navigator.pop(context, true);
+              },
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
