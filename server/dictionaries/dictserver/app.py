@@ -17,6 +17,7 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     DELETE /api/dictionaries/{id}
 """
 
+import asyncio
 import hashlib
 import hmac
 import os
@@ -48,6 +49,9 @@ ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_STYLES_BYTES = 1024 * 1024
 MAX_NOTE_LENGTH = 1000
+# An upload that sends nothing for this long is given up, so its slot is
+# free again: a phone that changes network can leave the connection open.
+UPLOAD_STALL_SECONDS = 60
 FAILURE_WINDOW = 600
 MAX_FAILURES = 10
 
@@ -277,7 +281,14 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             digest = hashlib.sha256()
             received = 0
             with open(temp, "wb") as out:
-                async for chunk in request.stream():
+                chunks = request.stream().__aiter__()
+                while True:
+                    try:
+                        chunk = await asyncio.wait_for(chunks.__anext__(), UPLOAD_STALL_SECONDS)
+                    except StopAsyncIteration:
+                        break
+                    except asyncio.TimeoutError:
+                        raise Problem(408, "The upload stopped arriving. Try again.") from None
                     received += len(chunk)
                     if received > declared or received > settings.max_upload_bytes:
                         raise Problem(413, "The upload is larger than it said it would be.")

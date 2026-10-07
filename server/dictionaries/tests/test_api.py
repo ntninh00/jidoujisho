@@ -270,3 +270,36 @@ def test_size_limit(client):
     big = b"\0" * (6 * 1024 * 1024)
     response = client.put("/api/dictionaries", content=big, headers=auth(ADMIN))
     assert response.status_code == 413
+
+
+def test_a_stalled_upload_frees_the_slot(settings, monkeypatch):
+    """A phone that goes quiet mid-upload must not block every upload after."""
+    import anyio
+    import httpx
+
+    from dictserver import app as server
+    from dictserver.app import create_app
+
+    monkeypatch.setattr(server, "UPLOAD_STALL_SECONDS", 0.3)
+    data = ja_en()
+
+    async def stalls():
+        yield data[:1000]
+        await anyio.sleep(3)
+        yield data[1000:]
+
+    async def main():
+        transport = httpx.ASGITransport(app=create_app(settings))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            headers = {**auth(ADMIN), "content-length": str(len(data))}
+            stalled = await client.put("/api/dictionaries", params={"name": "a.zip"},
+                                       content=stalls(), headers=headers)
+            again = await client.put("/api/dictionaries", params={"name": "a.zip"},
+                                     content=data, headers=headers)
+            return stalled, again
+
+    stalled, again = anyio.run(main)
+    assert stalled.status_code == 408
+    assert "stopped arriving" in stalled.json()["error"]
+    assert again.status_code == 202
+    assert list(settings.incoming_dir.glob("*.part")) == []
