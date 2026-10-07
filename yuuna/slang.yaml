@@ -1,0 +1,3 @@
+# Strings missing from a translation show in English instead of failing
+# the build.
+fallback_strategy: base_locale

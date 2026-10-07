@@ -25,6 +25,7 @@ import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:isar/isar.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:path/path.dart' as path;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -863,6 +864,7 @@ class AppModel with ChangeNotifier {
     final List<Locale> availableLocales = List<Locale>.unmodifiable(
       [
         const Locale('en', 'US'),
+        const Locale('vi', 'VN'),
       ],
     );
 
@@ -1358,6 +1360,8 @@ class AppModel with ChangeNotifier {
     /// This is not the initialisation step, which occurs below.
     populateLanguages();
     populateLocales();
+    await initializeDateFormatting();
+    _applyAppLocale();
     populateMediaTypes();
     populateMediaSources();
     populateDictionaryFormats();
@@ -1568,7 +1572,14 @@ class AppModel with ChangeNotifier {
   /// Persist a new app locale in preferences.
   Future<void> setAppLocale(String localeTag) async {
     await _preferences.put('app_locale', localeTag);
+    _applyAppLocale();
     notifyListeners();
+  }
+
+  /// Shows the app's own text, dates and numbers in [appLocale].
+  void _applyAppLocale() {
+    LocaleSettings.setLocaleRaw(appLocale.languageCode);
+    intl.Intl.defaultLocale = appLocale.languageCode;
   }
 
   /// Persist a new last selected dictionary format. This is called when the

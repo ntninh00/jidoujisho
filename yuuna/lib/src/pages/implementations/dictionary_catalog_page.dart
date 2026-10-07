@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:wakelock/wakelock.dart';
@@ -44,10 +45,7 @@ String _megabytes(int bytes) {
   return mb >= 10 ? '${mb.round()} MB' : '${mb.toStringAsFixed(1)} MB';
 }
 
-String _count(int n) => n.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+$)'),
-      (match) => '${match[1]},',
-    );
+String _count(int n) => intl.NumberFormat.decimalPattern().format(n);
 
 /// A word worth looking up first when previewing a dictionary.
 String _sampleWord(String? language) => switch (language) {
@@ -1814,6 +1812,9 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
             if (admin && _noteLanguages.length > 1) _noteLanguagePicker(),
             if (admin)
               TextField(
+                // A field of its own per language, so switching shows the
+                // other description at once.
+                key: ValueKey(_noteLanguage),
                 controller: _notes[_noteLanguage] ??
                     _notes[_noteLanguages.first],
                 minLines: 2,

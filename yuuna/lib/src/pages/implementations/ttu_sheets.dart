@@ -2417,7 +2417,8 @@ class _ThemeSwatch extends StatelessWidget {
   Widget build(BuildContext context) {
     ThemeData theme = Theme.of(context);
     List<int> colors = TtuPagePreset.themeColors[name]!;
-    String label = '${name[0].toUpperCase()}${name.substring(1)}';
+    String label = t['ttu_theme_names.$name'] as String? ??
+        '${name[0].toUpperCase()}${name.substring(1)}';
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
-/// Locales: 1
-/// Strings: 841
+/// Locales: 2
+/// Strings: 1694 (847 per locale)
 ///
-/// Built on 2026-10-07 at 05:38 UTC
+/// Built on 2026-10-07 at 06:13 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -22,7 +22,8 @@ const AppLocale _baseLocale = AppLocale.en;
 /// - Locale locale = AppLocale.en.flutterLocale // get flutter locale from enum
 /// - if (LocaleSettings.currentLocale == AppLocale.en) // locale check
 enum AppLocale with BaseAppLocale<AppLocale, _StringsEn> {
-	en(languageCode: 'en', build: _StringsEn.build);
+	en(languageCode: 'en', build: _StringsEn.build),
+	vi(languageCode: 'vi', build: _StringsVi.build);
 
 	const AppLocale({required this.languageCode, this.scriptCode, this.countryCode, required this.build}); // ignore: unused_element
 
@@ -864,6 +865,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_tags_none => 'No tags yet';
 	String get ttu_tags_used_before => 'Used before';
 	String get ttu_tags_info => 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
+	late final _StringsTtuThemeNamesEn ttu_theme_names = _StringsTtuThemeNamesEn._(_root);
 	late final _StringsLanguageNamesEn language_names = _StringsLanguageNamesEn._(_root);
 	late final _StringsAddonsEn addons = _StringsAddonsEn._(_root);
 }
@@ -892,6 +894,21 @@ class _StringsViewRepliesEn {
 		one: 'SHOW ${n} REPLY',
 		other: 'SHOW ${n} REPLIES',
 	);
+}
+
+// Path: ttu_theme_names
+class _StringsTtuThemeNamesEn {
+	_StringsTtuThemeNamesEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get light => 'Light';
+	String get ecru => 'Ecru';
+	String get water => 'Water';
+	String get gray => 'Gray';
+	String get dark => 'Dark';
+	String get black => 'Black';
 }
 
 // Path: language_names
@@ -1621,6 +1638,1526 @@ class _StringsAddonsSourceViewerCameraEn {
 	// Translations
 	String get label => 'Camera';
 	String get description => 'View images taken with the camera or picked from media.';
+}
+
+// Path: <root>
+class _StringsVi extends _StringsEn {
+
+	/// You can call this constructor and build your own translation instance of this locale.
+	/// Constructing via the enum [AppLocale.build] is preferred.
+	_StringsVi.build({Map<String, Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver})
+		: assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
+		  $meta = TranslationMetadata(
+		    locale: AppLocale.vi,
+		    overrides: overrides ?? {},
+		    cardinalResolver: cardinalResolver,
+		    ordinalResolver: ordinalResolver,
+		  ),
+		  super.build(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
+		super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
+		$meta.setFlatMapFunction(_flatMapFunction);
+	}
+
+	/// Metadata for the translations of <vi>.
+	@override final TranslationMetadata<AppLocale, _StringsEn> $meta;
+
+	/// Access flat map
+	@override dynamic operator[](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+
+	@override late final _StringsVi _root = this; // ignore: unused_field
+
+	// Translations
+	@override String get dictionary_media_type => 'Từ điển';
+	@override String get player_media_type => 'Trình phát';
+	@override String get reader_media_type => 'Trình đọc';
+	@override String get viewer_media_type => 'Trình xem';
+	@override String get back => 'Quay lại';
+	@override String get search => 'Tìm kiếm';
+	@override String get search_ellipsis => 'Tìm kiếm...';
+	@override String get show_more => 'Xem thêm';
+	@override String get show_menu => 'Hiện menu';
+	@override String get stash => 'Kho tạm';
+	@override String get pick_image => 'Chọn ảnh';
+	@override String get undo => 'Hoàn tác';
+	@override String get copy => 'Sao chép';
+	@override String get clear => 'Xóa';
+	@override String get creator => 'Trình tạo';
+	@override String get share => 'Chia sẻ';
+	@override String get resume_last_media => 'Tiếp tục nội dung gần nhất';
+	@override String get change_source => 'Đổi nguồn';
+	@override String get launch_source => 'Mở nguồn';
+	@override String get card_creator => 'Trình tạo thẻ';
+	@override String get target_language => 'Ngôn ngữ đích';
+	@override String get show_options => 'Hiện tùy chọn';
+	@override String get switch_profiles => 'Đổi hồ sơ';
+	@override String get dictionaries => 'Từ điển';
+	@override String get enhancements => 'Tiện ích bổ trợ';
+	@override String get app_locale => 'Ngôn ngữ ứng dụng';
+	@override String get app_locale_warning => 'Các tiện ích cộng đồng và tiện ích bổ trợ được nhà phát triển tương ứng quản lý, nên có thể hiển thị bằng ngôn ngữ gốc.';
+	@override String get dialog_play => 'PHÁT';
+	@override String get dialog_read => 'ĐỌC';
+	@override String get dialog_view => 'XEM';
+	@override String get dialog_edit => 'SỬA';
+	@override String get dialog_export => 'XUẤT';
+	@override String get dialog_import => 'NHẬP';
+	@override String get dialog_close => 'ĐÓNG';
+	@override String get dialog_clear => 'XÓA';
+	@override String get dialog_create => 'TẠO';
+	@override String get dialog_delete => 'XÓA';
+	@override String get dialog_cancel => 'HỦY';
+	@override String get dialog_select => 'CHỌN';
+	@override String get dialog_stash => 'KHO TẠM';
+	@override String get dialog_search => 'TÌM KIẾM';
+	@override String get dialog_exit => 'THOÁT';
+	@override String get dialog_share => 'CHIA SẺ';
+	@override String get dialog_pop => 'LẤY RA';
+	@override String get dialog_save => 'LƯU';
+	@override String get dialog_set => 'ĐẶT';
+	@override String get dialog_browse => 'DUYỆT';
+	@override String get dialog_channel => 'KÊNH';
+	@override String get dialog_directory => 'THƯ MỤC';
+	@override String get dialog_crop => 'CẮT';
+	@override String get dialog_connect => 'KẾT NỐI';
+	@override String get dialog_append => 'THÊM';
+	@override String get dialog_record => 'GHI';
+	@override String get dialog_manage => 'QUẢN LÝ';
+	@override String get dialog_stop => 'DỪNG';
+	@override String get dialog_done => 'XONG';
+	@override String get reset => 'Đặt lại';
+	@override String get dialog_launch_ankidroid => 'MỞ ANKIDROID';
+	@override String get media_item_delete_confirmation => 'Mục này sẽ bị xóa khỏi lịch sử. Bạn có chắc muốn tiếp tục không?';
+	@override String get dictionaries_delete_confirmation => 'Xóa một từ điển cũng sẽ xóa tất cả kết quả từ điển khỏi lịch sử. Bạn có chắc muốn tiếp tục không?';
+	@override String get mappings_delete_confirmation => 'Hồ sơ này sẽ bị xóa. Bạn có chắc muốn tiếp tục không?';
+	@override String get catalog_delete_confirmation => 'Danh mục này sẽ bị xóa. Bạn có chắc muốn tiếp tục không?';
+	@override String get dictionaries_deleting_data => 'Đang xóa dữ liệu từ điển...';
+	@override String get dictionaries_menu_empty => 'Nhập từ điển để sử dụng';
+	@override String get options_theme_light => 'Dùng giao diện sáng';
+	@override String get options_theme_dark => 'Dùng giao diện tối';
+	@override String get options_incognito_on => 'Bật chế độ ẩn danh';
+	@override String get options_incognito_off => 'Tắt chế độ ẩn danh';
+	@override String get options_dictionaries => 'Quản lý từ điển';
+	@override String get options_profiles => 'Hồ sơ xuất thẻ';
+	@override String get options_enhancements => 'Tiện ích bổ trợ của người dùng';
+	@override String get options_language => 'Cài đặt ngôn ngữ';
+	@override String get options_github => 'Xem kho lưu trữ trên GitHub';
+	@override String get options_attribution => 'Giấy phép và ghi công';
+	@override String get options_copy => 'Sao chép';
+	@override String get options_collapse => 'Thu gọn';
+	@override String get options_expand => 'Mở rộng';
+	@override String get options_delete => 'Xóa';
+	@override String get options_show => 'Hiện';
+	@override String get options_hide => 'Ẩn';
+	@override String get options_edit => 'Sửa';
+	@override String get info_empty_home_tab => 'Lịch sử trống';
+	@override String get delete_in_progress => 'Đang xóa';
+	@override String get import_format => 'Định dạng nhập';
+	@override String get import_in_progress => 'Đang nhập';
+	@override String get import_start => 'Đang chuẩn bị nhập...';
+	@override String get import_clean => 'Đang dọn dẹp không gian làm việc...';
+	@override String import_extract_count({required Object n}) => 'Đã giải nén ${n} tệp...';
+	@override String get import_extract => 'Đang giải nén tệp...';
+	@override String import_name({required Object name}) => 'Đang nhập 『${name}』...';
+	@override String get import_entries => 'Đang xử lý các mục...';
+	@override String import_found_entry({required Object count}) => 'Đã tìm thấy ${count} mục...';
+	@override String import_found_tag({required Object count}) => 'Đã tìm thấy ${count} nhãn...';
+	@override String import_found_frequency({required Object count}) => 'Đã tìm thấy ${count} mục tần suất...';
+	@override String import_found_pitch({required Object count}) => 'Đã tìm thấy ${count} mục trọng âm...';
+	@override String import_write_entry({required Object count, required Object total}) => 'Đang ghi các mục:\n${count} / ${total}';
+	@override String import_write_tag({required Object count, required Object total}) => 'Đang ghi các nhãn:\n${count} / ${total}';
+	@override String import_write_frequency({required Object count, required Object total}) => 'Đang ghi các mục tần suất:\n${count} / ${total}';
+	@override String import_write_pitch({required Object count, required Object total}) => 'Đang ghi các mục trọng âm:\n${count} / ${total}';
+	@override String get import_failed => 'Nhập từ điển không thành công.';
+	@override String get import_complete => 'Đã nhập từ điển.';
+	@override String import_duplicate({required Object name}) => 'Từ điển có tên 『${name}』 đã được nhập.';
+	@override String get dialog_title_dictionary_clear => 'Xóa tất cả từ điển?';
+	@override String get dialog_content_dictionary_clear => 'Xóa cơ sở dữ liệu từ điển cũng sẽ xóa tất cả kết quả tìm kiếm trong lịch sử.';
+	@override String dialog_title_dictionary_delete({required Object name}) => 'Xóa 『${name}』?';
+	@override String get dialog_content_dictionary_delete => 'Xóa một từ điển riêng lẻ có thể mất nhiều thời gian hơn xóa toàn bộ cơ sở dữ liệu từ điển. Thao tác này cũng sẽ xóa tất cả kết quả tìm kiếm trong lịch sử.';
+	@override String get delete_dictionary_data => 'Đang xóa tất cả dữ liệu từ điển...';
+	@override String dictionary_tag({required Object name}) => 'Được nhập từ ${name}';
+	@override String get legalese => 'Bộ công cụ học ngôn ngữ qua đắm chìm (immersion), đầy đủ tính năng, dành cho thiết bị di động.\n\nBan đầu được Arianne Orpilla xây dựng cho cộng đồng học tiếng Nhật. Logo do suzy và Aaron Marbella thiết kế.\n\njidoujisho là phần mềm miễn phí và mã nguồn mở. Xem kho lưu trữ của dự án để biết danh sách đầy đủ các giấy phép khác và thông báo ghi công. Bạn thích ứng dụng này? Hãy giúp chúng tôi bằng cách gửi phản hồi, quyên góp, báo cáo sự cố hoặc đóng góp cải tiến trên GitHub.';
+	@override String get same_name_dictionary_found => 'Đã tìm thấy từ điển trùng tên.';
+	@override String import_file_extension_invalid({required Object extensions}) => 'Định dạng này yêu cầu tệp có một trong các phần mở rộng sau: ${extensions}';
+	@override String get field_label_empty => 'Trống';
+	@override String get model_to_map => 'Loại thẻ dùng cho hồ sơ mới';
+	@override String get mapping_name => 'Tên hồ sơ';
+	@override String get mapping_name_hint => 'Tên gán cho hồ sơ';
+	@override String get error_profile_name => 'Tên hồ sơ không hợp lệ';
+	@override String get error_profile_name_content => 'Hồ sơ có tên này đã tồn tại hoặc không hợp lệ nên không thể lưu.';
+	@override String get error_standard_profile_name => 'Tên hồ sơ không hợp lệ';
+	@override String get error_standard_profile_name_content => 'Không thể đổi tên hồ sơ tiêu chuẩn.';
+	@override String get error_ankidroid_api => 'Lỗi AnkiDroid';
+	@override String get error_ankidroid_api_content => 'Đã xảy ra sự cố khi giao tiếp với AnkiDroid.\n\nHãy đảm bảo dịch vụ nền của AnkiDroid đang hoạt động và mọi quyền cần thiết của ứng dụng đều đã được cấp để tiếp tục.';
+	@override String get info_standard_model => 'Đã thêm loại thẻ tiêu chuẩn';
+	@override String get info_standard_model_content => '『jidoujisho Kinomoto』 đã được thêm vào AnkiDroid dưới dạng loại thẻ mới.\n\nBạn có thể dùng thiết lập với loại thẻ hoặc thứ tự trường khác bằng cách thêm hồ sơ xuất mới.';
+	@override String get error_model_missing => 'Thiếu loại thẻ';
+	@override String get error_model_missing_content => 'Loại thẻ tương ứng với hồ sơ hiện được chọn không còn tồn tại.\n\nHồ sơ sẽ bị xóa và hồ sơ tiêu chuẩn đã được chọn thay thế.';
+	@override String get error_model_changed => 'Loại thẻ đã thay đổi';
+	@override String get error_model_changed_content => 'Số trường của loại thẻ tương ứng với hồ sơ đã chọn đã thay đổi.\n\nCác trường trong hồ sơ hiện được chọn đã được đặt lại và cần cấu hình lại.';
+	@override String get creator_exporting_as => 'Đang tạo thẻ bằng hồ sơ';
+	@override String get creator_exporting_as_fields_editing => 'Đang sửa các trường cho hồ sơ';
+	@override String get creator_exporting_as_enhancements_editing => 'Đang sửa tiện ích bổ trợ cho hồ sơ';
+	@override String get creator_export_card => 'Tạo thẻ';
+	@override String get info_enhancements => 'Tiện ích bổ trợ tự động hóa việc chỉnh sửa trường trước khi tạo thẻ. Chọn một ô ở bên phải trường để cho phép sử dụng tiện ích bổ trợ. Mỗi trường có thể dùng tối đa năm ô bên phải. Tiện ích bổ trợ ở ô bên trái của trường sẽ tự động được áp dụng khi tạo thẻ tức thì hoặc mở Trình tạo thẻ.';
+	@override String get info_actions => 'Thao tác nhanh cho phép tạo thẻ tức thì và dùng các tính năng tự động khác trên kết quả tìm kiếm từ điển. Có thể gán thao tác qua các ô bên dưới. Có thể dùng tối đa sáu ô.';
+	@override String get no_more_available_enhancements => 'Không còn tiện ích bổ trợ nào cho trường này';
+	@override String get no_more_available_quick_actions => 'Không còn thao tác nhanh nào';
+	@override String get assign_auto_enhancement => 'Gán tiện ích bổ trợ tự động';
+	@override String get assign_manual_enhancement => 'Gán tiện ích bổ trợ thủ công';
+	@override String get remove_enhancement => 'Xóa tiện ích bổ trợ';
+	@override String copy_of_mapping({required Object name}) => 'Bản sao của ${name}';
+	@override String get enter_search_term => 'Nhập từ cần tìm...';
+	@override String searching_for({required Object searchTerm}) => 'Đang tìm 『${searchTerm}』...';
+	@override String get no_search_results => 'Không tìm thấy kết quả tìm kiếm.';
+	@override String get edit_actions => 'Sửa thao tác nhanh của từ điển';
+	@override String get remove_action => 'Xóa thao tác';
+	@override String get assign_action => 'Gán thao tác';
+	@override String dictionary_import_tag({required Object name}) => 'Được nhập từ ${name}';
+	@override String stash_added_single({required Object term}) => 'Đã thêm 『${term}』 vào Kho tạm.';
+	@override String get stash_added_multiple => 'Đã thêm nhiều mục vào Kho tạm.';
+	@override String stash_clear_single({required Object term}) => 'Đã xóa 『${term}』 khỏi Kho tạm.';
+	@override String get stash_clear_title => 'Xóa Kho tạm';
+	@override String get stash_clear_description => 'Tất cả nội dung sẽ bị xóa. Bạn có chắc không?';
+	@override String get stash_placeholder => 'Không có mục nào trong Kho tạm';
+	@override String get stash_nothing_to_pop => 'Không có mục nào để lấy khỏi Kho tạm.';
+	@override String get no_sentences_found => 'Không tìm thấy câu nào';
+	@override String get failed_online_service => 'Không thể giao tiếp với dịch vụ trực tuyến';
+	@override String get search_label_before => 'Hiện tất cả ';
+	@override String get search_label_middle => 'trong số ';
+	@override String get search_label_after => 'kết quả tìm kiếm cho';
+	@override String get clear_dictionary_title => 'Xóa lịch sử kết quả từ điển';
+	@override String get clear_dictionary_description => 'Thao tác này sẽ xóa tất cả kết quả từ điển khỏi lịch sử. Bạn có chắc không?';
+	@override String get clear_search_title => 'Xóa lịch sử tìm kiếm';
+	@override String get clear_search_description => 'Thao tác này sẽ xóa tất cả từ khóa tìm kiếm trong lịch sử này. Bạn có chắc không?';
+	@override String get clear_creator_title => 'Xóa Trình tạo';
+	@override String get clear_creator_description => 'Thao tác này sẽ xóa tất cả các trường. Bạn có chắc không?';
+	@override String get copied_to_clipboard => 'Đã sao chép vào bộ nhớ tạm.';
+	@override String get no_text => 'Không có văn bản.';
+	@override String get info_fields => 'Các trường được điền sẵn dựa trên mục từ được chọn khi xuất tức thì hoặc trước khi mở Trình tạo thẻ. Để đưa một trường vào thẻ xuất, bạn phải bật trường đó bên dưới và gán trường trong hồ sơ xuất hiện tại. Các trường đã bật cũng có thể được thu gọn bên dưới để giảm phần rối mắt khi chỉnh sửa. Dùng nút Xóa ở góc trên bên phải của Trình tạo thẻ để nhanh chóng xóa các trường ẩn này khi chỉnh sửa thẻ thủ công.';
+	@override String get edit_fields => 'Sửa và sắp xếp lại các trường';
+	@override String get remove_field => 'Xóa trường';
+	@override String get add_field => 'Gán trường';
+	@override String get add_field_hint => 'Gán một trường cho hàng này';
+	@override String get no_more_available_fields => 'Không còn trường nào';
+	@override String get hidden_fields => 'Các trường bổ sung';
+	@override String field_fallback_used({required Object field, required Object secondField}) => 'Trường ${field} đã dùng ${secondField} làm từ khóa tìm kiếm dự phòng.';
+	@override String get no_text_to_search => 'Không có văn bản để tìm kiếm.';
+	@override String get image_search_label_before => 'Đang chọn ảnh ';
+	@override String get image_search_label_middle => 'trong số ';
+	@override String get image_search_label_after => 'ảnh tìm thấy cho';
+	@override String get image_search_label_none_middle => 'ảnh nào ';
+	@override String get image_search_label_none_before => 'Chưa chọn ';
+	@override String get preparing_instant_export => 'Đang chuẩn bị thẻ để xuất...';
+	@override String get processing_in_progress => 'Đang chuẩn bị ảnh';
+	@override String get searching_in_progress => 'Đang tìm kiếm ';
+	@override String get audio_unavailable => 'Không tìm thấy âm thanh.';
+	@override String get no_audio_enhancements => 'Chưa gán tiện ích bổ trợ âm thanh nào.';
+	@override String card_exported({required Object deck}) => 'Đã xuất thẻ vào 『${deck}』.';
+	@override String get info_incognito_on => 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
+	@override String get info_incognito_off => 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';
+	@override String get exit_media_title => 'Thoát nội dung';
+	@override String get exit_media_description => 'Bạn sẽ được đưa về menu chính. Bạn có chắc không?';
+	@override String get unimplemented_source => 'Nguồn chưa được triển khai';
+	@override String get clear_browser_title => 'Xóa dữ liệu trình duyệt';
+	@override String get clear_browser_description => 'Thao tác này sẽ xóa tất cả dữ liệu duyệt web được các nguồn nội dung web sử dụng. Bạn có chắc không?';
+	@override String get ttu_no_books_added => 'Chưa thêm sách nào vào ッツ Ebook Reader';
+	@override String get local_media_directory_empty => 'Thư mục không có thư mục con hoặc video';
+	@override String get pick_video_file => 'Chọn tệp video';
+	@override String get navigate_up_one_directory_level => 'Lên một cấp thư mục';
+	@override String get play => 'Phát';
+	@override String get pause => 'Tạm dừng';
+	@override String get record => 'Ghi';
+	@override String get stop => 'Dừng';
+	@override String get replay => 'Phát lại';
+	@override String get audio_subtitles => 'Âm thanh/Phụ đề';
+	@override String get player_option_shadowing => 'Chế độ shadowing';
+	@override String get player_option_change_mode => 'Đổi chế độ phát';
+	@override String get player_option_listening_comprehension => 'Chế độ nghe hiểu';
+	@override String get player_option_drag_to_select => 'Kéo để chọn phụ đề';
+	@override String get player_option_tap_to_select => 'Chạm để chọn phụ đề';
+	@override String get player_option_dictionary_menu => 'Chọn nguồn từ điển đang dùng';
+	@override String get player_option_cast_video => 'Truyền tới thiết bị hiển thị';
+	@override String get player_option_share_subtitle => 'Chia sẻ phụ đề hiện tại';
+	@override String get player_option_export => 'Tạo thẻ từ ngữ cảnh';
+	@override String get player_option_audio => 'Âm thanh';
+	@override String get player_option_subtitle => 'Phụ đề';
+	@override String get player_option_subtitle_external => 'Bên ngoài';
+	@override String get player_option_subtitle_none => 'Không có';
+	@override String get player_option_select_subtitle => 'Chọn kênh phụ đề';
+	@override String get player_option_select_audio => 'Chọn kênh âm thanh';
+	@override String get player_option_text_filter => 'Dùng bộ lọc biểu thức chính quy';
+	@override String get player_option_blur_preferences => 'Tùy chọn khung làm mờ';
+	@override String get player_option_blur_use => 'Dùng khung làm mờ';
+	@override String get player_option_blur_radius => 'Bán kính làm mờ';
+	@override String get player_option_blur_options => 'Đặt màu và độ mờ của khung làm mờ';
+	@override String get player_option_blur_reset => 'Đặt lại kích thước và vị trí khung làm mờ';
+	@override String get player_align_subtitle_transcript => 'Căn phụ đề với bản chép lời';
+	@override String get player_option_subtitle_appearance => 'Thời gian và giao diện phụ đề';
+	@override String get player_option_load_subtitles => 'Tải phụ đề bên ngoài';
+	@override String get player_option_subtitle_delay => 'Độ trễ phụ đề';
+	@override String get player_option_audio_allowance => 'Thời gian đệm âm thanh';
+	@override String get player_option_font_name => 'Tên phông chữ phụ đề';
+	@override String get player_option_font_size => 'Cỡ chữ phụ đề';
+	@override String get player_option_regex_filter => 'Bộ lọc biểu thức chính quy';
+	@override String get player_option_subtitle_background_opacity => 'Độ đục nền phụ đề';
+	@override String get player_option_subtitle_background_blur_radius => 'Bán kính làm mờ nền phụ đề';
+	@override String get player_option_outline_width => 'Độ rộng viền phụ đề';
+	@override String get player_option_subtitle_always_above_bottom_bar => 'Luôn hiển thị phụ đề phía trên khu vực thanh dưới';
+	@override String get player_subtitles_transcript_empty => 'Bản chép lời trống.';
+	@override String get player_prepare_export => 'Đang chuẩn bị thẻ...';
+	@override String get player_change_player_orientation => 'Đổi hướng trình phát';
+	@override String get no_current_media => 'Phát hoặc làm mới nội dung để xem lời bài hát';
+	@override String get lyrics_permission_required => 'Chưa được cấp quyền cần thiết';
+	@override String get no_lyrics_found => 'Không tìm thấy lời bài hát';
+	@override String get trending => 'Thịnh hành';
+	@override String get caption_filter => 'Lọc phụ đề';
+	@override String get captions_query => 'Đang tìm phụ đề';
+	@override String get captions_target => 'Ngôn ngữ đích';
+	@override String get captions_app => 'Ngôn ngữ ứng dụng';
+	@override String get captions_other => 'Ngôn ngữ khác';
+	@override String get captions_closed => 'Phụ đề do người tạo';
+	@override String get captions_auto => 'Phụ đề tự động';
+	@override String get captions_unavailable => 'Không có phụ đề';
+	@override String get captions_error => 'Lỗi khi tìm phụ đề';
+	@override String get change_quality => 'Đổi chất lượng';
+	@override String get closed_captions_query => 'Đang tìm phụ đề';
+	@override String get closed_captions_target => 'Phụ đề ngôn ngữ đích';
+	@override String get closed_captions_app => 'Phụ đề bằng ngôn ngữ ứng dụng';
+	@override String get closed_captions_other => 'Phụ đề bằng ngôn ngữ khác';
+	@override String get closed_captions_unavailable => 'Không có phụ đề';
+	@override String get closed_captions_error => 'Lỗi khi tìm phụ đề';
+	@override String get stream_url => 'URL luồng phát';
+	@override String get default_option => 'Mặc định';
+	@override String get paste => 'Dán';
+	@override String get select_all => 'Chọn tất cả';
+	@override String get lyrics_title => 'Tên bài';
+	@override String get lyrics_artist => 'Nghệ sĩ';
+	@override String get set_media => 'Đặt nội dung';
+	@override String get no_recordings_found => 'Không tìm thấy bản ghi nào';
+	@override String get wrap_image_audio => 'Thêm thẻ HTML hình ảnh/âm thanh khi xuất';
+	@override String get server_address => 'Địa chỉ máy chủ';
+	@override String get no_active_connection => 'Không có kết nối đang hoạt động';
+	@override String get failed_server_connection => 'Không thể kết nối với máy chủ';
+	@override String get no_text_received => 'Chưa nhận được văn bản';
+	@override String get text_segmentation => 'Phân đoạn văn bản';
+	@override String get connect_disconnect => 'Kết nối/Ngắt kết nối';
+	@override String get clear_text_title => 'Xóa văn bản';
+	@override String get clear_text_description => 'Thao tác này sẽ xóa tất cả văn bản đã nhận. Bạn có chắc không?';
+	@override String get close_connection_title => 'Đóng kết nối';
+	@override String get close_connection_description => 'Thao tác này sẽ kết thúc kết nối WebSocket và xóa tất cả văn bản đã nhận. Bạn có chắc không?';
+	@override String get use_slow_import => 'Nhập chậm (dùng nếu nhập lỗi)';
+	@override String get settings => 'Cài đặt';
+	@override String get manager => 'Trình quản lý';
+	@override String get volume_button_page_turning => 'Dùng nút âm lượng để chuyển trang';
+	@override String get invert_volume_buttons => 'Đảo nút âm lượng';
+	@override String get volume_button_turning_speed => 'Tốc độ cuộn liên tục';
+	@override String get extend_page_beyond_navbar => 'Mở rộng trang qua thanh điều hướng';
+	@override String get tweaks => 'Tinh chỉnh';
+	@override String get increase => 'Tăng';
+	@override String get decrease => 'Giảm';
+	@override String get unit_milliseconds => 'ms';
+	@override String get unit_pixels => 'px';
+	@override String get dictionary_settings => 'Cài đặt từ điển';
+	@override String get auto_search => 'Tìm kiếm tự động';
+	@override String get auto_search_debounce_delay => 'Độ trễ trước khi tự tìm';
+	@override String get dictionary_font_size => 'Cỡ chữ từ điển';
+	@override String get close_on_export => 'Đóng khi xuất';
+	@override String get close_on_export_on => 'Trình tạo thẻ sẽ tự động đóng sau khi xuất thẻ.';
+	@override String get close_on_export_off => 'Trình tạo thẻ sẽ không còn tự động đóng sau khi xuất thẻ.';
+	@override String get export_profile_empty => 'Hồ sơ xuất của bạn chưa có trường nào được đặt và cần được cấu hình.';
+	@override String get error_export_media_ankidroid => 'Đã xảy ra lỗi khi xuất nội dung vào AnkiDroid.';
+	@override String get error_add_note => 'Đã xảy ra lỗi khi thêm thẻ vào AnkiDroid.';
+	@override String get first_time_setup => 'Thiết lập lần đầu';
+	@override String get first_time_setup_description => 'Chào mừng đến với jidoujisho! Hãy đặt ngôn ngữ đích và một hồ sơ mặc định sẽ được tùy chỉnh cho bạn. Bạn có thể thay đổi tùy chọn này bất cứ lúc nào.';
+	@override String get maximum_entries => 'Giới hạn tối đa số mục từ điển được truy vấn';
+	@override String get maximum_terms => 'Số từ đầu mục tối đa trong kết quả';
+	@override String get use_br_tags => 'Dùng <br> thay cho ký tự xuống dòng khi xuất';
+	@override String get prepend_dictionary_names => 'Thêm tên từ điển vào trước nghĩa';
+	@override String get highlight_on_tap => 'Tô sáng văn bản khi chạm';
+	@override String get no_audio_file => 'Không có tệp âm thanh để lưu.';
+	@override String get storage_permissions => 'Vui lòng cấp các quyền sau để xuất vào AnkiDroid.';
+	@override String get stream => 'Luồng phát';
+	@override String get network_subtitles_warning => 'Không hỗ trợ phụ đề nhúng cho luồng mạng.';
+	@override String get accessibility => 'Cần có quyền để chụp văn bản từ các sự kiện hỗ trợ tiếp cận.';
+	@override String get comments => 'Bình luận';
+	@override String get replies => 'Phản hồi';
+	@override String get no_comments_queried => 'Không tìm thấy bình luận nào';
+	@override String get no_text_in_clipboard => 'Không có văn bản để hiển thị';
+	@override String file_downloaded({required Object name}) => 'Đã tải tệp xuống: ${name}';
+	@override String get cfhange_sort_order => 'Đổi thứ tự sắp xếp';
+	@override String get login => 'Đăng nhập';
+	@override String get send => 'Gửi';
+	@override String get no_messages => 'Bắt đầu trò chuyện';
+	@override String get enter_message => 'Nhập tin nhắn...';
+	@override String get clear_message_title => 'Xóa tin nhắn';
+	@override String get clear_message_description => 'Thao tác này sẽ xóa tất cả tin nhắn và bắt đầu cuộc trò chuyện mới. Bạn có chắc không?';
+	@override String get error_chatgpt_response => 'Yêu cầu không thành công hoặc đã bị giới hạn tần suất. Hãy thử lại sau ít phút hoặc kiểm tra giới hạn sử dụng của bạn.';
+	@override String get pick_file => 'Chọn tệp';
+	@override String get open_url => 'Mở URL';
+	@override String get catalogs => 'Danh mục';
+	@override String get name => 'Tên';
+	@override String get url => 'URL';
+	@override String get duplicate_catalog => 'Đã có danh mục với URL này.';
+	@override String get no_catalogs_listed => 'Không có danh mục nào';
+	@override String get go_back => 'Quay lại';
+	@override String get invalid_mokuro_file => 'Tệp không phải là tệp HTML do Mokuro tạo.';
+	@override String get create_catalog => 'Tạo danh mục';
+	@override String get adapt_ttu_theme => 'Điều chỉnh cửa sổ bật lên của từ điển theo giao diện';
+	@override String get sentence_picker => 'Chọn câu';
+	@override String field_locked({required Object field}) => 'Trường ${field} đã khóa và sẽ không bị xóa khi xuất trong lúc Trình tạo đang hoạt động.';
+	@override String field_unlocked({required Object field}) => 'Trường ${field} đã mở khóa và sẽ bị xóa khi xuất.';
+	@override String get field_lock => 'Khóa trường';
+	@override String get field_unlock => 'Mở khóa trường';
+	@override String get use_dark_theme => 'Dùng giao diện tối';
+	@override String get stretch_to_fill_screen => 'Kéo giãn để lấp đầy màn hình';
+	@override String get processing_embedded_subtitles => 'Đang xử lý phụ đề nhúng. Hãy thử lại sau.';
+	@override String get transcript_playback_mode => 'Chế độ phát bản chép lời';
+	@override String get toggle_transcript_background => 'Bật/tắt nền bản chép lời';
+	@override String get seek => 'Tua';
+	@override String get saved_tags => 'Đã lưu nhãn.';
+	@override String structured_content_first({required Object i}) => '${i} định nghĩa không được hỗ trợ và đã bị lược bỏ.';
+	@override String get structured_content_second => 'Hãy thử dùng phiên bản nội dung không có cấu trúc của từ điển này.';
+	@override String get missing_api_key => 'Chưa cung cấp khóa API';
+	@override String get chatgpt_error => 'Đã xảy ra lỗi khi nhận phản hồi từ ChatGPT.';
+	@override String get api_key => 'Khóa API';
+	@override String subtitle_delay_set({required Object ms}) => 'Đã đặt độ trễ phụ đề thành ${ms} ms.';
+	@override String get cancel => 'Hủy';
+	@override String get server_port_in_use => 'Cổng máy chủ cục bộ đang được sử dụng';
+	@override String get google_fonts => 'Google Fonts';
+	@override String get video_show => 'Hiện video';
+	@override String get video_hide => 'Ẩn video';
+	@override String get subtitle_timing_show => 'Hiện thời gian phụ đề';
+	@override String get subtitle_timing_hide => 'Ẩn thời gian phụ đề';
+	@override String get find_next => 'Tìm tiếp';
+	@override String get find_previous => 'Tìm trước';
+	@override String get shadowing_mode => 'Chế độ shadowing';
+	@override String get display_settings => 'Cài đặt hiển thị';
+	@override String get cloze => 'Điền chỗ trống';
+	@override String get info_standard_update => 'Loại thẻ hồ sơ tiêu chuẩn mới';
+	@override String get info_standard_update_content => 'Hồ sơ tiêu chuẩn hiện dùng loại thẻ 『jidoujisho Kinomoto』.\n\nHồ sơ tiêu chuẩn cũ của bạn vẫn có thể sử dụng để đảm bảo tương thích ngược.';
+	@override late final _StringsRetryingInVi retrying_in = _StringsRetryingInVi._(_root);
+	@override late final _StringsViewRepliesVi view_replies = _StringsViewRepliesVi._(_root);
+	@override String get manage_duplicate_checks => 'Quản lý kiểm tra trùng lặp';
+	@override String get playback_normal => 'Chế độ phát bình thường';
+	@override String get playback_condensed => 'Chế độ phát cô đọng';
+	@override String get playback_auto_pause => 'Chế độ phát tạm dừng theo phụ đề';
+	@override String get player_hardware_acceleration => 'Tăng tốc phần cứng';
+	@override String get player_use_opensles => 'Âm thanh OpenSL ES';
+	@override String get go_forward => 'Đi tới';
+	@override String get browse => 'Duyệt';
+	@override String get bookmark => 'Dấu trang';
+	@override String get add_bookmark => 'Thêm dấu trang';
+	@override String get add_to_reading_list => 'Thêm vào danh sách đọc';
+	@override String get reading_list_empty => 'Danh sách đọc trống';
+	@override String get reading_list_add_toast => 'Đã thêm vào danh sách đọc.';
+	@override String get reading_list_remove_toast => 'Đã xóa khỏi danh sách đọc.';
+	@override String get ad_block_hosts => 'Danh sách chặn quảng cáo (hosts)';
+	@override String get error_parsing_hosts_file => 'Lỗi khi phân tích tệp hosts.';
+	@override String get double_tap_seek_duration => 'Thời lượng tua khi chạm hai lần';
+	@override String get player_background_play => 'Phát trong nền';
+	@override String get loaded_from_cache => 'Đã tải từ bộ nhớ đệm lưu trữ web.';
+	@override String get player_show_subtitle_in_notification => 'Hiện phụ đề trong thông báo nội dung';
+	@override String get subtitles_processing => 'Đang xử lý phụ đề...';
+	@override String get video_unavailable => 'Video không khả dụng';
+	@override String get video_unavailable_content => 'Không thể lấy các luồng phát. Có thể có hạn chế khiến bạn không thể xem video này.';
+	@override String get video_file_error => 'Không thể tải tệp';
+	@override String get video_file_error_content => 'Không thể tải tệp video. Hãy đảm bảo tệp này tồn tại và nằm trong thư mục mà ứng dụng có thể truy cập.';
+	@override String get ttu_add => 'Thêm';
+	@override String get ttu_add_book => 'Thêm sách';
+	@override String get ttu_reader_settings => 'Cài đặt trình đọc';
+	@override String get ttu_reader_source => 'Nguồn trình đọc';
+	@override String get ttu_empty_title => 'Thư viện của bạn đang trống';
+	@override String get ttu_empty_body => 'Thêm tệp EPUB hoặc HTMLZ để bắt đầu đọc. Chạm vào bất kỳ từ nào để tra từ khi đọc.';
+	@override String get ttu_restore_backup => 'Khôi phục từ bản sao lưu';
+	@override String ttu_adding_book({required Object name}) => 'Đang thêm ${name}';
+	@override String ttu_adding_books({required Object n}) => 'Đang thêm ${n} sách';
+	@override String get ttu_reading_file => 'ッツ đang đọc tệp';
+	@override String ttu_added_book({required Object name}) => 'Đã thêm ${name}';
+	@override String ttu_added_books({required Object n}) => 'Đã thêm ${n} sách';
+	@override String ttu_import_failed({required Object reason}) => 'Không thể thêm sách: ${reason}';
+	@override String ttu_unsupported_file({required Object name}) => '${name} không phải là tệp EPUB hoặc HTMLZ';
+	@override String get ttu_shelf_error => 'Không thể đọc thư viện.';
+	@override String get ttu_try_again => 'Thử lại';
+	@override String ttu_book_deleted({required Object name}) => 'Đã xóa ${name}';
+	@override String get ttu_undo => 'Hoàn tác';
+	@override String get ttu_read => 'Đọc';
+	@override String get ttu_continue => 'Tiếp tục';
+	@override String get ttu_memo => 'Ghi chú';
+	@override String get ttu_memos => 'Ghi chú';
+	@override String get ttu_new_memo => 'Ghi chú mới';
+	@override String get ttu_edit_memo => 'Sửa ghi chú';
+	@override String get ttu_memo_placeholder => 'Một từ cần tra, một câu hỏi, lý do dòng này quan trọng';
+	@override String ttu_memo_saved({required Object position}) => 'Đã lưu ghi chú tại ${position}';
+	@override String get ttu_memo_deleted => 'Đã xóa ghi chú';
+	@override String get ttu_no_memos => 'Chưa có ghi chú. Chọn văn bản trong sách rồi chạm vào Ghi chú để thêm.';
+	@override String get ttu_no_memos_short => 'Chưa có ghi chú';
+	@override String get ttu_memo_hint => 'Thêm ghi chú khi đọc: chọn văn bản rồi chạm vào Ghi chú.';
+	@override String get ttu_continue_reading => 'Đọc tiếp';
+	@override String get ttu_back_to_where => 'Quay lại vị trí trước đó';
+	@override String get ttu_before_jump => 'trước lần chuyển cuối';
+	@override String get ttu_sort_position => 'Vị trí';
+	@override String get ttu_sort_newest => 'Mới nhất';
+	@override String ttu_read_percent({required Object percent}) => 'Đã đọc ${percent}';
+	@override String get ttu_edit => 'Sửa';
+	@override String get ttu_delete => 'Xóa';
+	@override String get ttu_progress => 'Tiến độ';
+	@override String get ttu_read_label => 'Đã đọc';
+	@override String ttu_of_total({required Object total}) => 'trên ${total}';
+	@override String get ttu_last_opened => 'Mở lần cuối';
+	@override String get ttu_not_opened => 'Chưa mở';
+	@override String ttu_added_when({required Object when}) => 'Đã thêm ${when}';
+	@override String get ttu_language => 'Ngôn ngữ';
+	@override String get ttu_uses_dictionaries => 'Tra từ bằng ngôn ngữ này';
+	@override String get ttu_page => 'Trang';
+	@override String get ttu_page_note => 'ッツ áp dụng các cài đặt này khi mở sách';
+	@override String ttu_books_in({required Object language}) => 'Sách bằng ${language}';
+	@override String get ttu_theme => 'Chủ đề';
+	@override String get ttu_text_size => 'Cỡ chữ';
+	@override String get ttu_direction => 'Hướng chữ';
+	@override String get ttu_vertical => 'Dọc';
+	@override String get ttu_horizontal => 'Ngang';
+	@override String get ttu_layout => 'Bố cục';
+	@override String get ttu_pages => 'Trang';
+	@override String get ttu_scroll => 'Cuộn';
+	@override String get ttu_furigana => 'Hiện Furigana';
+	@override String get ttu_furigana_desc => 'Cách đọc bên trên kanji, nếu sách có';
+	@override String get ttu_while_reading => 'Khi đọc';
+	@override String get ttu_auto_save => 'Lưu vị trí của tôi';
+	@override String get ttu_auto_save_desc => 'Lưu khi bạn đọc và khi bạn rời khỏi sách';
+	@override String get ttu_highlight => 'Tô sáng từ đã tra';
+	@override String get ttu_highlight_desc => 'Đánh dấu từ mà từ điển đã tra';
+	@override String get ttu_volume => 'Phím âm lượng chuyển trang';
+	@override String get ttu_volume_desc => 'Mỗi lần nhấn chuyển một trang';
+	@override String get ttu_volume_swap => 'Đổi phím âm lượng';
+	@override String get ttu_volume_swap_desc => 'Nếu các phím hoạt động ngược chiều';
+	@override String get ttu_scroll_step => 'Bước cuộn';
+	@override String get ttu_scroll_step_desc => 'Khoảng cuộn sau mỗi lần nhấn phím trong bố cục Cuộn';
+	@override String get ttu_full_screen => 'Toàn màn hình';
+	@override String get ttu_full_screen_desc => 'Hiển thị bên dưới thanh trạng thái. Phù hợp nhất với điện thoại không có tai thỏ';
+	@override String get ttu_match_popup => 'Cửa sổ bật lên khớp với trang';
+	@override String get ttu_match_popup_desc => 'Dùng chủ đề của trang cho cửa sổ bật lên';
+	@override String get ttu_more => 'Thêm';
+	@override String get ttu_backup_sync => 'Sao lưu và đồng bộ';
+	@override String get ttu_backup_sync_desc => 'Google Drive, OneDrive hoặc một thư mục. Mở ッツ';
+	@override String get ttu_all_settings => 'Tất cả cài đặt ッツ';
+	@override String get ttu_all_settings_desc => 'Phông chữ, lề, cột trang và nhiều cài đặt khác. Mở ッツ';
+	@override String get ttu_opening => 'Đang mở';
+	@override String get ttu_jumping_to => 'Đang chuyển đến';
+	@override String get ttu_returning_to => 'Quay lại';
+	@override String ttu_back_to({required Object position}) => 'Quay lại ${position}';
+	@override String ttu_saved_place({required Object position}) => 'Đã lưu vị trí của bạn tại ${position}';
+	@override String get ttu_just_now => 'Vừa xong';
+	@override String ttu_minutes_ago({required Object n}) => '${n} phút trước';
+	@override String get ttu_today => 'Hôm nay';
+	@override String get ttu_yesterday => 'Hôm qua';
+	@override String ttu_days_ago({required Object n}) => '${n} ngày trước';
+	@override String get ttu_week_ago => '1 tuần trước';
+	@override String ttu_weeks_ago({required Object n}) => '${n} tuần trước';
+	@override String get ttu_month_ago => '1 tháng trước';
+	@override String ttu_months_ago({required Object n}) => '${n} tháng trước';
+	@override String get my_words => 'Mục từ của tôi';
+	@override String get my_words_add => 'Thêm vào Mục từ của tôi';
+	@override String get my_words_edit => 'Sửa mục từ';
+	@override String get my_words_word => 'Mục từ';
+	@override String get my_words_reading => 'Cách đọc';
+	@override String get my_words_meaning => 'Nghĩa (tùy chọn)';
+	@override String get my_words_meaning_hint => 'Tạo sinh tăng cường truy xuất';
+	@override String get my_words_saved => 'Đã lưu vào Mục từ của tôi';
+	@override String get my_words_deleted => 'Đã xóa mục từ';
+	@override String get my_words_empty => 'Chưa có mục từ';
+	@override String get my_words_info => 'Nghĩa do bạn tự thêm. Chúng luôn hiển thị đầu tiên mỗi khi bạn tra mục từ, trong bất kỳ cuốn sách nào. Chọn văn bản như "software as a service (SaaS)" rồi chạm vào Thêm mục từ để lưu SaaS chỉ với một lần chạm.';
+	@override String get my_words_new => 'Mục từ mới';
+	@override String get add_word => 'Thêm mục từ';
+	@override String get ttu_page_info => 'Sách bằng ngôn ngữ này sẽ mở với các cài đặt này.';
+	@override String get ttu_font => 'Phông chữ';
+	@override String get ttu_font_serif => 'Serif';
+	@override String get ttu_font_sans => 'Sans';
+	@override String get ttu_font_mincho => 'Mincho';
+	@override String get ttu_font_klee => 'Klee';
+	@override String get ttu_line_spacing => 'Giãn dòng';
+	@override String get ttu_margins => 'Lề';
+	@override String get ttu_columns => 'Cột';
+	@override String get ttu_columns_auto => 'Tự động';
+	@override String get ttu_furigana_label => 'Furigana';
+	@override String get ttu_furigana_show => 'Hiện';
+	@override String get ttu_furigana_faded => 'Mờ';
+	@override String get ttu_furigana_hidden => 'Ẩn';
+	@override String get ttu_furigana_tap => 'Khi chạm';
+	@override String get ttu_furigana_info => 'Mờ hiển thị cách đọc bằng màu xám. Khi chạm hiển thị cách đọc lúc bạn chạm vào một từ.';
+	@override String get ttu_avoid_break => 'Giữ nguyên đoạn văn';
+	@override String get ttu_avoid_break_info => 'Chuyển đoạn văn sang trang tiếp theo thay vì chia đoạn.';
+	@override String get ttu_blur_images => 'Làm mờ hình ảnh';
+	@override String get ttu_blur_images_info => 'Ẩn hình ảnh sau lớp che spoiler cho đến khi bạn chạm vào chúng.';
+	@override String get ttu_full_screen_info => 'Ẩn thanh trạng thái và thanh điều hướng. Khi vuốt từ cạnh màn hình, chúng chỉ hiện ra, vì vậy bạn cần vuốt hai lần để thoát hoặc mở thông báo.';
+	@override String get ttu_camera_area => 'Dùng vùng camera';
+	@override String get ttu_camera_area_info => 'Cho phép trang hiển thị bên dưới phần khoét camera.';
+	@override String get ttu_keep_screen_on => 'Giữ màn hình luôn bật';
+	@override String get ttu_auto_save_info => 'Lưu khi bạn đọc và khi bạn rời khỏi sách.';
+	@override String get ttu_match_popup_info => 'Dùng chủ đề của trang cho cửa sổ tra từ bật lên.';
+	@override String get ttu_scroll_step_info => 'Khoảng cuộn sau mỗi lần nhấn phím trong bố cục Cuộn.';
+	@override String get file_access_title => 'Cho phép truy cập tệp?';
+	@override String get file_access_media => 'Ảnh, video và âm thanh';
+	@override String get file_access_all => 'Tất cả tệp';
+	@override String get file_access_allow => 'Cho phép';
+	@override String get file_access_not_now => 'Để sau';
+	@override String get file_access_info => 'Cần quyền này để mở video và manga từ các thư mục trên điện thoại. Ảnh, video và âm thanh là đủ để phát video; Tất cả tệp cũng tìm thấy các tệp phụ đề bên cạnh chúng. Sách và từ điển không bao giờ cần quyền này.';
+	@override String get file_access_info_short => 'Cần quyền này để mở video và manga từ các thư mục trên điện thoại. Sách và từ điển không bao giờ cần quyền này.';
+	@override String get file_access_denied => 'Không thể mở tệp nếu chưa được cấp quyền truy cập. Bạn có thể cho phép trong phần cài đặt Android.';
+	@override String ttu_language_changed({required Object language}) => 'Các từ trong sách này hiện được tra bằng ${language}';
+	@override String my_terms_from({required Object title}) => 'Từ ${title}';
+	@override String my_terms_saved_term({required Object term}) => 'Đã lưu ${term}';
+	@override String get my_terms_edit => 'Sửa';
+	@override String get ttu_terms => 'Mục từ';
+	@override String get ttu_no_terms => 'Chưa có mục từ nào được lưu từ sách này';
+	@override String ttu_place_kept({required Object position}) => 'Vị trí của bạn vẫn là ${position}';
+	@override String get ttu_read_on => 'Đọc';
+	@override String get ttu_font_genei => 'Genei';
+	@override String get ttu_chapters => 'Chương';
+	@override String get ttu_no_chapters => 'Sách này không có danh sách chương';
+	@override String get ttu_applying => 'Đang áp dụng cài đặt';
+	@override String get ttu_memos_on_page => 'Hiện ghi chú trên trang';
+	@override String get ttu_memos_on_page_info => 'Một dòng ngắn phía trên mỗi đoạn văn có ghi chú. Chạm vào để đọc toàn bộ ghi chú.';
+	@override String get ttu_color_amber => 'Hổ phách';
+	@override String get ttu_color_rose => 'Hồng';
+	@override String get ttu_color_green => 'Xanh lá';
+	@override String get ttu_color_sky => 'Xanh dương';
+	@override String get ttu_color_violet => 'Tím';
+	@override String get catalog_title => 'Từ điển trực tuyến';
+	@override String get catalog_open => 'Trực tuyến';
+	@override String get catalog_connect_title => 'Kết nối máy chủ từ điển';
+	@override String get catalog_connect_hint => 'Dán địa chỉ máy chủ và token. Token chỉ đọc cho phép duyệt và tải xuống; token quản trị còn cho phép tải lên và xóa. Dán liên kết có token sau dấu # sẽ tự điền cả hai.';
+	@override String get catalog_address => 'Địa chỉ máy chủ';
+	@override String get catalog_token => 'Token';
+	@override String get catalog_connect => 'Kết nối';
+	@override String get catalog_all => 'Tất cả';
+	@override String get catalog_section_bilingual => 'Song ngữ';
+	@override String get catalog_section_monolingual => 'Đơn ngữ';
+	@override String get catalog_section_kanji => 'Kanji';
+	@override String get catalog_section_frequency => 'Tần suất';
+	@override String get catalog_section_pronunciation => 'Phát âm';
+	@override String get catalog_section_other => 'Khác';
+	@override String catalog_entries({required Object n}) => '${n} mục từ';
+	@override String get catalog_installed => 'Đã cài đặt';
+	@override String get catalog_preparing => 'Đang chuẩn bị';
+	@override String get catalog_failed => 'Không thể chuẩn bị';
+	@override String get catalog_download => 'Tải xuống';
+	@override String get catalog_search_hint => 'Tìm trong từ điển này';
+	@override String catalog_nothing_found({required Object query}) => 'Không tìm thấy gì cho ${query}';
+	@override String get catalog_upload => 'Tải lên';
+	@override String catalog_uploading({required Object name}) => 'Đang tải ${name} lên';
+	@override String catalog_uploaded({required Object name}) => '${name} đã có trên máy chủ và đang được chuẩn bị';
+	@override String get catalog_replace => 'Thay thế';
+	@override String get catalog_delete => 'Xóa khỏi máy chủ';
+	@override String get catalog_delete_confirm => 'Chạm lần nữa để xóa';
+	@override String catalog_deleted({required Object name}) => 'Đã xóa ${name} khỏi máy chủ';
+	@override String get catalog_words => 'Từ';
+	@override String get catalog_definitions => 'Định nghĩa';
+	@override String get catalog_languages_hint => 'Ngôn ngữ bạn tra từ và ngôn ngữ của phần định nghĩa. Các từ điển không có thông tin này trong chỉ mục sẽ được máy chủ gắn nhãn dựa trên nội dung; hãy sửa tại đây nếu máy chủ đoán sai.';
+	@override String get catalog_save => 'Lưu';
+	@override String get catalog_server => 'Máy chủ';
+	@override String get catalog_disconnect => 'Ngắt kết nối';
+	@override String get catalog_role_admin => 'Quản trị viên';
+	@override String get catalog_role_read => 'Chỉ đọc';
+	@override String get catalog_empty => 'Chưa có từ điển nào trên máy chủ';
+	@override String catalog_imported({required Object name}) => 'Đã nhập ${name}';
+	@override String get catalog_unknown_language => 'Không xác định';
+	@override String get backup_title => 'Sao lưu và khôi phục';
+	@override String get backup_menu => 'Sao lưu và khôi phục';
+	@override String get backup_step_settings => 'Cài đặt';
+	@override String get backup_step_memos => 'Ghi chú và mục từ';
+	@override String backup_step_books({required Object language}) => 'Sách (${language})';
+	@override String backup_step_dictionary({required Object name}) => 'Từ điển: ${name}';
+	@override String get backup_step_packing => 'Đang đóng gói';
+	@override String backup_step_download({required Object name}) => 'Đang tải ${name} xuống';
+	@override String backup_step_install({required Object name}) => 'Đang cài đặt ${name}';
+	@override String get backup_not_a_backup => 'Tệp này không phải bản sao lưu jidoujisho.';
+	@override String get backup_too_new => 'Bản sao lưu này được tạo bởi phiên bản ứng dụng mới hơn. Hãy cập nhật ứng dụng để khôi phục.';
+	@override String get backup_make => 'Sao lưu';
+	@override String get backup_make_hint => 'Một tệp chứa sách và vị trí đọc, cài đặt và phông chữ của ッツ, ghi chú, Mục từ của tôi, lịch sử, hồ sơ Anki, cài đặt ứng dụng cùng liên kết máy chủ từ điển và các từ điển của bạn. Khi khôi phục, các từ điển có trên máy chủ từ điển sẽ được tải xuống lại; các từ điển khác được lưu trong tệp. Tệp có chứa token máy chủ của bạn, hãy giữ kín tệp này.';
+	@override String get backup_restore => 'Khôi phục';
+	@override String get backup_restore_hint => 'Thay thế sách, ghi chú, mục từ và cài đặt trên thiết bị này bằng dữ liệu trong bản sao lưu. Các từ điển đã có trên thiết bị vẫn được giữ lại; những từ điển khác trong bản sao lưu sẽ được cài đặt.';
+	@override String get backup_choose => 'Chọn bản sao lưu';
+	@override String get backup_saved => 'Đã lưu bản sao lưu';
+	@override String get backup_not_saved => 'Chưa lưu được bản sao lưu';
+	@override String get backup_books => 'Sách';
+	@override String get backup_dictionaries => 'Từ điển';
+	@override String backup_dictionaries_split({required Object included, required Object online}) => '${included} trong tệp · ${online} từ máy chủ của bạn';
+	@override String get backup_memos => 'Ghi chú';
+	@override String get backup_terms => 'Mục từ của tôi';
+	@override String backup_made({required Object date, required Object version}) => 'Được tạo ${date} bằng ${version}';
+	@override String get backup_restore_confirm => 'Chạm lần nữa để thay thế dữ liệu trên thiết bị này';
+	@override String get backup_restored => 'Đã khôi phục. Khởi động lại ứng dụng để hoàn tất.';
+	@override String get backup_restart => 'Đóng ứng dụng';
+	@override String backup_failed_dictionaries({required Object names}) => 'Không thể cài đặt: ${names}';
+	@override String get backup_working => 'Hãy giữ ứng dụng mở cho đến khi hoàn tất.';
+	@override String get theme_menu => 'Chủ đề';
+	@override String get theme_mode => 'Chế độ';
+	@override String get theme_mode_system => 'Hệ thống';
+	@override String get theme_mode_light => 'Sáng';
+	@override String get theme_mode_dark => 'Tối';
+	@override String get theme_mode_hint => 'Hệ thống làm theo điện thoại của bạn và chuyển đổi cùng điện thoại.';
+	@override String get theme_accent => 'Màu nhấn';
+	@override String get theme_accent_red => 'Đỏ';
+	@override String get theme_accent_rose => 'Hồng';
+	@override String get theme_accent_orange => 'Cam';
+	@override String get theme_accent_green => 'Xanh lá';
+	@override String get theme_accent_teal => 'Xanh ngọc';
+	@override String get theme_accent_blue => 'Xanh dương';
+	@override String get theme_accent_violet => 'Tím';
+	@override String get theme_accent_slate => 'Xám xanh';
+	@override String get ttu_search => 'Tìm kiếm';
+	@override String get ttu_search_hint => 'Tìm trong sách này';
+	@override String ttu_search_found({required Object count}) => 'Tìm thấy ${count} kết quả';
+	@override String ttu_search_first({required Object shown}) => 'Hiển thị ${shown} kết quả đầu tiên';
+	@override String get ttu_search_none => 'Không có trong sách này';
+	@override String get ttu_search_reading => 'Đang đọc sách…';
+	@override String get ttu_search_stay => 'Ở lại đây';
+	@override String get ttu_search_list => 'Tất cả kết quả';
+	@override String get ttu_search_previous => 'Kết quả trước';
+	@override String get ttu_search_next => 'Kết quả tiếp theo';
+	@override String get ttu_search_info => 'Kết quả không phân biệt hiragana và katakana, ký tự full-width và half-width, hay chữ hoa và chữ thường. Không tìm kiếm Furigana. Vị trí đã lưu vẫn giữ nguyên cho đến khi bạn chọn Ở lại đây.';
+	@override String get ttu_favourite => 'Yêu thích';
+	@override String get ttu_unfavourite => 'Xóa khỏi mục yêu thích';
+	@override String get ttu_favourites => 'Mục yêu thích';
+	@override String get ttu_shelf => 'Kệ sách';
+	@override String get ttu_group_by => 'Nhóm theo';
+	@override String get ttu_group_by_none => 'Không nhóm';
+	@override String get ttu_group_by_groups => 'Nhóm của tôi';
+	@override String get ttu_group_by_language => 'Ngôn ngữ';
+	@override String get ttu_group_by_progress => 'Tiến độ';
+	@override String get ttu_group => 'Nhóm';
+	@override String get ttu_group_none => 'Không có';
+	@override String get ttu_ungrouped => 'Chưa thuộc nhóm';
+	@override String get ttu_progress_reading => 'Đang đọc';
+	@override String get ttu_progress_unread => 'Chưa bắt đầu';
+	@override String get ttu_progress_finished => 'Đã đọc xong';
+	@override String get ttu_other_books => 'Sách';
+	@override String get ttu_new_group => 'Nhóm mới';
+	@override String get ttu_group_name => 'Tên nhóm';
+	@override String get ttu_rename_group => 'Đổi tên';
+	@override String get ttu_delete_group => 'Xóa nhóm';
+	@override String get ttu_group_info => 'Sách sẽ hiển thị dưới nhóm khi kệ sách được nhóm theo Nhóm của tôi trong phần cài đặt kệ sách.';
+	@override String get ttu_group_by_info => 'Mục yêu thích luôn hiển thị đầu tiên. Chạm vào tiêu đề để thu gọn.';
+	@override String get ttu_this_book => 'Sách này';
+	@override String get ttu_follow_links => 'Mở liên kết';
+	@override String get ttu_follow_links_info => 'Khi bật, chạm vào liên kết sẽ đưa bạn đến nơi liên kết trỏ tới, kèm cách quay lại. Khi tắt, liên kết được đọc như văn bản thường và chạm vào sẽ tra từ.';
+	@override String get ttu_book_fonts => 'Phông chữ riêng của sách';
+	@override String get ttu_book_fonts_info => 'Khi tắt, phông chữ của bạn được dùng cho toàn bộ sách. Mã vẫn dùng phông chữ đơn cách.';
+	@override String ttu_repaired_partly({required Object title}) => 'Một phần của ${title} bị thiếu trong tệp. Phần còn lại đã được thêm.';
+	@override String get catalog_description => 'Mô tả';
+	@override String get catalog_description_hint => 'Dùng để làm gì hoặc dành cho ai';
+	@override String catalog_description_shown_in({required Object language}) => 'Chỉ hiển thị khi ứng dụng dùng ${language}';
+	@override String import_replacing({required Object name}) => 'Đang thay thế ${name} cũ…';
+	@override String get catalog_update => 'Cập nhật lên phiên bản này';
+	@override String get dictionary_about => 'Thông tin';
+	@override String dictionary_by({required Object author}) => 'Tác giả: ${author}';
+	@override String get dictionary_delete_all => 'Xóa tất cả từ điển';
+	@override String get dictionary_import => 'Nhập';
+	@override String get dictionary_collapsed => 'Mặc định thu gọn';
+	@override String get dictionary_show_in_results => 'Hiện trong kết quả';
+	@override String get dictionary_start_collapsed => 'Thu gọn sẵn trong kết quả';
+	@override String get dictionary_from_server => 'Đã tải xuống';
+	@override String get dictionary_from_file => 'Đã nhập từ tệp';
+	@override String get dictionary_delete => 'Xóa từ điển';
+	@override String get ttu_add_font => 'Thêm phông chữ';
+	@override String get ttu_font_unsupported => 'Phông chữ phải là tệp .ttf, .otf, .woff hoặc .woff2.';
+	@override String get ttu_font_failed => 'Không thể thêm phông chữ.';
+	@override String ttu_remove_font({required Object name}) => 'Xóa ${name}';
+	@override String get auto_backup_title => 'Luôn cập nhật bản sao lưu';
+	@override String get auto_backup_hint => 'Một tệp sao lưu ở nơi bạn chọn, chẳng hạn như Google Drive, sẽ được ghi đè khi đến hạn để chỉ giữ lại bản mới nhất. Tệp được cập nhật khi ứng dụng đang mở, một lúc sau khi bạn mở ứng dụng.';
+	@override String get auto_backup_choose => 'Chọn nơi lưu';
+	@override String get auto_backup_file => 'Tệp sao lưu';
+	@override String get auto_backup_daily => 'Mỗi ngày';
+	@override String get auto_backup_weekly => 'Mỗi tuần';
+	@override String get auto_backup_own_dictionaries => 'Bao gồm các từ điển do tôi tự thêm';
+	@override String get auto_backup_own_dictionaries_info => 'Các từ điển này có thể khiến tệp lớn. Từ điển trên máy chủ của bạn luôn được liệt kê và sẽ được tải xuống lại khi khôi phục.';
+	@override String get auto_backup_now => 'Cập nhật ngay';
+	@override String get auto_backup_off => 'Tắt';
+	@override String auto_backup_updated({required Object date}) => 'Đã cập nhật ${date}';
+	@override String get auto_backup_never => 'Chưa cập nhật';
+	@override String auto_backup_failed({required Object reason}) => 'Lần cập nhật cuối thất bại: ${reason}';
+	@override String get auto_backup_lost => 'Không thể truy cập tệp sao lưu nữa. Hãy chọn lại nơi lưu.';
+	@override String get auto_backup_writing => 'Đang ghi tệp sao lưu';
+	@override String get auto_backup_cannot_keep => 'Sau này không thể ghi lại vào nơi đó. Hãy chọn nơi khác, chẳng hạn như một thư mục hoặc Google Drive.';
+	@override String get auto_backup_running => 'Đang cập nhật tệp sao lưu';
+	@override String get ttu_tags => 'Nhãn';
+	@override String get ttu_add_tag => 'Thêm nhãn';
+	@override String get ttu_tags_none => 'Chưa có nhãn';
+	@override String get ttu_tags_used_before => 'Đã dùng trước đây';
+	@override String get ttu_tags_info => 'Nhãn hiển thị trên bìa sách. Chọn một nhãn đã dùng trước đây hoặc nhập nhãn mới.';
+	@override late final _StringsTtuThemeNamesVi ttu_theme_names = _StringsTtuThemeNamesVi._(_root);
+	@override late final _StringsLanguageNamesVi language_names = _StringsLanguageNamesVi._(_root);
+	@override late final _StringsAddonsVi addons = _StringsAddonsVi._(_root);
+}
+
+// Path: retrying_in
+class _StringsRetryingInVi extends _StringsRetryingInEn {
+	_StringsRetryingInVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String seconds({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('vi'))(n,
+		one: 'Đang thử lại sau ${n} giây...',
+		other: 'Đang thử lại sau ${n} giây...',
+	);
+}
+
+// Path: view_replies
+class _StringsViewRepliesVi extends _StringsViewRepliesEn {
+	_StringsViewRepliesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String reply({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('vi'))(n,
+		one: 'HIỆN ${n} PHẢN HỒI',
+		other: 'HIỆN ${n} PHẢN HỒI',
+	);
+}
+
+// Path: ttu_theme_names
+class _StringsTtuThemeNamesVi extends _StringsTtuThemeNamesEn {
+	_StringsTtuThemeNamesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get light => 'Sáng';
+	@override String get ecru => 'Ngà';
+	@override String get water => 'Nước';
+	@override String get gray => 'Xám';
+	@override String get dark => 'Tối';
+	@override String get black => 'Đen';
+}
+
+// Path: language_names
+class _StringsLanguageNamesVi extends _StringsLanguageNamesEn {
+	_StringsLanguageNamesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get ja => 'Tiếng Nhật';
+	@override String get en => 'Tiếng Anh';
+	@override String get vi => 'Tiếng Việt';
+	@override String get zh => 'Tiếng Trung';
+	@override String get ko => 'Tiếng Hàn';
+	@override String get fr => 'Tiếng Pháp';
+	@override String get de => 'Tiếng Đức';
+	@override String get es => 'Tiếng Tây Ban Nha';
+	@override String get ru => 'Tiếng Nga';
+	@override String get th => 'Tiếng Thái';
+	@override String get ar => 'Tiếng Ả Rập';
+}
+
+// Path: addons
+class _StringsAddonsVi extends _StringsAddonsEn {
+	_StringsAddonsVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override late final _StringsAddonsFieldVi field = _StringsAddonsFieldVi._(_root);
+	@override late final _StringsAddonsEnhancementVi enhancement = _StringsAddonsEnhancementVi._(_root);
+	@override late final _StringsAddonsActionVi action = _StringsAddonsActionVi._(_root);
+	@override late final _StringsAddonsSourceVi source = _StringsAddonsSourceVi._(_root);
+}
+
+// Path: addons.field
+class _StringsAddonsFieldVi extends _StringsAddonsFieldEn {
+	_StringsAddonsFieldVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override late final _StringsAddonsFieldSentenceVi sentence = _StringsAddonsFieldSentenceVi._(_root);
+	@override late final _StringsAddonsFieldTermVi term = _StringsAddonsFieldTermVi._(_root);
+	@override late final _StringsAddonsFieldReadingVi reading = _StringsAddonsFieldReadingVi._(_root);
+	@override late final _StringsAddonsFieldMeaningVi meaning = _StringsAddonsFieldMeaningVi._(_root);
+	@override late final _StringsAddonsFieldNotesVi notes = _StringsAddonsFieldNotesVi._(_root);
+	@override late final _StringsAddonsFieldImageVi image = _StringsAddonsFieldImageVi._(_root);
+	@override late final _StringsAddonsFieldAudioVi audio = _StringsAddonsFieldAudioVi._(_root);
+	@override late final _StringsAddonsFieldAudioSentenceVi audio_sentence = _StringsAddonsFieldAudioSentenceVi._(_root);
+	@override late final _StringsAddonsFieldPitchAccentVi pitch_accent = _StringsAddonsFieldPitchAccentVi._(_root);
+	@override late final _StringsAddonsFieldFuriganaVi furigana = _StringsAddonsFieldFuriganaVi._(_root);
+	@override late final _StringsAddonsFieldFrequencyVi frequency = _StringsAddonsFieldFrequencyVi._(_root);
+	@override late final _StringsAddonsFieldContextVi context = _StringsAddonsFieldContextVi._(_root);
+	@override late final _StringsAddonsFieldClozeBeforeVi cloze_before = _StringsAddonsFieldClozeBeforeVi._(_root);
+	@override late final _StringsAddonsFieldClozeInsideVi cloze_inside = _StringsAddonsFieldClozeInsideVi._(_root);
+	@override late final _StringsAddonsFieldClozeAfterVi cloze_after = _StringsAddonsFieldClozeAfterVi._(_root);
+	@override late final _StringsAddonsFieldExpandedMeaningVi expanded_meaning = _StringsAddonsFieldExpandedMeaningVi._(_root);
+	@override late final _StringsAddonsFieldCollapsedMeaningVi collapsed_meaning = _StringsAddonsFieldCollapsedMeaningVi._(_root);
+	@override late final _StringsAddonsFieldHiddenMeaningVi hidden_meaning = _StringsAddonsFieldHiddenMeaningVi._(_root);
+	@override late final _StringsAddonsFieldTagsVi tags = _StringsAddonsFieldTagsVi._(_root);
+}
+
+// Path: addons.enhancement
+class _StringsAddonsEnhancementVi extends _StringsAddonsEnhancementEn {
+	_StringsAddonsEnhancementVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override late final _StringsAddonsEnhancementClearFieldVi clear_field = _StringsAddonsEnhancementClearFieldVi._(_root);
+	@override late final _StringsAddonsEnhancementJpd101AudioVi jpd101_audio = _StringsAddonsEnhancementJpd101AudioVi._(_root);
+	@override late final _StringsAddonsEnhancementForvoAudioVi forvo_audio = _StringsAddonsEnhancementForvoAudioVi._(_root);
+	@override late final _StringsAddonsEnhancementPickAudioVi pick_audio = _StringsAddonsEnhancementPickAudioVi._(_root);
+	@override late final _StringsAddonsEnhancementAudioRecorderVi audio_recorder = _StringsAddonsEnhancementAudioRecorderVi._(_root);
+	@override late final _StringsAddonsEnhancementOpenStashVi open_stash = _StringsAddonsEnhancementOpenStashVi._(_root);
+	@override late final _StringsAddonsEnhancementPopFromStashVi pop_from_stash = _StringsAddonsEnhancementPopFromStashVi._(_root);
+	@override late final _StringsAddonsEnhancementTextSegmentationVi text_segmentation = _StringsAddonsEnhancementTextSegmentationVi._(_root);
+	@override late final _StringsAddonsEnhancementBingImagesSearchVi bing_images_search = _StringsAddonsEnhancementBingImagesSearchVi._(_root);
+	@override late final _StringsAddonsEnhancementCropImageVi crop_image = _StringsAddonsEnhancementCropImageVi._(_root);
+	@override late final _StringsAddonsEnhancementPickImageVi pick_image = _StringsAddonsEnhancementPickImageVi._(_root);
+	@override late final _StringsAddonsEnhancementCameraVi camera = _StringsAddonsEnhancementCameraVi._(_root);
+	@override late final _StringsAddonsEnhancementSentencePickerVi sentence_picker = _StringsAddonsEnhancementSentencePickerVi._(_root);
+	@override late final _StringsAddonsEnhancementSearchDictionaryVi search_dictionary = _StringsAddonsEnhancementSearchDictionaryVi._(_root);
+	@override late final _StringsAddonsEnhancementMassifExampleSentencesVi massif_example_sentences = _StringsAddonsEnhancementMassifExampleSentencesVi._(_root);
+	@override late final _StringsAddonsEnhancementTatoebaExampleSentencesVi tatoeba_example_sentences = _StringsAddonsEnhancementTatoebaExampleSentencesVi._(_root);
+	@override late final _StringsAddonsEnhancementImmersionKitVi immersion_kit = _StringsAddonsEnhancementImmersionKitVi._(_root);
+	@override late final _StringsAddonsEnhancementSaveTagsVi save_tags = _StringsAddonsEnhancementSaveTagsVi._(_root);
+}
+
+// Path: addons.action
+class _StringsAddonsActionVi extends _StringsAddonsActionEn {
+	_StringsAddonsActionVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override late final _StringsAddonsActionCardCreatorVi card_creator = _StringsAddonsActionCardCreatorVi._(_root);
+	@override late final _StringsAddonsActionInstantExportVi instant_export = _StringsAddonsActionInstantExportVi._(_root);
+	@override late final _StringsAddonsActionAddToStashVi add_to_stash = _StringsAddonsActionAddToStashVi._(_root);
+	@override late final _StringsAddonsActionMyWordsVi my_words = _StringsAddonsActionMyWordsVi._(_root);
+	@override late final _StringsAddonsActionCopyToClipboardVi copy_to_clipboard = _StringsAddonsActionCopyToClipboardVi._(_root);
+	@override late final _StringsAddonsActionShareVi share = _StringsAddonsActionShareVi._(_root);
+	@override late final _StringsAddonsActionPlayAudioVi play_audio = _StringsAddonsActionPlayAudioVi._(_root);
+}
+
+// Path: addons.source
+class _StringsAddonsSourceVi extends _StringsAddonsSourceEn {
+	_StringsAddonsSourceVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override late final _StringsAddonsSourcePlayerLocalMediaVi player_local_media = _StringsAddonsSourcePlayerLocalMediaVi._(_root);
+	@override late final _StringsAddonsSourcePlayerYoutubeVi player_youtube = _StringsAddonsSourcePlayerYoutubeVi._(_root);
+	@override late final _StringsAddonsSourcePlayerNetworkStreamVi player_network_stream = _StringsAddonsSourcePlayerNetworkStreamVi._(_root);
+	@override late final _StringsAddonsSourceReaderTtuVi reader_ttu = _StringsAddonsSourceReaderTtuVi._(_root);
+	@override late final _StringsAddonsSourceReaderMokuroVi reader_mokuro = _StringsAddonsSourceReaderMokuroVi._(_root);
+	@override late final _StringsAddonsSourceReaderBrowserVi reader_browser = _StringsAddonsSourceReaderBrowserVi._(_root);
+	@override late final _StringsAddonsSourceReaderLyricsVi reader_lyrics = _StringsAddonsSourceReaderLyricsVi._(_root);
+	@override late final _StringsAddonsSourceReaderChatgptVi reader_chatgpt = _StringsAddonsSourceReaderChatgptVi._(_root);
+	@override late final _StringsAddonsSourceReaderClipboardVi reader_clipboard = _StringsAddonsSourceReaderClipboardVi._(_root);
+	@override late final _StringsAddonsSourceReaderWebsocketVi reader_websocket = _StringsAddonsSourceReaderWebsocketVi._(_root);
+	@override late final _StringsAddonsSourceViewerCameraVi viewer_camera = _StringsAddonsSourceViewerCameraVi._(_root);
+}
+
+// Path: addons.field.sentence
+class _StringsAddonsFieldSentenceVi extends _StringsAddonsFieldSentenceEn {
+	_StringsAddonsFieldSentenceVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Câu';
+	@override String get description => 'Phụ đề, đoạn trích trong sách và thông tin ngữ cảnh khác.';
+}
+
+// Path: addons.field.term
+class _StringsAddonsFieldTermVi extends _StringsAddonsFieldTermEn {
+	_StringsAddonsFieldTermVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Mục từ';
+	@override String get description => 'Từ đầu mục hoặc cụm từ trong từ điển.';
+}
+
+// Path: addons.field.reading
+class _StringsAddonsFieldReadingVi extends _StringsAddonsFieldReadingEn {
+	_StringsAddonsFieldReadingVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Cách đọc';
+	@override String get description => 'Cách phát âm hoặc kiểu nói.';
+}
+
+// Path: addons.field.meaning
+class _StringsAddonsFieldMeaningVi extends _StringsAddonsFieldMeaningEn {
+	_StringsAddonsFieldMeaningVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Nghĩa';
+	@override String get description => 'Tất cả định nghĩa trong từ điển của một mục từ.';
+}
+
+// Path: addons.field.notes
+class _StringsAddonsFieldNotesVi extends _StringsAddonsFieldNotesEn {
+	_StringsAddonsFieldNotesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Ghi chú';
+	@override String get description => 'Thông tin bổ sung hoặc nhận xét cá nhân.';
+}
+
+// Path: addons.field.image
+class _StringsAddonsFieldImageVi extends _StringsAddonsFieldImageEn {
+	_StringsAddonsFieldImageVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Hình ảnh';
+	@override String get description => 'Thông tin bổ sung trực quan. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn hình ảnh.';
+}
+
+// Path: addons.field.audio
+class _StringsAddonsFieldAudioVi extends _StringsAddonsFieldAudioEn {
+	_StringsAddonsFieldAudioVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Âm thanh mục từ';
+	@override String get description => 'Âm thanh liên quan đến mục từ. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn âm thanh.';
+}
+
+// Path: addons.field.audio_sentence
+class _StringsAddonsFieldAudioSentenceVi extends _StringsAddonsFieldAudioSentenceEn {
+	_StringsAddonsFieldAudioSentenceVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Âm thanh câu';
+	@override String get description => 'Âm thanh liên quan đến câu. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn âm thanh.';
+}
+
+// Path: addons.field.pitch_accent
+class _StringsAddonsFieldPitchAccentVi extends _StringsAddonsFieldPitchAccentEn {
+	_StringsAddonsFieldPitchAccentVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Trọng âm cao độ';
+	@override String get description => 'Điền sẵn văn bản để xuất sơ đồ trọng âm cao độ.';
+}
+
+// Path: addons.field.furigana
+class _StringsAddonsFieldFuriganaVi extends _StringsAddonsFieldFuriganaEn {
+	_StringsAddonsFieldFuriganaVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Furigana';
+	@override String get description => 'Điền sẵn văn bản để xuất Furigana.';
+}
+
+// Path: addons.field.frequency
+class _StringsAddonsFieldFrequencyVi extends _StringsAddonsFieldFrequencyEn {
+	_StringsAddonsFieldFrequencyVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Tần suất';
+	@override String get description => 'Thêm tần suất của từ đầu mục để sắp xếp, được tính bằng trung bình điều hòa.';
+}
+
+// Path: addons.field.context
+class _StringsAddonsFieldContextVi extends _StringsAddonsFieldContextEn {
+	_StringsAddonsFieldContextVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Ngữ cảnh';
+	@override String get description => 'Tên của nguồn hiện tại.';
+}
+
+// Path: addons.field.cloze_before
+class _StringsAddonsFieldClozeBeforeVi extends _StringsAddonsFieldClozeBeforeEn {
+	_StringsAddonsFieldClozeBeforeVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Trước chỗ trống';
+	@override String get description => 'Văn bản trước phần được tô sáng trong câu. Trống nếu không có gì được tô sáng.';
+}
+
+// Path: addons.field.cloze_inside
+class _StringsAddonsFieldClozeInsideVi extends _StringsAddonsFieldClozeInsideEn {
+	_StringsAddonsFieldClozeInsideVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Chỗ trống';
+	@override String get description => 'Văn bản được tô sáng trong câu.';
+}
+
+// Path: addons.field.cloze_after
+class _StringsAddonsFieldClozeAfterVi extends _StringsAddonsFieldClozeAfterEn {
+	_StringsAddonsFieldClozeAfterVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Sau chỗ trống';
+	@override String get description => 'Văn bản sau phần được tô sáng trong câu. Trống nếu không có gì được tô sáng.';
+}
+
+// Path: addons.field.expanded_meaning
+class _StringsAddonsFieldExpandedMeaningVi extends _StringsAddonsFieldExpandedMeaningEn {
+	_StringsAddonsFieldExpandedMeaningVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Nghĩa mở rộng';
+	@override String get description => 'Chỉ các định nghĩa từ những từ điển đang mở rộng.';
+}
+
+// Path: addons.field.collapsed_meaning
+class _StringsAddonsFieldCollapsedMeaningVi extends _StringsAddonsFieldCollapsedMeaningEn {
+	_StringsAddonsFieldCollapsedMeaningVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Nghĩa thu gọn';
+	@override String get description => 'Chỉ các định nghĩa từ những từ điển đang thu gọn.';
+}
+
+// Path: addons.field.hidden_meaning
+class _StringsAddonsFieldHiddenMeaningVi extends _StringsAddonsFieldHiddenMeaningEn {
+	_StringsAddonsFieldHiddenMeaningVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Nghĩa ẩn';
+	@override String get description => 'Chỉ các định nghĩa từ những từ điển đang ẩn.';
+}
+
+// Path: addons.field.tags
+class _StringsAddonsFieldTagsVi extends _StringsAddonsFieldTagsEn {
+	_StringsAddonsFieldTagsVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Nhãn';
+	@override String get description => 'Sắp xếp thẻ trong bộ thẻ bằng các nhãn cách nhau bởi dấu cách.';
+}
+
+// Path: addons.enhancement.clear_field
+class _StringsAddonsEnhancementClearFieldVi extends _StringsAddonsEnhancementClearFieldEn {
+	_StringsAddonsEnhancementClearFieldVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Xóa trường';
+	@override String get description => 'Nhanh chóng xóa nội dung của một trường.';
+}
+
+// Path: addons.enhancement.jpd101_audio
+class _StringsAddonsEnhancementJpd101AudioVi extends _StringsAddonsEnhancementJpd101AudioEn {
+	_StringsAddonsEnhancementJpd101AudioVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Âm thanh JapanesePod101';
+	@override String get description => 'Tìm cách phát âm phù hợp của từ trên JapanesePod101.';
+}
+
+// Path: addons.enhancement.forvo_audio
+class _StringsAddonsEnhancementForvoAudioVi extends _StringsAddonsEnhancementForvoAudioEn {
+	_StringsAddonsEnhancementForvoAudioVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Âm thanh Forvo';
+	@override String get description => 'Lấy âm thanh của từ từ Forvo.';
+}
+
+// Path: addons.enhancement.pick_audio
+class _StringsAddonsEnhancementPickAudioVi extends _StringsAddonsEnhancementPickAudioEn {
+	_StringsAddonsEnhancementPickAudioVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Chọn âm thanh';
+	@override String get description => 'Chọn tệp âm thanh bằng trình chọn bên ngoài.';
+}
+
+// Path: addons.enhancement.audio_recorder
+class _StringsAddonsEnhancementAudioRecorderVi extends _StringsAddonsEnhancementAudioRecorderEn {
+	_StringsAddonsEnhancementAudioRecorderVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Trình ghi âm';
+	@override String get description => 'Ghi và sử dụng âm thanh thu từ micrô của thiết bị.';
+}
+
+// Path: addons.enhancement.open_stash
+class _StringsAddonsEnhancementOpenStashVi extends _StringsAddonsEnhancementOpenStashEn {
+	_StringsAddonsEnhancementOpenStashVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Mở Kho tạm';
+	@override String get description => 'Xem và quản lý văn bản đã lưu trong Kho tạm.';
+}
+
+// Path: addons.enhancement.pop_from_stash
+class _StringsAddonsEnhancementPopFromStashVi extends _StringsAddonsEnhancementPopFromStashEn {
+	_StringsAddonsEnhancementPopFromStashVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Lấy từ Kho tạm';
+	@override String get description => 'Nhanh chóng lấy mục mới nhất trong Kho tạm.';
+}
+
+// Path: addons.enhancement.text_segmentation
+class _StringsAddonsEnhancementTextSegmentationVi extends _StringsAddonsEnhancementTextSegmentationEn {
+	_StringsAddonsEnhancementTextSegmentationVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Tách văn bản';
+	@override String get description => 'Tìm kiếm hoặc chọn một mục từ mới trong văn bản đã được tách.';
+}
+
+// Path: addons.enhancement.bing_images_search
+class _StringsAddonsEnhancementBingImagesSearchVi extends _StringsAddonsEnhancementBingImagesSearchEn {
+	_StringsAddonsEnhancementBingImagesSearchVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Tìm hình ảnh trên Bing';
+	@override String get description => 'Tìm hình ảnh trên Bing bằng truy vấn hình ảnh hiện tại hoặc từ hiện tại.';
+}
+
+// Path: addons.enhancement.crop_image
+class _StringsAddonsEnhancementCropImageVi extends _StringsAddonsEnhancementCropImageEn {
+	_StringsAddonsEnhancementCropImageVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Cắt hình ảnh';
+	@override String get description => 'Cắt hình ảnh hiện được chọn.';
+}
+
+// Path: addons.enhancement.pick_image
+class _StringsAddonsEnhancementPickImageVi extends _StringsAddonsEnhancementPickImageEn {
+	_StringsAddonsEnhancementPickImageVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Chọn hình ảnh';
+	@override String get description => 'Chọn hình ảnh mới bằng trình chọn bên ngoài.';
+}
+
+// Path: addons.enhancement.camera
+class _StringsAddonsEnhancementCameraVi extends _StringsAddonsEnhancementCameraEn {
+	_StringsAddonsEnhancementCameraVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Máy ảnh';
+	@override String get description => 'Chụp ảnh mới để dùng làm hình ảnh.';
+}
+
+// Path: addons.enhancement.sentence_picker
+class _StringsAddonsEnhancementSentencePickerVi extends _StringsAddonsEnhancementSentencePickerEn {
+	_StringsAddonsEnhancementSentencePickerVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Chọn câu';
+	@override String get description => 'Chọn các câu được phân cách bằng dấu câu và khoảng trắng.';
+}
+
+// Path: addons.enhancement.search_dictionary
+class _StringsAddonsEnhancementSearchDictionaryVi extends _StringsAddonsEnhancementSearchDictionaryEn {
+	_StringsAddonsEnhancementSearchDictionaryVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Tra từ điển';
+	@override String get description => 'Tìm trong từ điển bằng nội dung của một trường.';
+}
+
+// Path: addons.enhancement.massif_example_sentences
+class _StringsAddonsEnhancementMassifExampleSentencesVi extends _StringsAddonsEnhancementMassifExampleSentencesEn {
+	_StringsAddonsEnhancementMassifExampleSentencesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Câu ví dụ từ Massif';
+	@override String get description => 'Lấy các câu ví dụ được tuyển chọn qua Massif.';
+}
+
+// Path: addons.enhancement.tatoeba_example_sentences
+class _StringsAddonsEnhancementTatoebaExampleSentencesVi extends _StringsAddonsEnhancementTatoebaExampleSentencesEn {
+	_StringsAddonsEnhancementTatoebaExampleSentencesVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Câu ví dụ từ Tatoeba';
+	@override String get description => 'Chọn cụm từ và câu ví dụ từ Tatoeba.';
+}
+
+// Path: addons.enhancement.immersion_kit
+class _StringsAddonsEnhancementImmersionKitVi extends _StringsAddonsEnhancementImmersionKitEn {
+	_StringsAddonsEnhancementImmersionKitVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'ImmersionKit';
+	@override String get description => 'Lấy các câu ví dụ kèm hình ảnh và âm thanh.';
+}
+
+// Path: addons.enhancement.save_tags
+class _StringsAddonsEnhancementSaveTagsVi extends _StringsAddonsEnhancementSaveTagsEn {
+	_StringsAddonsEnhancementSaveTagsVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Lưu nhãn';
+	@override String get description => 'Lưu văn bản hiện tại vào trường Nhãn.';
+}
+
+// Path: addons.action.card_creator
+class _StringsAddonsActionCardCreatorVi extends _StringsAddonsActionCardCreatorEn {
+	_StringsAddonsActionCardCreatorVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Trình tạo thẻ';
+	@override String get description => 'Tạo thẻ từ mục từ điển đã chọn và chỉnh sửa trước khi xuất.';
+}
+
+// Path: addons.action.instant_export
+class _StringsAddonsActionInstantExportVi extends _StringsAddonsActionInstantExportEn {
+	_StringsAddonsActionInstantExportVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Xuất ngay';
+	@override String get description => 'Xuất thẻ ngay từ mục từ điển đã chọn.';
+}
+
+// Path: addons.action.add_to_stash
+class _StringsAddonsActionAddToStashVi extends _StringsAddonsActionAddToStashEn {
+	_StringsAddonsActionAddToStashVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Thêm vào Kho tạm';
+	@override String get description => 'Nhanh chóng lưu từ đầu mục của một mục từ điển vào Kho tạm.';
+}
+
+// Path: addons.action.my_words
+class _StringsAddonsActionMyWordsVi extends _StringsAddonsActionMyWordsEn {
+	_StringsAddonsActionMyWordsVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Mục từ của tôi';
+	@override String get description => 'Viết nghĩa riêng của bạn cho một mục từ. Nghĩa này luôn hiển thị đầu tiên mỗi khi bạn tra mục từ.';
+}
+
+// Path: addons.action.copy_to_clipboard
+class _StringsAddonsActionCopyToClipboardVi extends _StringsAddonsActionCopyToClipboardEn {
+	_StringsAddonsActionCopyToClipboardVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Sao chép vào bộ nhớ tạm';
+	@override String get description => 'Sao chép từ đầu mục của một mục từ điển vào bộ nhớ tạm.';
+}
+
+// Path: addons.action.share
+class _StringsAddonsActionShareVi extends _StringsAddonsActionShareEn {
+	_StringsAddonsActionShareVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Chia sẻ';
+	@override String get description => 'Chia sẻ thông tin của một mục từ điển.';
+}
+
+// Path: addons.action.play_audio
+class _StringsAddonsActionPlayAudioVi extends _StringsAddonsActionPlayAudioEn {
+	_StringsAddonsActionPlayAudioVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Phát âm thanh';
+	@override String get description => 'Thử phát âm thanh bằng các tiện ích bổ trợ của trường Âm thanh. Tiện ích tự động được ưu tiên trước.';
+}
+
+// Path: addons.source.player_local_media
+class _StringsAddonsSourcePlayerLocalMediaVi extends _StringsAddonsSourcePlayerLocalMediaEn {
+	_StringsAddonsSourcePlayerLocalMediaVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Phương tiện trên thiết bị';
+	@override String get description => 'Phát video từ bộ nhớ trên thiết bị.';
+}
+
+// Path: addons.source.player_youtube
+class _StringsAddonsSourcePlayerYoutubeVi extends _StringsAddonsSourcePlayerYoutubeEn {
+	_StringsAddonsSourcePlayerYoutubeVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'YouTube';
+	@override String get description => 'Tìm kiếm và xem video từ YouTube.';
+}
+
+// Path: addons.source.player_network_stream
+class _StringsAddonsSourcePlayerNetworkStreamVi extends _StringsAddonsSourcePlayerNetworkStreamEn {
+	_StringsAddonsSourcePlayerNetworkStreamVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Luồng mạng';
+	@override String get description => 'Phát trực tuyến video từ URL trực tiếp.';
+}
+
+// Path: addons.source.reader_ttu
+class _StringsAddonsSourceReaderTtuVi extends _StringsAddonsSourceReaderTtuEn {
+	_StringsAddonsSourceReaderTtuVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'ッツ Ebook Reader';
+	@override String get description => 'Đọc EPUB và tạo thẻ từ câu qua trình đọc web tích hợp.';
+}
+
+// Path: addons.source.reader_mokuro
+class _StringsAddonsSourceReaderMokuroVi extends _StringsAddonsSourceReaderMokuroEn {
+	_StringsAddonsSourceReaderMokuroVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Mokuro';
+	@override String get description => 'Đọc các tập manga đã được xử lý thành một tệp HTML duy nhất bằng Mokuro.';
+}
+
+// Path: addons.source.reader_browser
+class _StringsAddonsSourceReaderBrowserVi extends _StringsAddonsSourceReaderBrowserEn {
+	_StringsAddonsSourceReaderBrowserVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Trình duyệt';
+	@override String get description => 'Duyệt trang web bằng trình duyệt cho phép tìm kiếm và tạo thẻ từ văn bản đã chọn.';
+}
+
+// Path: addons.source.reader_lyrics
+class _StringsAddonsSourceReaderLyricsVi extends _StringsAddonsSourceReaderLyricsEn {
+	_StringsAddonsSourceReaderLyricsVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Lời bài hát';
+	@override String get description => 'Cho phép lấy và tô sáng lời bài hát của phương tiện đang phát, được lấy từ Google và Uta-Net.';
+}
+
+// Path: addons.source.reader_chatgpt
+class _StringsAddonsSourceReaderChatgptVi extends _StringsAddonsSourceReaderChatgptEn {
+	_StringsAddonsSourceReaderChatgptVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'ChatGPT';
+	@override String get description => 'Cho phép người dùng tương tác với mô hình ngôn ngữ AI bằng khóa API chính thức từ OpenAI.';
+}
+
+// Path: addons.source.reader_clipboard
+class _StringsAddonsSourceReaderClipboardVi extends _StringsAddonsSourceReaderClipboardEn {
+	_StringsAddonsSourceReaderClipboardVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Bộ nhớ tạm';
+	@override String get description => 'Cho phép hiển thị văn bản được dán từ bộ nhớ tạm dưới dạng văn bản có thể chọn.';
+}
+
+// Path: addons.source.reader_websocket
+class _StringsAddonsSourceReaderWebsocketVi extends _StringsAddonsSourceReaderWebsocketEn {
+	_StringsAddonsSourceReaderWebsocketVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'WebSocket';
+	@override String get description => 'Chọn văn bản nhận được từ máy chủ WebSocket và tạo thẻ từ đó.';
+}
+
+// Path: addons.source.viewer_camera
+class _StringsAddonsSourceViewerCameraVi extends _StringsAddonsSourceViewerCameraEn {
+	_StringsAddonsSourceViewerCameraVi._(_StringsVi root) : this._root = root, super._(root);
+
+	@override final _StringsVi _root; // ignore: unused_field
+
+	// Translations
+	@override String get label => 'Máy ảnh';
+	@override String get description => 'Xem hình ảnh được chụp bằng máy ảnh hoặc được chọn từ phương tiện.';
 }
 
 /// Flat map(s) containing all translations.
@@ -2353,6 +3890,12 @@ extension on _StringsEn {
 			case 'ttu_tags_none': return 'No tags yet';
 			case 'ttu_tags_used_before': return 'Used before';
 			case 'ttu_tags_info': return 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
+			case 'ttu_theme_names.light': return 'Light';
+			case 'ttu_theme_names.ecru': return 'Ecru';
+			case 'ttu_theme_names.water': return 'Water';
+			case 'ttu_theme_names.gray': return 'Gray';
+			case 'ttu_theme_names.dark': return 'Dark';
+			case 'ttu_theme_names.black': return 'Black';
 			case 'language_names.ja': return 'Japanese';
 			case 'language_names.en': return 'English';
 			case 'language_names.vi': return 'Vietnamese';
@@ -2474,6 +4017,865 @@ extension on _StringsEn {
 			case 'addons.source.reader_websocket.description': return 'Select and mine text received from a WebSocket server.';
 			case 'addons.source.viewer_camera.label': return 'Camera';
 			case 'addons.source.viewer_camera.description': return 'View images taken with the camera or picked from media.';
+			default: return null;
+		}
+	}
+}
+
+extension on _StringsVi {
+	dynamic _flatMapFunction(String path) {
+		switch (path) {
+			case 'dictionary_media_type': return 'Từ điển';
+			case 'player_media_type': return 'Trình phát';
+			case 'reader_media_type': return 'Trình đọc';
+			case 'viewer_media_type': return 'Trình xem';
+			case 'back': return 'Quay lại';
+			case 'search': return 'Tìm kiếm';
+			case 'search_ellipsis': return 'Tìm kiếm...';
+			case 'show_more': return 'Xem thêm';
+			case 'show_menu': return 'Hiện menu';
+			case 'stash': return 'Kho tạm';
+			case 'pick_image': return 'Chọn ảnh';
+			case 'undo': return 'Hoàn tác';
+			case 'copy': return 'Sao chép';
+			case 'clear': return 'Xóa';
+			case 'creator': return 'Trình tạo';
+			case 'share': return 'Chia sẻ';
+			case 'resume_last_media': return 'Tiếp tục nội dung gần nhất';
+			case 'change_source': return 'Đổi nguồn';
+			case 'launch_source': return 'Mở nguồn';
+			case 'card_creator': return 'Trình tạo thẻ';
+			case 'target_language': return 'Ngôn ngữ đích';
+			case 'show_options': return 'Hiện tùy chọn';
+			case 'switch_profiles': return 'Đổi hồ sơ';
+			case 'dictionaries': return 'Từ điển';
+			case 'enhancements': return 'Tiện ích bổ trợ';
+			case 'app_locale': return 'Ngôn ngữ ứng dụng';
+			case 'app_locale_warning': return 'Các tiện ích cộng đồng và tiện ích bổ trợ được nhà phát triển tương ứng quản lý, nên có thể hiển thị bằng ngôn ngữ gốc.';
+			case 'dialog_play': return 'PHÁT';
+			case 'dialog_read': return 'ĐỌC';
+			case 'dialog_view': return 'XEM';
+			case 'dialog_edit': return 'SỬA';
+			case 'dialog_export': return 'XUẤT';
+			case 'dialog_import': return 'NHẬP';
+			case 'dialog_close': return 'ĐÓNG';
+			case 'dialog_clear': return 'XÓA';
+			case 'dialog_create': return 'TẠO';
+			case 'dialog_delete': return 'XÓA';
+			case 'dialog_cancel': return 'HỦY';
+			case 'dialog_select': return 'CHỌN';
+			case 'dialog_stash': return 'KHO TẠM';
+			case 'dialog_search': return 'TÌM KIẾM';
+			case 'dialog_exit': return 'THOÁT';
+			case 'dialog_share': return 'CHIA SẺ';
+			case 'dialog_pop': return 'LẤY RA';
+			case 'dialog_save': return 'LƯU';
+			case 'dialog_set': return 'ĐẶT';
+			case 'dialog_browse': return 'DUYỆT';
+			case 'dialog_channel': return 'KÊNH';
+			case 'dialog_directory': return 'THƯ MỤC';
+			case 'dialog_crop': return 'CẮT';
+			case 'dialog_connect': return 'KẾT NỐI';
+			case 'dialog_append': return 'THÊM';
+			case 'dialog_record': return 'GHI';
+			case 'dialog_manage': return 'QUẢN LÝ';
+			case 'dialog_stop': return 'DỪNG';
+			case 'dialog_done': return 'XONG';
+			case 'reset': return 'Đặt lại';
+			case 'dialog_launch_ankidroid': return 'MỞ ANKIDROID';
+			case 'media_item_delete_confirmation': return 'Mục này sẽ bị xóa khỏi lịch sử. Bạn có chắc muốn tiếp tục không?';
+			case 'dictionaries_delete_confirmation': return 'Xóa một từ điển cũng sẽ xóa tất cả kết quả từ điển khỏi lịch sử. Bạn có chắc muốn tiếp tục không?';
+			case 'mappings_delete_confirmation': return 'Hồ sơ này sẽ bị xóa. Bạn có chắc muốn tiếp tục không?';
+			case 'catalog_delete_confirmation': return 'Danh mục này sẽ bị xóa. Bạn có chắc muốn tiếp tục không?';
+			case 'dictionaries_deleting_data': return 'Đang xóa dữ liệu từ điển...';
+			case 'dictionaries_menu_empty': return 'Nhập từ điển để sử dụng';
+			case 'options_theme_light': return 'Dùng giao diện sáng';
+			case 'options_theme_dark': return 'Dùng giao diện tối';
+			case 'options_incognito_on': return 'Bật chế độ ẩn danh';
+			case 'options_incognito_off': return 'Tắt chế độ ẩn danh';
+			case 'options_dictionaries': return 'Quản lý từ điển';
+			case 'options_profiles': return 'Hồ sơ xuất thẻ';
+			case 'options_enhancements': return 'Tiện ích bổ trợ của người dùng';
+			case 'options_language': return 'Cài đặt ngôn ngữ';
+			case 'options_github': return 'Xem kho lưu trữ trên GitHub';
+			case 'options_attribution': return 'Giấy phép và ghi công';
+			case 'options_copy': return 'Sao chép';
+			case 'options_collapse': return 'Thu gọn';
+			case 'options_expand': return 'Mở rộng';
+			case 'options_delete': return 'Xóa';
+			case 'options_show': return 'Hiện';
+			case 'options_hide': return 'Ẩn';
+			case 'options_edit': return 'Sửa';
+			case 'info_empty_home_tab': return 'Lịch sử trống';
+			case 'delete_in_progress': return 'Đang xóa';
+			case 'import_format': return 'Định dạng nhập';
+			case 'import_in_progress': return 'Đang nhập';
+			case 'import_start': return 'Đang chuẩn bị nhập...';
+			case 'import_clean': return 'Đang dọn dẹp không gian làm việc...';
+			case 'import_extract_count': return ({required Object n}) => 'Đã giải nén ${n} tệp...';
+			case 'import_extract': return 'Đang giải nén tệp...';
+			case 'import_name': return ({required Object name}) => 'Đang nhập 『${name}』...';
+			case 'import_entries': return 'Đang xử lý các mục...';
+			case 'import_found_entry': return ({required Object count}) => 'Đã tìm thấy ${count} mục...';
+			case 'import_found_tag': return ({required Object count}) => 'Đã tìm thấy ${count} nhãn...';
+			case 'import_found_frequency': return ({required Object count}) => 'Đã tìm thấy ${count} mục tần suất...';
+			case 'import_found_pitch': return ({required Object count}) => 'Đã tìm thấy ${count} mục trọng âm...';
+			case 'import_write_entry': return ({required Object count, required Object total}) => 'Đang ghi các mục:\n${count} / ${total}';
+			case 'import_write_tag': return ({required Object count, required Object total}) => 'Đang ghi các nhãn:\n${count} / ${total}';
+			case 'import_write_frequency': return ({required Object count, required Object total}) => 'Đang ghi các mục tần suất:\n${count} / ${total}';
+			case 'import_write_pitch': return ({required Object count, required Object total}) => 'Đang ghi các mục trọng âm:\n${count} / ${total}';
+			case 'import_failed': return 'Nhập từ điển không thành công.';
+			case 'import_complete': return 'Đã nhập từ điển.';
+			case 'import_duplicate': return ({required Object name}) => 'Từ điển có tên 『${name}』 đã được nhập.';
+			case 'dialog_title_dictionary_clear': return 'Xóa tất cả từ điển?';
+			case 'dialog_content_dictionary_clear': return 'Xóa cơ sở dữ liệu từ điển cũng sẽ xóa tất cả kết quả tìm kiếm trong lịch sử.';
+			case 'dialog_title_dictionary_delete': return ({required Object name}) => 'Xóa 『${name}』?';
+			case 'dialog_content_dictionary_delete': return 'Xóa một từ điển riêng lẻ có thể mất nhiều thời gian hơn xóa toàn bộ cơ sở dữ liệu từ điển. Thao tác này cũng sẽ xóa tất cả kết quả tìm kiếm trong lịch sử.';
+			case 'delete_dictionary_data': return 'Đang xóa tất cả dữ liệu từ điển...';
+			case 'dictionary_tag': return ({required Object name}) => 'Được nhập từ ${name}';
+			case 'legalese': return 'Bộ công cụ học ngôn ngữ qua đắm chìm (immersion), đầy đủ tính năng, dành cho thiết bị di động.\n\nBan đầu được Arianne Orpilla xây dựng cho cộng đồng học tiếng Nhật. Logo do suzy và Aaron Marbella thiết kế.\n\njidoujisho là phần mềm miễn phí và mã nguồn mở. Xem kho lưu trữ của dự án để biết danh sách đầy đủ các giấy phép khác và thông báo ghi công. Bạn thích ứng dụng này? Hãy giúp chúng tôi bằng cách gửi phản hồi, quyên góp, báo cáo sự cố hoặc đóng góp cải tiến trên GitHub.';
+			case 'same_name_dictionary_found': return 'Đã tìm thấy từ điển trùng tên.';
+			case 'import_file_extension_invalid': return ({required Object extensions}) => 'Định dạng này yêu cầu tệp có một trong các phần mở rộng sau: ${extensions}';
+			case 'field_label_empty': return 'Trống';
+			case 'model_to_map': return 'Loại thẻ dùng cho hồ sơ mới';
+			case 'mapping_name': return 'Tên hồ sơ';
+			case 'mapping_name_hint': return 'Tên gán cho hồ sơ';
+			case 'error_profile_name': return 'Tên hồ sơ không hợp lệ';
+			case 'error_profile_name_content': return 'Hồ sơ có tên này đã tồn tại hoặc không hợp lệ nên không thể lưu.';
+			case 'error_standard_profile_name': return 'Tên hồ sơ không hợp lệ';
+			case 'error_standard_profile_name_content': return 'Không thể đổi tên hồ sơ tiêu chuẩn.';
+			case 'error_ankidroid_api': return 'Lỗi AnkiDroid';
+			case 'error_ankidroid_api_content': return 'Đã xảy ra sự cố khi giao tiếp với AnkiDroid.\n\nHãy đảm bảo dịch vụ nền của AnkiDroid đang hoạt động và mọi quyền cần thiết của ứng dụng đều đã được cấp để tiếp tục.';
+			case 'info_standard_model': return 'Đã thêm loại thẻ tiêu chuẩn';
+			case 'info_standard_model_content': return '『jidoujisho Kinomoto』 đã được thêm vào AnkiDroid dưới dạng loại thẻ mới.\n\nBạn có thể dùng thiết lập với loại thẻ hoặc thứ tự trường khác bằng cách thêm hồ sơ xuất mới.';
+			case 'error_model_missing': return 'Thiếu loại thẻ';
+			case 'error_model_missing_content': return 'Loại thẻ tương ứng với hồ sơ hiện được chọn không còn tồn tại.\n\nHồ sơ sẽ bị xóa và hồ sơ tiêu chuẩn đã được chọn thay thế.';
+			case 'error_model_changed': return 'Loại thẻ đã thay đổi';
+			case 'error_model_changed_content': return 'Số trường của loại thẻ tương ứng với hồ sơ đã chọn đã thay đổi.\n\nCác trường trong hồ sơ hiện được chọn đã được đặt lại và cần cấu hình lại.';
+			case 'creator_exporting_as': return 'Đang tạo thẻ bằng hồ sơ';
+			case 'creator_exporting_as_fields_editing': return 'Đang sửa các trường cho hồ sơ';
+			case 'creator_exporting_as_enhancements_editing': return 'Đang sửa tiện ích bổ trợ cho hồ sơ';
+			case 'creator_export_card': return 'Tạo thẻ';
+			case 'info_enhancements': return 'Tiện ích bổ trợ tự động hóa việc chỉnh sửa trường trước khi tạo thẻ. Chọn một ô ở bên phải trường để cho phép sử dụng tiện ích bổ trợ. Mỗi trường có thể dùng tối đa năm ô bên phải. Tiện ích bổ trợ ở ô bên trái của trường sẽ tự động được áp dụng khi tạo thẻ tức thì hoặc mở Trình tạo thẻ.';
+			case 'info_actions': return 'Thao tác nhanh cho phép tạo thẻ tức thì và dùng các tính năng tự động khác trên kết quả tìm kiếm từ điển. Có thể gán thao tác qua các ô bên dưới. Có thể dùng tối đa sáu ô.';
+			case 'no_more_available_enhancements': return 'Không còn tiện ích bổ trợ nào cho trường này';
+			case 'no_more_available_quick_actions': return 'Không còn thao tác nhanh nào';
+			case 'assign_auto_enhancement': return 'Gán tiện ích bổ trợ tự động';
+			case 'assign_manual_enhancement': return 'Gán tiện ích bổ trợ thủ công';
+			case 'remove_enhancement': return 'Xóa tiện ích bổ trợ';
+			case 'copy_of_mapping': return ({required Object name}) => 'Bản sao của ${name}';
+			case 'enter_search_term': return 'Nhập từ cần tìm...';
+			case 'searching_for': return ({required Object searchTerm}) => 'Đang tìm 『${searchTerm}』...';
+			case 'no_search_results': return 'Không tìm thấy kết quả tìm kiếm.';
+			case 'edit_actions': return 'Sửa thao tác nhanh của từ điển';
+			case 'remove_action': return 'Xóa thao tác';
+			case 'assign_action': return 'Gán thao tác';
+			case 'dictionary_import_tag': return ({required Object name}) => 'Được nhập từ ${name}';
+			case 'stash_added_single': return ({required Object term}) => 'Đã thêm 『${term}』 vào Kho tạm.';
+			case 'stash_added_multiple': return 'Đã thêm nhiều mục vào Kho tạm.';
+			case 'stash_clear_single': return ({required Object term}) => 'Đã xóa 『${term}』 khỏi Kho tạm.';
+			case 'stash_clear_title': return 'Xóa Kho tạm';
+			case 'stash_clear_description': return 'Tất cả nội dung sẽ bị xóa. Bạn có chắc không?';
+			case 'stash_placeholder': return 'Không có mục nào trong Kho tạm';
+			case 'stash_nothing_to_pop': return 'Không có mục nào để lấy khỏi Kho tạm.';
+			case 'no_sentences_found': return 'Không tìm thấy câu nào';
+			case 'failed_online_service': return 'Không thể giao tiếp với dịch vụ trực tuyến';
+			case 'search_label_before': return 'Hiện tất cả ';
+			case 'search_label_middle': return 'trong số ';
+			case 'search_label_after': return 'kết quả tìm kiếm cho';
+			case 'clear_dictionary_title': return 'Xóa lịch sử kết quả từ điển';
+			case 'clear_dictionary_description': return 'Thao tác này sẽ xóa tất cả kết quả từ điển khỏi lịch sử. Bạn có chắc không?';
+			case 'clear_search_title': return 'Xóa lịch sử tìm kiếm';
+			case 'clear_search_description': return 'Thao tác này sẽ xóa tất cả từ khóa tìm kiếm trong lịch sử này. Bạn có chắc không?';
+			case 'clear_creator_title': return 'Xóa Trình tạo';
+			case 'clear_creator_description': return 'Thao tác này sẽ xóa tất cả các trường. Bạn có chắc không?';
+			case 'copied_to_clipboard': return 'Đã sao chép vào bộ nhớ tạm.';
+			case 'no_text': return 'Không có văn bản.';
+			case 'info_fields': return 'Các trường được điền sẵn dựa trên mục từ được chọn khi xuất tức thì hoặc trước khi mở Trình tạo thẻ. Để đưa một trường vào thẻ xuất, bạn phải bật trường đó bên dưới và gán trường trong hồ sơ xuất hiện tại. Các trường đã bật cũng có thể được thu gọn bên dưới để giảm phần rối mắt khi chỉnh sửa. Dùng nút Xóa ở góc trên bên phải của Trình tạo thẻ để nhanh chóng xóa các trường ẩn này khi chỉnh sửa thẻ thủ công.';
+			case 'edit_fields': return 'Sửa và sắp xếp lại các trường';
+			case 'remove_field': return 'Xóa trường';
+			case 'add_field': return 'Gán trường';
+			case 'add_field_hint': return 'Gán một trường cho hàng này';
+			case 'no_more_available_fields': return 'Không còn trường nào';
+			case 'hidden_fields': return 'Các trường bổ sung';
+			case 'field_fallback_used': return ({required Object field, required Object secondField}) => 'Trường ${field} đã dùng ${secondField} làm từ khóa tìm kiếm dự phòng.';
+			case 'no_text_to_search': return 'Không có văn bản để tìm kiếm.';
+			case 'image_search_label_before': return 'Đang chọn ảnh ';
+			case 'image_search_label_middle': return 'trong số ';
+			case 'image_search_label_after': return 'ảnh tìm thấy cho';
+			case 'image_search_label_none_middle': return 'ảnh nào ';
+			case 'image_search_label_none_before': return 'Chưa chọn ';
+			case 'preparing_instant_export': return 'Đang chuẩn bị thẻ để xuất...';
+			case 'processing_in_progress': return 'Đang chuẩn bị ảnh';
+			case 'searching_in_progress': return 'Đang tìm kiếm ';
+			case 'audio_unavailable': return 'Không tìm thấy âm thanh.';
+			case 'no_audio_enhancements': return 'Chưa gán tiện ích bổ trợ âm thanh nào.';
+			case 'card_exported': return ({required Object deck}) => 'Đã xuất thẻ vào 『${deck}』.';
+			case 'info_incognito_on': return 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
+			case 'info_incognito_off': return 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';
+			case 'exit_media_title': return 'Thoát nội dung';
+			case 'exit_media_description': return 'Bạn sẽ được đưa về menu chính. Bạn có chắc không?';
+			case 'unimplemented_source': return 'Nguồn chưa được triển khai';
+			case 'clear_browser_title': return 'Xóa dữ liệu trình duyệt';
+			case 'clear_browser_description': return 'Thao tác này sẽ xóa tất cả dữ liệu duyệt web được các nguồn nội dung web sử dụng. Bạn có chắc không?';
+			case 'ttu_no_books_added': return 'Chưa thêm sách nào vào ッツ Ebook Reader';
+			case 'local_media_directory_empty': return 'Thư mục không có thư mục con hoặc video';
+			case 'pick_video_file': return 'Chọn tệp video';
+			case 'navigate_up_one_directory_level': return 'Lên một cấp thư mục';
+			case 'play': return 'Phát';
+			case 'pause': return 'Tạm dừng';
+			case 'record': return 'Ghi';
+			case 'stop': return 'Dừng';
+			case 'replay': return 'Phát lại';
+			case 'audio_subtitles': return 'Âm thanh/Phụ đề';
+			case 'player_option_shadowing': return 'Chế độ shadowing';
+			case 'player_option_change_mode': return 'Đổi chế độ phát';
+			case 'player_option_listening_comprehension': return 'Chế độ nghe hiểu';
+			case 'player_option_drag_to_select': return 'Kéo để chọn phụ đề';
+			case 'player_option_tap_to_select': return 'Chạm để chọn phụ đề';
+			case 'player_option_dictionary_menu': return 'Chọn nguồn từ điển đang dùng';
+			case 'player_option_cast_video': return 'Truyền tới thiết bị hiển thị';
+			case 'player_option_share_subtitle': return 'Chia sẻ phụ đề hiện tại';
+			case 'player_option_export': return 'Tạo thẻ từ ngữ cảnh';
+			case 'player_option_audio': return 'Âm thanh';
+			case 'player_option_subtitle': return 'Phụ đề';
+			case 'player_option_subtitle_external': return 'Bên ngoài';
+			case 'player_option_subtitle_none': return 'Không có';
+			case 'player_option_select_subtitle': return 'Chọn kênh phụ đề';
+			case 'player_option_select_audio': return 'Chọn kênh âm thanh';
+			case 'player_option_text_filter': return 'Dùng bộ lọc biểu thức chính quy';
+			case 'player_option_blur_preferences': return 'Tùy chọn khung làm mờ';
+			case 'player_option_blur_use': return 'Dùng khung làm mờ';
+			case 'player_option_blur_radius': return 'Bán kính làm mờ';
+			case 'player_option_blur_options': return 'Đặt màu và độ mờ của khung làm mờ';
+			case 'player_option_blur_reset': return 'Đặt lại kích thước và vị trí khung làm mờ';
+			case 'player_align_subtitle_transcript': return 'Căn phụ đề với bản chép lời';
+			case 'player_option_subtitle_appearance': return 'Thời gian và giao diện phụ đề';
+			case 'player_option_load_subtitles': return 'Tải phụ đề bên ngoài';
+			case 'player_option_subtitle_delay': return 'Độ trễ phụ đề';
+			case 'player_option_audio_allowance': return 'Thời gian đệm âm thanh';
+			case 'player_option_font_name': return 'Tên phông chữ phụ đề';
+			case 'player_option_font_size': return 'Cỡ chữ phụ đề';
+			case 'player_option_regex_filter': return 'Bộ lọc biểu thức chính quy';
+			case 'player_option_subtitle_background_opacity': return 'Độ đục nền phụ đề';
+			case 'player_option_subtitle_background_blur_radius': return 'Bán kính làm mờ nền phụ đề';
+			case 'player_option_outline_width': return 'Độ rộng viền phụ đề';
+			case 'player_option_subtitle_always_above_bottom_bar': return 'Luôn hiển thị phụ đề phía trên khu vực thanh dưới';
+			case 'player_subtitles_transcript_empty': return 'Bản chép lời trống.';
+			case 'player_prepare_export': return 'Đang chuẩn bị thẻ...';
+			case 'player_change_player_orientation': return 'Đổi hướng trình phát';
+			case 'no_current_media': return 'Phát hoặc làm mới nội dung để xem lời bài hát';
+			case 'lyrics_permission_required': return 'Chưa được cấp quyền cần thiết';
+			case 'no_lyrics_found': return 'Không tìm thấy lời bài hát';
+			case 'trending': return 'Thịnh hành';
+			case 'caption_filter': return 'Lọc phụ đề';
+			case 'captions_query': return 'Đang tìm phụ đề';
+			case 'captions_target': return 'Ngôn ngữ đích';
+			case 'captions_app': return 'Ngôn ngữ ứng dụng';
+			case 'captions_other': return 'Ngôn ngữ khác';
+			case 'captions_closed': return 'Phụ đề do người tạo';
+			case 'captions_auto': return 'Phụ đề tự động';
+			case 'captions_unavailable': return 'Không có phụ đề';
+			case 'captions_error': return 'Lỗi khi tìm phụ đề';
+			case 'change_quality': return 'Đổi chất lượng';
+			case 'closed_captions_query': return 'Đang tìm phụ đề';
+			case 'closed_captions_target': return 'Phụ đề ngôn ngữ đích';
+			case 'closed_captions_app': return 'Phụ đề bằng ngôn ngữ ứng dụng';
+			case 'closed_captions_other': return 'Phụ đề bằng ngôn ngữ khác';
+			case 'closed_captions_unavailable': return 'Không có phụ đề';
+			case 'closed_captions_error': return 'Lỗi khi tìm phụ đề';
+			case 'stream_url': return 'URL luồng phát';
+			case 'default_option': return 'Mặc định';
+			case 'paste': return 'Dán';
+			case 'select_all': return 'Chọn tất cả';
+			case 'lyrics_title': return 'Tên bài';
+			case 'lyrics_artist': return 'Nghệ sĩ';
+			case 'set_media': return 'Đặt nội dung';
+			case 'no_recordings_found': return 'Không tìm thấy bản ghi nào';
+			case 'wrap_image_audio': return 'Thêm thẻ HTML hình ảnh/âm thanh khi xuất';
+			case 'server_address': return 'Địa chỉ máy chủ';
+			case 'no_active_connection': return 'Không có kết nối đang hoạt động';
+			case 'failed_server_connection': return 'Không thể kết nối với máy chủ';
+			case 'no_text_received': return 'Chưa nhận được văn bản';
+			case 'text_segmentation': return 'Phân đoạn văn bản';
+			case 'connect_disconnect': return 'Kết nối/Ngắt kết nối';
+			case 'clear_text_title': return 'Xóa văn bản';
+			case 'clear_text_description': return 'Thao tác này sẽ xóa tất cả văn bản đã nhận. Bạn có chắc không?';
+			case 'close_connection_title': return 'Đóng kết nối';
+			case 'close_connection_description': return 'Thao tác này sẽ kết thúc kết nối WebSocket và xóa tất cả văn bản đã nhận. Bạn có chắc không?';
+			case 'use_slow_import': return 'Nhập chậm (dùng nếu nhập lỗi)';
+			case 'settings': return 'Cài đặt';
+			case 'manager': return 'Trình quản lý';
+			case 'volume_button_page_turning': return 'Dùng nút âm lượng để chuyển trang';
+			case 'invert_volume_buttons': return 'Đảo nút âm lượng';
+			case 'volume_button_turning_speed': return 'Tốc độ cuộn liên tục';
+			case 'extend_page_beyond_navbar': return 'Mở rộng trang qua thanh điều hướng';
+			case 'tweaks': return 'Tinh chỉnh';
+			case 'increase': return 'Tăng';
+			case 'decrease': return 'Giảm';
+			case 'unit_milliseconds': return 'ms';
+			case 'unit_pixels': return 'px';
+			case 'dictionary_settings': return 'Cài đặt từ điển';
+			case 'auto_search': return 'Tìm kiếm tự động';
+			case 'auto_search_debounce_delay': return 'Độ trễ trước khi tự tìm';
+			case 'dictionary_font_size': return 'Cỡ chữ từ điển';
+			case 'close_on_export': return 'Đóng khi xuất';
+			case 'close_on_export_on': return 'Trình tạo thẻ sẽ tự động đóng sau khi xuất thẻ.';
+			case 'close_on_export_off': return 'Trình tạo thẻ sẽ không còn tự động đóng sau khi xuất thẻ.';
+			case 'export_profile_empty': return 'Hồ sơ xuất của bạn chưa có trường nào được đặt và cần được cấu hình.';
+			case 'error_export_media_ankidroid': return 'Đã xảy ra lỗi khi xuất nội dung vào AnkiDroid.';
+			case 'error_add_note': return 'Đã xảy ra lỗi khi thêm thẻ vào AnkiDroid.';
+			case 'first_time_setup': return 'Thiết lập lần đầu';
+			case 'first_time_setup_description': return 'Chào mừng đến với jidoujisho! Hãy đặt ngôn ngữ đích và một hồ sơ mặc định sẽ được tùy chỉnh cho bạn. Bạn có thể thay đổi tùy chọn này bất cứ lúc nào.';
+			case 'maximum_entries': return 'Giới hạn tối đa số mục từ điển được truy vấn';
+			case 'maximum_terms': return 'Số từ đầu mục tối đa trong kết quả';
+			case 'use_br_tags': return 'Dùng <br> thay cho ký tự xuống dòng khi xuất';
+			case 'prepend_dictionary_names': return 'Thêm tên từ điển vào trước nghĩa';
+			case 'highlight_on_tap': return 'Tô sáng văn bản khi chạm';
+			case 'no_audio_file': return 'Không có tệp âm thanh để lưu.';
+			case 'storage_permissions': return 'Vui lòng cấp các quyền sau để xuất vào AnkiDroid.';
+			case 'stream': return 'Luồng phát';
+			case 'network_subtitles_warning': return 'Không hỗ trợ phụ đề nhúng cho luồng mạng.';
+			case 'accessibility': return 'Cần có quyền để chụp văn bản từ các sự kiện hỗ trợ tiếp cận.';
+			case 'comments': return 'Bình luận';
+			case 'replies': return 'Phản hồi';
+			case 'no_comments_queried': return 'Không tìm thấy bình luận nào';
+			case 'no_text_in_clipboard': return 'Không có văn bản để hiển thị';
+			case 'file_downloaded': return ({required Object name}) => 'Đã tải tệp xuống: ${name}';
+			case 'cfhange_sort_order': return 'Đổi thứ tự sắp xếp';
+			case 'login': return 'Đăng nhập';
+			case 'send': return 'Gửi';
+			case 'no_messages': return 'Bắt đầu trò chuyện';
+			case 'enter_message': return 'Nhập tin nhắn...';
+			case 'clear_message_title': return 'Xóa tin nhắn';
+			case 'clear_message_description': return 'Thao tác này sẽ xóa tất cả tin nhắn và bắt đầu cuộc trò chuyện mới. Bạn có chắc không?';
+			case 'error_chatgpt_response': return 'Yêu cầu không thành công hoặc đã bị giới hạn tần suất. Hãy thử lại sau ít phút hoặc kiểm tra giới hạn sử dụng của bạn.';
+			case 'pick_file': return 'Chọn tệp';
+			case 'open_url': return 'Mở URL';
+			case 'catalogs': return 'Danh mục';
+			case 'name': return 'Tên';
+			case 'url': return 'URL';
+			case 'duplicate_catalog': return 'Đã có danh mục với URL này.';
+			case 'no_catalogs_listed': return 'Không có danh mục nào';
+			case 'go_back': return 'Quay lại';
+			case 'invalid_mokuro_file': return 'Tệp không phải là tệp HTML do Mokuro tạo.';
+			case 'create_catalog': return 'Tạo danh mục';
+			case 'adapt_ttu_theme': return 'Điều chỉnh cửa sổ bật lên của từ điển theo giao diện';
+			case 'sentence_picker': return 'Chọn câu';
+			case 'field_locked': return ({required Object field}) => 'Trường ${field} đã khóa và sẽ không bị xóa khi xuất trong lúc Trình tạo đang hoạt động.';
+			case 'field_unlocked': return ({required Object field}) => 'Trường ${field} đã mở khóa và sẽ bị xóa khi xuất.';
+			case 'field_lock': return 'Khóa trường';
+			case 'field_unlock': return 'Mở khóa trường';
+			case 'use_dark_theme': return 'Dùng giao diện tối';
+			case 'stretch_to_fill_screen': return 'Kéo giãn để lấp đầy màn hình';
+			case 'processing_embedded_subtitles': return 'Đang xử lý phụ đề nhúng. Hãy thử lại sau.';
+			case 'transcript_playback_mode': return 'Chế độ phát bản chép lời';
+			case 'toggle_transcript_background': return 'Bật/tắt nền bản chép lời';
+			case 'seek': return 'Tua';
+			case 'saved_tags': return 'Đã lưu nhãn.';
+			case 'structured_content_first': return ({required Object i}) => '${i} định nghĩa không được hỗ trợ và đã bị lược bỏ.';
+			case 'structured_content_second': return 'Hãy thử dùng phiên bản nội dung không có cấu trúc của từ điển này.';
+			case 'missing_api_key': return 'Chưa cung cấp khóa API';
+			case 'chatgpt_error': return 'Đã xảy ra lỗi khi nhận phản hồi từ ChatGPT.';
+			case 'api_key': return 'Khóa API';
+			case 'subtitle_delay_set': return ({required Object ms}) => 'Đã đặt độ trễ phụ đề thành ${ms} ms.';
+			case 'cancel': return 'Hủy';
+			case 'server_port_in_use': return 'Cổng máy chủ cục bộ đang được sử dụng';
+			case 'google_fonts': return 'Google Fonts';
+			case 'video_show': return 'Hiện video';
+			case 'video_hide': return 'Ẩn video';
+			case 'subtitle_timing_show': return 'Hiện thời gian phụ đề';
+			case 'subtitle_timing_hide': return 'Ẩn thời gian phụ đề';
+			case 'find_next': return 'Tìm tiếp';
+			case 'find_previous': return 'Tìm trước';
+			case 'shadowing_mode': return 'Chế độ shadowing';
+			case 'display_settings': return 'Cài đặt hiển thị';
+			case 'cloze': return 'Điền chỗ trống';
+			case 'info_standard_update': return 'Loại thẻ hồ sơ tiêu chuẩn mới';
+			case 'info_standard_update_content': return 'Hồ sơ tiêu chuẩn hiện dùng loại thẻ 『jidoujisho Kinomoto』.\n\nHồ sơ tiêu chuẩn cũ của bạn vẫn có thể sử dụng để đảm bảo tương thích ngược.';
+			case 'retrying_in.seconds': return ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('vi'))(n,
+				one: 'Đang thử lại sau ${n} giây...',
+				other: 'Đang thử lại sau ${n} giây...',
+			);
+			case 'view_replies.reply': return ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('vi'))(n,
+				one: 'HIỆN ${n} PHẢN HỒI',
+				other: 'HIỆN ${n} PHẢN HỒI',
+			);
+			case 'manage_duplicate_checks': return 'Quản lý kiểm tra trùng lặp';
+			case 'playback_normal': return 'Chế độ phát bình thường';
+			case 'playback_condensed': return 'Chế độ phát cô đọng';
+			case 'playback_auto_pause': return 'Chế độ phát tạm dừng theo phụ đề';
+			case 'player_hardware_acceleration': return 'Tăng tốc phần cứng';
+			case 'player_use_opensles': return 'Âm thanh OpenSL ES';
+			case 'go_forward': return 'Đi tới';
+			case 'browse': return 'Duyệt';
+			case 'bookmark': return 'Dấu trang';
+			case 'add_bookmark': return 'Thêm dấu trang';
+			case 'add_to_reading_list': return 'Thêm vào danh sách đọc';
+			case 'reading_list_empty': return 'Danh sách đọc trống';
+			case 'reading_list_add_toast': return 'Đã thêm vào danh sách đọc.';
+			case 'reading_list_remove_toast': return 'Đã xóa khỏi danh sách đọc.';
+			case 'ad_block_hosts': return 'Danh sách chặn quảng cáo (hosts)';
+			case 'error_parsing_hosts_file': return 'Lỗi khi phân tích tệp hosts.';
+			case 'double_tap_seek_duration': return 'Thời lượng tua khi chạm hai lần';
+			case 'player_background_play': return 'Phát trong nền';
+			case 'loaded_from_cache': return 'Đã tải từ bộ nhớ đệm lưu trữ web.';
+			case 'player_show_subtitle_in_notification': return 'Hiện phụ đề trong thông báo nội dung';
+			case 'subtitles_processing': return 'Đang xử lý phụ đề...';
+			case 'video_unavailable': return 'Video không khả dụng';
+			case 'video_unavailable_content': return 'Không thể lấy các luồng phát. Có thể có hạn chế khiến bạn không thể xem video này.';
+			case 'video_file_error': return 'Không thể tải tệp';
+			case 'video_file_error_content': return 'Không thể tải tệp video. Hãy đảm bảo tệp này tồn tại và nằm trong thư mục mà ứng dụng có thể truy cập.';
+			case 'ttu_add': return 'Thêm';
+			case 'ttu_add_book': return 'Thêm sách';
+			case 'ttu_reader_settings': return 'Cài đặt trình đọc';
+			case 'ttu_reader_source': return 'Nguồn trình đọc';
+			case 'ttu_empty_title': return 'Thư viện của bạn đang trống';
+			case 'ttu_empty_body': return 'Thêm tệp EPUB hoặc HTMLZ để bắt đầu đọc. Chạm vào bất kỳ từ nào để tra từ khi đọc.';
+			case 'ttu_restore_backup': return 'Khôi phục từ bản sao lưu';
+			case 'ttu_adding_book': return ({required Object name}) => 'Đang thêm ${name}';
+			case 'ttu_adding_books': return ({required Object n}) => 'Đang thêm ${n} sách';
+			case 'ttu_reading_file': return 'ッツ đang đọc tệp';
+			case 'ttu_added_book': return ({required Object name}) => 'Đã thêm ${name}';
+			case 'ttu_added_books': return ({required Object n}) => 'Đã thêm ${n} sách';
+			case 'ttu_import_failed': return ({required Object reason}) => 'Không thể thêm sách: ${reason}';
+			case 'ttu_unsupported_file': return ({required Object name}) => '${name} không phải là tệp EPUB hoặc HTMLZ';
+			case 'ttu_shelf_error': return 'Không thể đọc thư viện.';
+			case 'ttu_try_again': return 'Thử lại';
+			case 'ttu_book_deleted': return ({required Object name}) => 'Đã xóa ${name}';
+			case 'ttu_undo': return 'Hoàn tác';
+			case 'ttu_read': return 'Đọc';
+			case 'ttu_continue': return 'Tiếp tục';
+			case 'ttu_memo': return 'Ghi chú';
+			case 'ttu_memos': return 'Ghi chú';
+			case 'ttu_new_memo': return 'Ghi chú mới';
+			case 'ttu_edit_memo': return 'Sửa ghi chú';
+			case 'ttu_memo_placeholder': return 'Một từ cần tra, một câu hỏi, lý do dòng này quan trọng';
+			case 'ttu_memo_saved': return ({required Object position}) => 'Đã lưu ghi chú tại ${position}';
+			case 'ttu_memo_deleted': return 'Đã xóa ghi chú';
+			case 'ttu_no_memos': return 'Chưa có ghi chú. Chọn văn bản trong sách rồi chạm vào Ghi chú để thêm.';
+			case 'ttu_no_memos_short': return 'Chưa có ghi chú';
+			case 'ttu_memo_hint': return 'Thêm ghi chú khi đọc: chọn văn bản rồi chạm vào Ghi chú.';
+			case 'ttu_continue_reading': return 'Đọc tiếp';
+			case 'ttu_back_to_where': return 'Quay lại vị trí trước đó';
+			case 'ttu_before_jump': return 'trước lần chuyển cuối';
+			case 'ttu_sort_position': return 'Vị trí';
+			case 'ttu_sort_newest': return 'Mới nhất';
+			case 'ttu_read_percent': return ({required Object percent}) => 'Đã đọc ${percent}';
+			case 'ttu_edit': return 'Sửa';
+			case 'ttu_delete': return 'Xóa';
+			case 'ttu_progress': return 'Tiến độ';
+			case 'ttu_read_label': return 'Đã đọc';
+			case 'ttu_of_total': return ({required Object total}) => 'trên ${total}';
+			case 'ttu_last_opened': return 'Mở lần cuối';
+			case 'ttu_not_opened': return 'Chưa mở';
+			case 'ttu_added_when': return ({required Object when}) => 'Đã thêm ${when}';
+			case 'ttu_language': return 'Ngôn ngữ';
+			case 'ttu_uses_dictionaries': return 'Tra từ bằng ngôn ngữ này';
+			case 'ttu_page': return 'Trang';
+			case 'ttu_page_note': return 'ッツ áp dụng các cài đặt này khi mở sách';
+			case 'ttu_books_in': return ({required Object language}) => 'Sách bằng ${language}';
+			case 'ttu_theme': return 'Chủ đề';
+			case 'ttu_text_size': return 'Cỡ chữ';
+			case 'ttu_direction': return 'Hướng chữ';
+			case 'ttu_vertical': return 'Dọc';
+			case 'ttu_horizontal': return 'Ngang';
+			case 'ttu_layout': return 'Bố cục';
+			case 'ttu_pages': return 'Trang';
+			case 'ttu_scroll': return 'Cuộn';
+			case 'ttu_furigana': return 'Hiện Furigana';
+			case 'ttu_furigana_desc': return 'Cách đọc bên trên kanji, nếu sách có';
+			case 'ttu_while_reading': return 'Khi đọc';
+			case 'ttu_auto_save': return 'Lưu vị trí của tôi';
+			case 'ttu_auto_save_desc': return 'Lưu khi bạn đọc và khi bạn rời khỏi sách';
+			case 'ttu_highlight': return 'Tô sáng từ đã tra';
+			case 'ttu_highlight_desc': return 'Đánh dấu từ mà từ điển đã tra';
+			case 'ttu_volume': return 'Phím âm lượng chuyển trang';
+			case 'ttu_volume_desc': return 'Mỗi lần nhấn chuyển một trang';
+			case 'ttu_volume_swap': return 'Đổi phím âm lượng';
+			case 'ttu_volume_swap_desc': return 'Nếu các phím hoạt động ngược chiều';
+			case 'ttu_scroll_step': return 'Bước cuộn';
+			case 'ttu_scroll_step_desc': return 'Khoảng cuộn sau mỗi lần nhấn phím trong bố cục Cuộn';
+			case 'ttu_full_screen': return 'Toàn màn hình';
+			case 'ttu_full_screen_desc': return 'Hiển thị bên dưới thanh trạng thái. Phù hợp nhất với điện thoại không có tai thỏ';
+			case 'ttu_match_popup': return 'Cửa sổ bật lên khớp với trang';
+			case 'ttu_match_popup_desc': return 'Dùng chủ đề của trang cho cửa sổ bật lên';
+			case 'ttu_more': return 'Thêm';
+			case 'ttu_backup_sync': return 'Sao lưu và đồng bộ';
+			case 'ttu_backup_sync_desc': return 'Google Drive, OneDrive hoặc một thư mục. Mở ッツ';
+			case 'ttu_all_settings': return 'Tất cả cài đặt ッツ';
+			case 'ttu_all_settings_desc': return 'Phông chữ, lề, cột trang và nhiều cài đặt khác. Mở ッツ';
+			case 'ttu_opening': return 'Đang mở';
+			case 'ttu_jumping_to': return 'Đang chuyển đến';
+			case 'ttu_returning_to': return 'Quay lại';
+			case 'ttu_back_to': return ({required Object position}) => 'Quay lại ${position}';
+			case 'ttu_saved_place': return ({required Object position}) => 'Đã lưu vị trí của bạn tại ${position}';
+			case 'ttu_just_now': return 'Vừa xong';
+			case 'ttu_minutes_ago': return ({required Object n}) => '${n} phút trước';
+			case 'ttu_today': return 'Hôm nay';
+			case 'ttu_yesterday': return 'Hôm qua';
+			case 'ttu_days_ago': return ({required Object n}) => '${n} ngày trước';
+			case 'ttu_week_ago': return '1 tuần trước';
+			case 'ttu_weeks_ago': return ({required Object n}) => '${n} tuần trước';
+			case 'ttu_month_ago': return '1 tháng trước';
+			case 'ttu_months_ago': return ({required Object n}) => '${n} tháng trước';
+			case 'my_words': return 'Mục từ của tôi';
+			case 'my_words_add': return 'Thêm vào Mục từ của tôi';
+			case 'my_words_edit': return 'Sửa mục từ';
+			case 'my_words_word': return 'Mục từ';
+			case 'my_words_reading': return 'Cách đọc';
+			case 'my_words_meaning': return 'Nghĩa (tùy chọn)';
+			case 'my_words_meaning_hint': return 'Tạo sinh tăng cường truy xuất';
+			case 'my_words_saved': return 'Đã lưu vào Mục từ của tôi';
+			case 'my_words_deleted': return 'Đã xóa mục từ';
+			case 'my_words_empty': return 'Chưa có mục từ';
+			case 'my_words_info': return 'Nghĩa do bạn tự thêm. Chúng luôn hiển thị đầu tiên mỗi khi bạn tra mục từ, trong bất kỳ cuốn sách nào. Chọn văn bản như "software as a service (SaaS)" rồi chạm vào Thêm mục từ để lưu SaaS chỉ với một lần chạm.';
+			case 'my_words_new': return 'Mục từ mới';
+			case 'add_word': return 'Thêm mục từ';
+			case 'ttu_page_info': return 'Sách bằng ngôn ngữ này sẽ mở với các cài đặt này.';
+			case 'ttu_font': return 'Phông chữ';
+			case 'ttu_font_serif': return 'Serif';
+			case 'ttu_font_sans': return 'Sans';
+			case 'ttu_font_mincho': return 'Mincho';
+			case 'ttu_font_klee': return 'Klee';
+			case 'ttu_line_spacing': return 'Giãn dòng';
+			case 'ttu_margins': return 'Lề';
+			case 'ttu_columns': return 'Cột';
+			case 'ttu_columns_auto': return 'Tự động';
+			case 'ttu_furigana_label': return 'Furigana';
+			case 'ttu_furigana_show': return 'Hiện';
+			case 'ttu_furigana_faded': return 'Mờ';
+			case 'ttu_furigana_hidden': return 'Ẩn';
+			case 'ttu_furigana_tap': return 'Khi chạm';
+			case 'ttu_furigana_info': return 'Mờ hiển thị cách đọc bằng màu xám. Khi chạm hiển thị cách đọc lúc bạn chạm vào một từ.';
+			case 'ttu_avoid_break': return 'Giữ nguyên đoạn văn';
+			case 'ttu_avoid_break_info': return 'Chuyển đoạn văn sang trang tiếp theo thay vì chia đoạn.';
+			case 'ttu_blur_images': return 'Làm mờ hình ảnh';
+			case 'ttu_blur_images_info': return 'Ẩn hình ảnh sau lớp che spoiler cho đến khi bạn chạm vào chúng.';
+			case 'ttu_full_screen_info': return 'Ẩn thanh trạng thái và thanh điều hướng. Khi vuốt từ cạnh màn hình, chúng chỉ hiện ra, vì vậy bạn cần vuốt hai lần để thoát hoặc mở thông báo.';
+			case 'ttu_camera_area': return 'Dùng vùng camera';
+			case 'ttu_camera_area_info': return 'Cho phép trang hiển thị bên dưới phần khoét camera.';
+			case 'ttu_keep_screen_on': return 'Giữ màn hình luôn bật';
+			case 'ttu_auto_save_info': return 'Lưu khi bạn đọc và khi bạn rời khỏi sách.';
+			case 'ttu_match_popup_info': return 'Dùng chủ đề của trang cho cửa sổ tra từ bật lên.';
+			case 'ttu_scroll_step_info': return 'Khoảng cuộn sau mỗi lần nhấn phím trong bố cục Cuộn.';
+			case 'file_access_title': return 'Cho phép truy cập tệp?';
+			case 'file_access_media': return 'Ảnh, video và âm thanh';
+			case 'file_access_all': return 'Tất cả tệp';
+			case 'file_access_allow': return 'Cho phép';
+			case 'file_access_not_now': return 'Để sau';
+			case 'file_access_info': return 'Cần quyền này để mở video và manga từ các thư mục trên điện thoại. Ảnh, video và âm thanh là đủ để phát video; Tất cả tệp cũng tìm thấy các tệp phụ đề bên cạnh chúng. Sách và từ điển không bao giờ cần quyền này.';
+			case 'file_access_info_short': return 'Cần quyền này để mở video và manga từ các thư mục trên điện thoại. Sách và từ điển không bao giờ cần quyền này.';
+			case 'file_access_denied': return 'Không thể mở tệp nếu chưa được cấp quyền truy cập. Bạn có thể cho phép trong phần cài đặt Android.';
+			case 'ttu_language_changed': return ({required Object language}) => 'Các từ trong sách này hiện được tra bằng ${language}';
+			case 'my_terms_from': return ({required Object title}) => 'Từ ${title}';
+			case 'my_terms_saved_term': return ({required Object term}) => 'Đã lưu ${term}';
+			case 'my_terms_edit': return 'Sửa';
+			case 'ttu_terms': return 'Mục từ';
+			case 'ttu_no_terms': return 'Chưa có mục từ nào được lưu từ sách này';
+			case 'ttu_place_kept': return ({required Object position}) => 'Vị trí của bạn vẫn là ${position}';
+			case 'ttu_read_on': return 'Đọc';
+			case 'ttu_font_genei': return 'Genei';
+			case 'ttu_chapters': return 'Chương';
+			case 'ttu_no_chapters': return 'Sách này không có danh sách chương';
+			case 'ttu_applying': return 'Đang áp dụng cài đặt';
+			case 'ttu_memos_on_page': return 'Hiện ghi chú trên trang';
+			case 'ttu_memos_on_page_info': return 'Một dòng ngắn phía trên mỗi đoạn văn có ghi chú. Chạm vào để đọc toàn bộ ghi chú.';
+			case 'ttu_color_amber': return 'Hổ phách';
+			case 'ttu_color_rose': return 'Hồng';
+			case 'ttu_color_green': return 'Xanh lá';
+			case 'ttu_color_sky': return 'Xanh dương';
+			case 'ttu_color_violet': return 'Tím';
+			case 'catalog_title': return 'Từ điển trực tuyến';
+			case 'catalog_open': return 'Trực tuyến';
+			case 'catalog_connect_title': return 'Kết nối máy chủ từ điển';
+			case 'catalog_connect_hint': return 'Dán địa chỉ máy chủ và token. Token chỉ đọc cho phép duyệt và tải xuống; token quản trị còn cho phép tải lên và xóa. Dán liên kết có token sau dấu # sẽ tự điền cả hai.';
+			case 'catalog_address': return 'Địa chỉ máy chủ';
+			case 'catalog_token': return 'Token';
+			case 'catalog_connect': return 'Kết nối';
+			case 'catalog_all': return 'Tất cả';
+			case 'catalog_section_bilingual': return 'Song ngữ';
+			case 'catalog_section_monolingual': return 'Đơn ngữ';
+			case 'catalog_section_kanji': return 'Kanji';
+			case 'catalog_section_frequency': return 'Tần suất';
+			case 'catalog_section_pronunciation': return 'Phát âm';
+			case 'catalog_section_other': return 'Khác';
+			case 'catalog_entries': return ({required Object n}) => '${n} mục từ';
+			case 'catalog_installed': return 'Đã cài đặt';
+			case 'catalog_preparing': return 'Đang chuẩn bị';
+			case 'catalog_failed': return 'Không thể chuẩn bị';
+			case 'catalog_download': return 'Tải xuống';
+			case 'catalog_search_hint': return 'Tìm trong từ điển này';
+			case 'catalog_nothing_found': return ({required Object query}) => 'Không tìm thấy gì cho ${query}';
+			case 'catalog_upload': return 'Tải lên';
+			case 'catalog_uploading': return ({required Object name}) => 'Đang tải ${name} lên';
+			case 'catalog_uploaded': return ({required Object name}) => '${name} đã có trên máy chủ và đang được chuẩn bị';
+			case 'catalog_replace': return 'Thay thế';
+			case 'catalog_delete': return 'Xóa khỏi máy chủ';
+			case 'catalog_delete_confirm': return 'Chạm lần nữa để xóa';
+			case 'catalog_deleted': return ({required Object name}) => 'Đã xóa ${name} khỏi máy chủ';
+			case 'catalog_words': return 'Từ';
+			case 'catalog_definitions': return 'Định nghĩa';
+			case 'catalog_languages_hint': return 'Ngôn ngữ bạn tra từ và ngôn ngữ của phần định nghĩa. Các từ điển không có thông tin này trong chỉ mục sẽ được máy chủ gắn nhãn dựa trên nội dung; hãy sửa tại đây nếu máy chủ đoán sai.';
+			case 'catalog_save': return 'Lưu';
+			case 'catalog_server': return 'Máy chủ';
+			case 'catalog_disconnect': return 'Ngắt kết nối';
+			case 'catalog_role_admin': return 'Quản trị viên';
+			case 'catalog_role_read': return 'Chỉ đọc';
+			case 'catalog_empty': return 'Chưa có từ điển nào trên máy chủ';
+			case 'catalog_imported': return ({required Object name}) => 'Đã nhập ${name}';
+			case 'catalog_unknown_language': return 'Không xác định';
+			case 'backup_title': return 'Sao lưu và khôi phục';
+			case 'backup_menu': return 'Sao lưu và khôi phục';
+			case 'backup_step_settings': return 'Cài đặt';
+			case 'backup_step_memos': return 'Ghi chú và mục từ';
+			case 'backup_step_books': return ({required Object language}) => 'Sách (${language})';
+			case 'backup_step_dictionary': return ({required Object name}) => 'Từ điển: ${name}';
+			case 'backup_step_packing': return 'Đang đóng gói';
+			case 'backup_step_download': return ({required Object name}) => 'Đang tải ${name} xuống';
+			case 'backup_step_install': return ({required Object name}) => 'Đang cài đặt ${name}';
+			case 'backup_not_a_backup': return 'Tệp này không phải bản sao lưu jidoujisho.';
+			case 'backup_too_new': return 'Bản sao lưu này được tạo bởi phiên bản ứng dụng mới hơn. Hãy cập nhật ứng dụng để khôi phục.';
+			case 'backup_make': return 'Sao lưu';
+			case 'backup_make_hint': return 'Một tệp chứa sách và vị trí đọc, cài đặt và phông chữ của ッツ, ghi chú, Mục từ của tôi, lịch sử, hồ sơ Anki, cài đặt ứng dụng cùng liên kết máy chủ từ điển và các từ điển của bạn. Khi khôi phục, các từ điển có trên máy chủ từ điển sẽ được tải xuống lại; các từ điển khác được lưu trong tệp. Tệp có chứa token máy chủ của bạn, hãy giữ kín tệp này.';
+			case 'backup_restore': return 'Khôi phục';
+			case 'backup_restore_hint': return 'Thay thế sách, ghi chú, mục từ và cài đặt trên thiết bị này bằng dữ liệu trong bản sao lưu. Các từ điển đã có trên thiết bị vẫn được giữ lại; những từ điển khác trong bản sao lưu sẽ được cài đặt.';
+			case 'backup_choose': return 'Chọn bản sao lưu';
+			case 'backup_saved': return 'Đã lưu bản sao lưu';
+			case 'backup_not_saved': return 'Chưa lưu được bản sao lưu';
+			case 'backup_books': return 'Sách';
+			case 'backup_dictionaries': return 'Từ điển';
+			case 'backup_dictionaries_split': return ({required Object included, required Object online}) => '${included} trong tệp · ${online} từ máy chủ của bạn';
+			case 'backup_memos': return 'Ghi chú';
+			case 'backup_terms': return 'Mục từ của tôi';
+			case 'backup_made': return ({required Object date, required Object version}) => 'Được tạo ${date} bằng ${version}';
+			case 'backup_restore_confirm': return 'Chạm lần nữa để thay thế dữ liệu trên thiết bị này';
+			case 'backup_restored': return 'Đã khôi phục. Khởi động lại ứng dụng để hoàn tất.';
+			case 'backup_restart': return 'Đóng ứng dụng';
+			case 'backup_failed_dictionaries': return ({required Object names}) => 'Không thể cài đặt: ${names}';
+			case 'backup_working': return 'Hãy giữ ứng dụng mở cho đến khi hoàn tất.';
+			case 'theme_menu': return 'Chủ đề';
+			case 'theme_mode': return 'Chế độ';
+			case 'theme_mode_system': return 'Hệ thống';
+			case 'theme_mode_light': return 'Sáng';
+			case 'theme_mode_dark': return 'Tối';
+			case 'theme_mode_hint': return 'Hệ thống làm theo điện thoại của bạn và chuyển đổi cùng điện thoại.';
+			case 'theme_accent': return 'Màu nhấn';
+			case 'theme_accent_red': return 'Đỏ';
+			case 'theme_accent_rose': return 'Hồng';
+			case 'theme_accent_orange': return 'Cam';
+			case 'theme_accent_green': return 'Xanh lá';
+			case 'theme_accent_teal': return 'Xanh ngọc';
+			case 'theme_accent_blue': return 'Xanh dương';
+			case 'theme_accent_violet': return 'Tím';
+			case 'theme_accent_slate': return 'Xám xanh';
+			case 'ttu_search': return 'Tìm kiếm';
+			case 'ttu_search_hint': return 'Tìm trong sách này';
+			case 'ttu_search_found': return ({required Object count}) => 'Tìm thấy ${count} kết quả';
+			case 'ttu_search_first': return ({required Object shown}) => 'Hiển thị ${shown} kết quả đầu tiên';
+			case 'ttu_search_none': return 'Không có trong sách này';
+			case 'ttu_search_reading': return 'Đang đọc sách…';
+			case 'ttu_search_stay': return 'Ở lại đây';
+			case 'ttu_search_list': return 'Tất cả kết quả';
+			case 'ttu_search_previous': return 'Kết quả trước';
+			case 'ttu_search_next': return 'Kết quả tiếp theo';
+			case 'ttu_search_info': return 'Kết quả không phân biệt hiragana và katakana, ký tự full-width và half-width, hay chữ hoa và chữ thường. Không tìm kiếm Furigana. Vị trí đã lưu vẫn giữ nguyên cho đến khi bạn chọn Ở lại đây.';
+			case 'ttu_favourite': return 'Yêu thích';
+			case 'ttu_unfavourite': return 'Xóa khỏi mục yêu thích';
+			case 'ttu_favourites': return 'Mục yêu thích';
+			case 'ttu_shelf': return 'Kệ sách';
+			case 'ttu_group_by': return 'Nhóm theo';
+			case 'ttu_group_by_none': return 'Không nhóm';
+			case 'ttu_group_by_groups': return 'Nhóm của tôi';
+			case 'ttu_group_by_language': return 'Ngôn ngữ';
+			case 'ttu_group_by_progress': return 'Tiến độ';
+			case 'ttu_group': return 'Nhóm';
+			case 'ttu_group_none': return 'Không có';
+			case 'ttu_ungrouped': return 'Chưa thuộc nhóm';
+			case 'ttu_progress_reading': return 'Đang đọc';
+			case 'ttu_progress_unread': return 'Chưa bắt đầu';
+			case 'ttu_progress_finished': return 'Đã đọc xong';
+			case 'ttu_other_books': return 'Sách';
+			case 'ttu_new_group': return 'Nhóm mới';
+			case 'ttu_group_name': return 'Tên nhóm';
+			case 'ttu_rename_group': return 'Đổi tên';
+			case 'ttu_delete_group': return 'Xóa nhóm';
+			case 'ttu_group_info': return 'Sách sẽ hiển thị dưới nhóm khi kệ sách được nhóm theo Nhóm của tôi trong phần cài đặt kệ sách.';
+			case 'ttu_group_by_info': return 'Mục yêu thích luôn hiển thị đầu tiên. Chạm vào tiêu đề để thu gọn.';
+			case 'ttu_this_book': return 'Sách này';
+			case 'ttu_follow_links': return 'Mở liên kết';
+			case 'ttu_follow_links_info': return 'Khi bật, chạm vào liên kết sẽ đưa bạn đến nơi liên kết trỏ tới, kèm cách quay lại. Khi tắt, liên kết được đọc như văn bản thường và chạm vào sẽ tra từ.';
+			case 'ttu_book_fonts': return 'Phông chữ riêng của sách';
+			case 'ttu_book_fonts_info': return 'Khi tắt, phông chữ của bạn được dùng cho toàn bộ sách. Mã vẫn dùng phông chữ đơn cách.';
+			case 'ttu_repaired_partly': return ({required Object title}) => 'Một phần của ${title} bị thiếu trong tệp. Phần còn lại đã được thêm.';
+			case 'catalog_description': return 'Mô tả';
+			case 'catalog_description_hint': return 'Dùng để làm gì hoặc dành cho ai';
+			case 'catalog_description_shown_in': return ({required Object language}) => 'Chỉ hiển thị khi ứng dụng dùng ${language}';
+			case 'import_replacing': return ({required Object name}) => 'Đang thay thế ${name} cũ…';
+			case 'catalog_update': return 'Cập nhật lên phiên bản này';
+			case 'dictionary_about': return 'Thông tin';
+			case 'dictionary_by': return ({required Object author}) => 'Tác giả: ${author}';
+			case 'dictionary_delete_all': return 'Xóa tất cả từ điển';
+			case 'dictionary_import': return 'Nhập';
+			case 'dictionary_collapsed': return 'Mặc định thu gọn';
+			case 'dictionary_show_in_results': return 'Hiện trong kết quả';
+			case 'dictionary_start_collapsed': return 'Thu gọn sẵn trong kết quả';
+			case 'dictionary_from_server': return 'Đã tải xuống';
+			case 'dictionary_from_file': return 'Đã nhập từ tệp';
+			case 'dictionary_delete': return 'Xóa từ điển';
+			case 'ttu_add_font': return 'Thêm phông chữ';
+			case 'ttu_font_unsupported': return 'Phông chữ phải là tệp .ttf, .otf, .woff hoặc .woff2.';
+			case 'ttu_font_failed': return 'Không thể thêm phông chữ.';
+			case 'ttu_remove_font': return ({required Object name}) => 'Xóa ${name}';
+			case 'auto_backup_title': return 'Luôn cập nhật bản sao lưu';
+			case 'auto_backup_hint': return 'Một tệp sao lưu ở nơi bạn chọn, chẳng hạn như Google Drive, sẽ được ghi đè khi đến hạn để chỉ giữ lại bản mới nhất. Tệp được cập nhật khi ứng dụng đang mở, một lúc sau khi bạn mở ứng dụng.';
+			case 'auto_backup_choose': return 'Chọn nơi lưu';
+			case 'auto_backup_file': return 'Tệp sao lưu';
+			case 'auto_backup_daily': return 'Mỗi ngày';
+			case 'auto_backup_weekly': return 'Mỗi tuần';
+			case 'auto_backup_own_dictionaries': return 'Bao gồm các từ điển do tôi tự thêm';
+			case 'auto_backup_own_dictionaries_info': return 'Các từ điển này có thể khiến tệp lớn. Từ điển trên máy chủ của bạn luôn được liệt kê và sẽ được tải xuống lại khi khôi phục.';
+			case 'auto_backup_now': return 'Cập nhật ngay';
+			case 'auto_backup_off': return 'Tắt';
+			case 'auto_backup_updated': return ({required Object date}) => 'Đã cập nhật ${date}';
+			case 'auto_backup_never': return 'Chưa cập nhật';
+			case 'auto_backup_failed': return ({required Object reason}) => 'Lần cập nhật cuối thất bại: ${reason}';
+			case 'auto_backup_lost': return 'Không thể truy cập tệp sao lưu nữa. Hãy chọn lại nơi lưu.';
+			case 'auto_backup_writing': return 'Đang ghi tệp sao lưu';
+			case 'auto_backup_cannot_keep': return 'Sau này không thể ghi lại vào nơi đó. Hãy chọn nơi khác, chẳng hạn như một thư mục hoặc Google Drive.';
+			case 'auto_backup_running': return 'Đang cập nhật tệp sao lưu';
+			case 'ttu_tags': return 'Nhãn';
+			case 'ttu_add_tag': return 'Thêm nhãn';
+			case 'ttu_tags_none': return 'Chưa có nhãn';
+			case 'ttu_tags_used_before': return 'Đã dùng trước đây';
+			case 'ttu_tags_info': return 'Nhãn hiển thị trên bìa sách. Chọn một nhãn đã dùng trước đây hoặc nhập nhãn mới.';
+			case 'ttu_theme_names.light': return 'Sáng';
+			case 'ttu_theme_names.ecru': return 'Ngà';
+			case 'ttu_theme_names.water': return 'Nước';
+			case 'ttu_theme_names.gray': return 'Xám';
+			case 'ttu_theme_names.dark': return 'Tối';
+			case 'ttu_theme_names.black': return 'Đen';
+			case 'language_names.ja': return 'Tiếng Nhật';
+			case 'language_names.en': return 'Tiếng Anh';
+			case 'language_names.vi': return 'Tiếng Việt';
+			case 'language_names.zh': return 'Tiếng Trung';
+			case 'language_names.ko': return 'Tiếng Hàn';
+			case 'language_names.fr': return 'Tiếng Pháp';
+			case 'language_names.de': return 'Tiếng Đức';
+			case 'language_names.es': return 'Tiếng Tây Ban Nha';
+			case 'language_names.ru': return 'Tiếng Nga';
+			case 'language_names.th': return 'Tiếng Thái';
+			case 'language_names.ar': return 'Tiếng Ả Rập';
+			case 'addons.field.sentence.label': return 'Câu';
+			case 'addons.field.sentence.description': return 'Phụ đề, đoạn trích trong sách và thông tin ngữ cảnh khác.';
+			case 'addons.field.term.label': return 'Mục từ';
+			case 'addons.field.term.description': return 'Từ đầu mục hoặc cụm từ trong từ điển.';
+			case 'addons.field.reading.label': return 'Cách đọc';
+			case 'addons.field.reading.description': return 'Cách phát âm hoặc kiểu nói.';
+			case 'addons.field.meaning.label': return 'Nghĩa';
+			case 'addons.field.meaning.description': return 'Tất cả định nghĩa trong từ điển của một mục từ.';
+			case 'addons.field.notes.label': return 'Ghi chú';
+			case 'addons.field.notes.description': return 'Thông tin bổ sung hoặc nhận xét cá nhân.';
+			case 'addons.field.image.label': return 'Hình ảnh';
+			case 'addons.field.image.description': return 'Thông tin bổ sung trực quan. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn hình ảnh.';
+			case 'addons.field.audio.label': return 'Âm thanh mục từ';
+			case 'addons.field.audio.description': return 'Âm thanh liên quan đến mục từ. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn âm thanh.';
+			case 'addons.field.audio_sentence.label': return 'Âm thanh câu';
+			case 'addons.field.audio_sentence.description': return 'Âm thanh liên quan đến câu. Có thể dùng trường văn bản để nhập từ tìm kiếm cho các nguồn âm thanh.';
+			case 'addons.field.pitch_accent.label': return 'Trọng âm cao độ';
+			case 'addons.field.pitch_accent.description': return 'Điền sẵn văn bản để xuất sơ đồ trọng âm cao độ.';
+			case 'addons.field.furigana.label': return 'Furigana';
+			case 'addons.field.furigana.description': return 'Điền sẵn văn bản để xuất Furigana.';
+			case 'addons.field.frequency.label': return 'Tần suất';
+			case 'addons.field.frequency.description': return 'Thêm tần suất của từ đầu mục để sắp xếp, được tính bằng trung bình điều hòa.';
+			case 'addons.field.context.label': return 'Ngữ cảnh';
+			case 'addons.field.context.description': return 'Tên của nguồn hiện tại.';
+			case 'addons.field.cloze_before.label': return 'Trước chỗ trống';
+			case 'addons.field.cloze_before.description': return 'Văn bản trước phần được tô sáng trong câu. Trống nếu không có gì được tô sáng.';
+			case 'addons.field.cloze_inside.label': return 'Chỗ trống';
+			case 'addons.field.cloze_inside.description': return 'Văn bản được tô sáng trong câu.';
+			case 'addons.field.cloze_after.label': return 'Sau chỗ trống';
+			case 'addons.field.cloze_after.description': return 'Văn bản sau phần được tô sáng trong câu. Trống nếu không có gì được tô sáng.';
+			case 'addons.field.expanded_meaning.label': return 'Nghĩa mở rộng';
+			case 'addons.field.expanded_meaning.description': return 'Chỉ các định nghĩa từ những từ điển đang mở rộng.';
+			case 'addons.field.collapsed_meaning.label': return 'Nghĩa thu gọn';
+			case 'addons.field.collapsed_meaning.description': return 'Chỉ các định nghĩa từ những từ điển đang thu gọn.';
+			case 'addons.field.hidden_meaning.label': return 'Nghĩa ẩn';
+			case 'addons.field.hidden_meaning.description': return 'Chỉ các định nghĩa từ những từ điển đang ẩn.';
+			case 'addons.field.tags.label': return 'Nhãn';
+			case 'addons.field.tags.description': return 'Sắp xếp thẻ trong bộ thẻ bằng các nhãn cách nhau bởi dấu cách.';
+			case 'addons.enhancement.clear_field.label': return 'Xóa trường';
+			case 'addons.enhancement.clear_field.description': return 'Nhanh chóng xóa nội dung của một trường.';
+			case 'addons.enhancement.jpd101_audio.label': return 'Âm thanh JapanesePod101';
+			case 'addons.enhancement.jpd101_audio.description': return 'Tìm cách phát âm phù hợp của từ trên JapanesePod101.';
+			case 'addons.enhancement.forvo_audio.label': return 'Âm thanh Forvo';
+			case 'addons.enhancement.forvo_audio.description': return 'Lấy âm thanh của từ từ Forvo.';
+			case 'addons.enhancement.pick_audio.label': return 'Chọn âm thanh';
+			case 'addons.enhancement.pick_audio.description': return 'Chọn tệp âm thanh bằng trình chọn bên ngoài.';
+			case 'addons.enhancement.audio_recorder.label': return 'Trình ghi âm';
+			case 'addons.enhancement.audio_recorder.description': return 'Ghi và sử dụng âm thanh thu từ micrô của thiết bị.';
+			case 'addons.enhancement.open_stash.label': return 'Mở Kho tạm';
+			case 'addons.enhancement.open_stash.description': return 'Xem và quản lý văn bản đã lưu trong Kho tạm.';
+			case 'addons.enhancement.pop_from_stash.label': return 'Lấy từ Kho tạm';
+			case 'addons.enhancement.pop_from_stash.description': return 'Nhanh chóng lấy mục mới nhất trong Kho tạm.';
+			case 'addons.enhancement.text_segmentation.label': return 'Tách văn bản';
+			case 'addons.enhancement.text_segmentation.description': return 'Tìm kiếm hoặc chọn một mục từ mới trong văn bản đã được tách.';
+			case 'addons.enhancement.bing_images_search.label': return 'Tìm hình ảnh trên Bing';
+			case 'addons.enhancement.bing_images_search.description': return 'Tìm hình ảnh trên Bing bằng truy vấn hình ảnh hiện tại hoặc từ hiện tại.';
+			case 'addons.enhancement.crop_image.label': return 'Cắt hình ảnh';
+			case 'addons.enhancement.crop_image.description': return 'Cắt hình ảnh hiện được chọn.';
+			case 'addons.enhancement.pick_image.label': return 'Chọn hình ảnh';
+			case 'addons.enhancement.pick_image.description': return 'Chọn hình ảnh mới bằng trình chọn bên ngoài.';
+			case 'addons.enhancement.camera.label': return 'Máy ảnh';
+			case 'addons.enhancement.camera.description': return 'Chụp ảnh mới để dùng làm hình ảnh.';
+			case 'addons.enhancement.sentence_picker.label': return 'Chọn câu';
+			case 'addons.enhancement.sentence_picker.description': return 'Chọn các câu được phân cách bằng dấu câu và khoảng trắng.';
+			case 'addons.enhancement.search_dictionary.label': return 'Tra từ điển';
+			case 'addons.enhancement.search_dictionary.description': return 'Tìm trong từ điển bằng nội dung của một trường.';
+			case 'addons.enhancement.massif_example_sentences.label': return 'Câu ví dụ từ Massif';
+			case 'addons.enhancement.massif_example_sentences.description': return 'Lấy các câu ví dụ được tuyển chọn qua Massif.';
+			case 'addons.enhancement.tatoeba_example_sentences.label': return 'Câu ví dụ từ Tatoeba';
+			case 'addons.enhancement.tatoeba_example_sentences.description': return 'Chọn cụm từ và câu ví dụ từ Tatoeba.';
+			case 'addons.enhancement.immersion_kit.label': return 'ImmersionKit';
+			case 'addons.enhancement.immersion_kit.description': return 'Lấy các câu ví dụ kèm hình ảnh và âm thanh.';
+			case 'addons.enhancement.save_tags.label': return 'Lưu nhãn';
+			case 'addons.enhancement.save_tags.description': return 'Lưu văn bản hiện tại vào trường Nhãn.';
+			case 'addons.action.card_creator.label': return 'Trình tạo thẻ';
+			case 'addons.action.card_creator.description': return 'Tạo thẻ từ mục từ điển đã chọn và chỉnh sửa trước khi xuất.';
+			case 'addons.action.instant_export.label': return 'Xuất ngay';
+			case 'addons.action.instant_export.description': return 'Xuất thẻ ngay từ mục từ điển đã chọn.';
+			case 'addons.action.add_to_stash.label': return 'Thêm vào Kho tạm';
+			case 'addons.action.add_to_stash.description': return 'Nhanh chóng lưu từ đầu mục của một mục từ điển vào Kho tạm.';
+			case 'addons.action.my_words.label': return 'Mục từ của tôi';
+			case 'addons.action.my_words.description': return 'Viết nghĩa riêng của bạn cho một mục từ. Nghĩa này luôn hiển thị đầu tiên mỗi khi bạn tra mục từ.';
+			case 'addons.action.copy_to_clipboard.label': return 'Sao chép vào bộ nhớ tạm';
+			case 'addons.action.copy_to_clipboard.description': return 'Sao chép từ đầu mục của một mục từ điển vào bộ nhớ tạm.';
+			case 'addons.action.share.label': return 'Chia sẻ';
+			case 'addons.action.share.description': return 'Chia sẻ thông tin của một mục từ điển.';
+			case 'addons.action.play_audio.label': return 'Phát âm thanh';
+			case 'addons.action.play_audio.description': return 'Thử phát âm thanh bằng các tiện ích bổ trợ của trường Âm thanh. Tiện ích tự động được ưu tiên trước.';
+			case 'addons.source.player_local_media.label': return 'Phương tiện trên thiết bị';
+			case 'addons.source.player_local_media.description': return 'Phát video từ bộ nhớ trên thiết bị.';
+			case 'addons.source.player_youtube.label': return 'YouTube';
+			case 'addons.source.player_youtube.description': return 'Tìm kiếm và xem video từ YouTube.';
+			case 'addons.source.player_network_stream.label': return 'Luồng mạng';
+			case 'addons.source.player_network_stream.description': return 'Phát trực tuyến video từ URL trực tiếp.';
+			case 'addons.source.reader_ttu.label': return 'ッツ Ebook Reader';
+			case 'addons.source.reader_ttu.description': return 'Đọc EPUB và tạo thẻ từ câu qua trình đọc web tích hợp.';
+			case 'addons.source.reader_mokuro.label': return 'Mokuro';
+			case 'addons.source.reader_mokuro.description': return 'Đọc các tập manga đã được xử lý thành một tệp HTML duy nhất bằng Mokuro.';
+			case 'addons.source.reader_browser.label': return 'Trình duyệt';
+			case 'addons.source.reader_browser.description': return 'Duyệt trang web bằng trình duyệt cho phép tìm kiếm và tạo thẻ từ văn bản đã chọn.';
+			case 'addons.source.reader_lyrics.label': return 'Lời bài hát';
+			case 'addons.source.reader_lyrics.description': return 'Cho phép lấy và tô sáng lời bài hát của phương tiện đang phát, được lấy từ Google và Uta-Net.';
+			case 'addons.source.reader_chatgpt.label': return 'ChatGPT';
+			case 'addons.source.reader_chatgpt.description': return 'Cho phép người dùng tương tác với mô hình ngôn ngữ AI bằng khóa API chính thức từ OpenAI.';
+			case 'addons.source.reader_clipboard.label': return 'Bộ nhớ tạm';
+			case 'addons.source.reader_clipboard.description': return 'Cho phép hiển thị văn bản được dán từ bộ nhớ tạm dưới dạng văn bản có thể chọn.';
+			case 'addons.source.reader_websocket.label': return 'WebSocket';
+			case 'addons.source.reader_websocket.description': return 'Chọn văn bản nhận được từ máy chủ WebSocket và tạo thẻ từ đó.';
+			case 'addons.source.viewer_camera.label': return 'Máy ảnh';
+			case 'addons.source.viewer_camera.description': return 'Xem hình ảnh được chụp bằng máy ảnh hoặc được chọn từ phương tiện.';
 			default: return null;
 		}
 	}

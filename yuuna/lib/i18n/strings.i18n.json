@@ -753,6 +753,14 @@
     "ttu_tags_none": "No tags yet",
     "ttu_tags_used_before": "Used before",
     "ttu_tags_info": "Tags show on the book's cover. Pick one you used before or type a new one.",
+    "ttu_theme_names": {
+        "light": "Light",
+        "ecru": "Ecru",
+        "water": "Water",
+        "gray": "Gray",
+        "dark": "Dark",
+        "black": "Black"
+    },
     "language_names": {
         "ja": "Japanese",
         "en": "English",

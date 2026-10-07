@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_logs/flutter_logs.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:network_to_file_image/network_to_file_image.dart';
@@ -363,6 +364,9 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
       locale: locale,
       localizationsDelegates: const [
         JidoujishoLocalizationsDelegate(),
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: appModel.locales.values,
       themeMode: themeMode,
@@ -391,8 +395,10 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
   /// Light, dark, or following the phone, as picked in the theme settings.
   ThemeMode get themeMode => appModel.themeMode;
 
-  /// The current locale, dependent on the active target language.
-  Locale get locale => appModel.targetLanguage.locale;
+  /// The language of the app's own text, which Flutter's built-in text
+  /// such as the copy and paste menu follows too. Text in the target
+  /// language keeps its own locale through the theme's text style.
+  Locale get locale => appModel.appLocale;
 }
 
 /// Used to override certain strings.
