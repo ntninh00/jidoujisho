@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/dictionary.dart';
+import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/models.dart';
 
 /// An entity that represents a broad characteristic of an item being
@@ -52,13 +53,16 @@ abstract class Field {
   /// Get the best localisation for the label of this enhancement. If there
   /// is no localisation, the fallback is [label].
   String getLocalisedLabel(AppModel appModel) {
-    return labelLocalisation[appModel.appLocale.toLanguageTag()] ?? label;
+    return labelLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.field.$uniqueKey.label'] as String? ??
+        label;
   }
 
   /// Get the best localisation for the description of this enhancement. If
   /// there is no localisation, the fallback is [description].
   String getLocalisedDescription(AppModel appModel) {
     return descriptionLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.field.$uniqueKey.description'] as String? ??
         description;
   }
 

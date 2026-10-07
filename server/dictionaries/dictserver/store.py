@@ -12,6 +12,10 @@ from pathlib import Path
 STATUSES = ("waiting", "indexing", "ready", "failed")
 
 
+def _encode_notes(notes: dict[str, str]) -> str:
+    return json.dumps(notes, ensure_ascii=False, sort_keys=True)
+
+
 class Catalog:
     def __init__(self, path: Path, dictionaries_dir: Path) -> None:
         self._path = path
@@ -38,7 +42,8 @@ class Catalog:
                     status TEXT NOT NULL,
                     error TEXT,
                     note TEXT,
-                    replaces TEXT
+                    replaces TEXT,
+                    notes TEXT NOT NULL DEFAULT '{}'
                 )"""
             )
             # Catalogs from before these columns get them.
@@ -46,6 +51,15 @@ class Catalog:
             for column in ("note", "replaces"):
                 if column not in columns:
                     db.execute(f"ALTER TABLE dictionaries ADD COLUMN {column} TEXT")
+            if "notes" not in columns:
+                db.execute("ALTER TABLE dictionaries ADD COLUMN notes TEXT NOT NULL DEFAULT '{}'")
+            # A description from before they had languages was written for
+            # the app in English, the only language it had then.
+            for row in db.execute("SELECT id, note FROM dictionaries WHERE note IS NOT NULL").fetchall():
+                db.execute(
+                    "UPDATE dictionaries SET notes = ?, note = NULL WHERE id = ?",
+                    (_encode_notes({"en": row["note"]}), row["id"]),
+                )
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self._path, timeout=10)
@@ -64,6 +78,7 @@ class Catalog:
     @staticmethod
     def _public(row: sqlite3.Row) -> dict:
         """The row as the API shows it."""
+        notes = json.loads(row["notes"] or "{}")
         return {
             "id": row["id"],
             "title": row["title"],
@@ -73,7 +88,10 @@ class Catalog:
             "url": row["url"],
             "description": row["description"],
             "attribution": row["attribution"],
-            "note": row["note"],
+            "notes": notes,
+            # For apps from before descriptions had languages, which were
+            # all in English.
+            "note": notes.get("en"),
             "replaces": row["replaces"],
             "sourceLanguage": row["source_language"],
             "targetLanguage": row["target_language"],
@@ -139,14 +157,14 @@ class Catalog:
             return None
         old = db.execute("SELECT * FROM dictionaries WHERE id = ?", (new["replaces"],)).fetchone()
         if old is not None:
-            note = new["note"] if new["note"] is not None else old["note"]
+            notes = {**json.loads(old["notes"] or "{}"), **json.loads(new["notes"] or "{}")}
             source, target, guessed = new["source_language"], new["target_language"], new["languages_guessed"]
             if new["languages_guessed"] and not old["languages_guessed"]:
                 source, target, guessed = old["source_language"], old["target_language"], 0
             db.execute(
-                """UPDATE dictionaries SET note = ?, source_language = ?, target_language = ?,
+                """UPDATE dictionaries SET notes = ?, source_language = ?, target_language = ?,
                    languages_guessed = ? WHERE id = ?""",
-                (note, source, target, guessed, dictionary_id),
+                (_encode_notes(notes), source, target, guessed, dictionary_id),
             )
             db.execute("DELETE FROM dictionaries WHERE id = ?", (old["id"],))
         db.execute("UPDATE dictionaries SET replaces = NULL WHERE id = ?", (dictionary_id,))
@@ -204,11 +222,21 @@ class Catalog:
             )
         return self.get(dictionary_id)
 
-    def set_note(self, dictionary_id: str, note: str | None) -> dict | None:
-        """The admin's own description, kept apart from the one the
-        dictionary came with."""
+    def set_notes(self, dictionary_id: str, changes: dict[str, str | None]) -> dict | None:
+        """The admin's own descriptions, one per app language and kept apart
+        from the one the dictionary came with. Only the languages in
+        [changes] change; an empty one is removed."""
         with self._lock, self._connect() as db:
-            db.execute("UPDATE dictionaries SET note = ? WHERE id = ?", (note, dictionary_id))
+            row = db.execute("SELECT notes FROM dictionaries WHERE id = ?", (dictionary_id,)).fetchone()
+            if row is None:
+                return None
+            notes = json.loads(row["notes"] or "{}")
+            for language, note in changes.items():
+                if note:
+                    notes[language] = note
+                else:
+                    notes.pop(language, None)
+            db.execute("UPDATE dictionaries SET notes = ? WHERE id = ?", (_encode_notes(notes), dictionary_id))
         return self.get(dictionary_id)
 
     def delete(self, dictionary_id: str) -> bool:

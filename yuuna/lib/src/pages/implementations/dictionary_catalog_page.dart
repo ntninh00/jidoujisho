@@ -16,24 +16,26 @@ import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
-const Map<String, String> _languageNames = {
-  'ja': 'Japanese',
-  'en': 'English',
-  'vi': 'Vietnamese',
-  'zh': 'Chinese',
-  'ko': 'Korean',
-  'fr': 'French',
-  'de': 'German',
-  'es': 'Spanish',
-  'ru': 'Russian',
-  'th': 'Thai',
-  'ar': 'Arabic',
-};
+/// The languages a dictionary can be labelled with, by code. Their names
+/// are in the strings, under `language_names`.
+const List<String> _languageCodes = [
+  'ja',
+  'en',
+  'vi',
+  'zh',
+  'ko',
+  'fr',
+  'de',
+  'es',
+  'ru',
+  'th',
+  'ar',
+];
 
 /// A language's name, or its code when the app doesn't know it.
 String catalogLanguageName(String? code) => code == null
     ? t.catalog_unknown_language
-    : _languageNames[code] ?? code.toUpperCase();
+    : t['language_names.$code'] as String? ?? code.toUpperCase();
 
 String _code(String? language) => (language ?? '?').toUpperCase();
 
@@ -309,7 +311,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
         'id': dictionary.id,
         'title': dictionary.title,
         'revision': dictionary.revision,
-        if (dictionary.note != null) 'note': dictionary.note,
+        if (dictionary.notes.isNotEmpty) 'notes': dictionary.notes,
       });
     }
     if (!mounted) {
@@ -1605,14 +1607,31 @@ class _CatalogManageSheet extends StatefulWidget {
 class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   late String? _source = widget.dictionary.sourceLanguage;
   late String? _target = widget.dictionary.targetLanguage;
-  late final TextEditingController _note =
-      TextEditingController(text: widget.dictionary.note ?? '');
+
+  /// The app's languages. Each has its own description, which shows only
+  /// in the app set to that language.
+  final List<String> _noteLanguages = {
+    for (AppLocale locale in AppLocale.values) locale.languageCode,
+  }.toList();
+
+  /// The language whose description is being written, at first the one
+  /// the app is in.
+  String _noteLanguage = LocaleSettings.currentLocale.languageCode;
+
+  late final Map<String, TextEditingController> _notes = {
+    for (String language in _noteLanguages)
+      language: TextEditingController(
+        text: widget.dictionary.notes[language] ?? '',
+      ),
+  };
   bool _confirming = false;
   bool _busy = false;
 
   @override
   void dispose() {
-    _note.dispose();
+    for (TextEditingController note in _notes.values) {
+      note.dispose();
+    }
     super.dispose();
   }
 
@@ -1621,15 +1640,68 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
     CatalogDictionary dictionary = widget.dictionary;
     bool languages = _source != dictionary.sourceLanguage ||
         _target != dictionary.targetLanguage;
-    String note = _note.text.trim();
+    Map<String, String> notes = {
+      for (MapEntry<String, TextEditingController> note in _notes.entries)
+        if (note.value.text.trim() != (dictionary.notes[note.key] ?? ''))
+          note.key: note.value.text.trim(),
+    };
     return CatalogChanges(
       languages: languages ? (source: _source, target: _target) : null,
-      note: note != (dictionary.note ?? '') ? note : null,
+      notes: notes,
+    );
+  }
+
+  /// Picks which language's description is being written, when the app
+  /// has more than one.
+  Widget _noteLanguagePicker() {
+    ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (String language in _noteLanguages)
+            Builder(builder: (context) {
+              bool selected = language == _noteLanguage;
+              bool written = _notes[language]!.text.trim().isNotEmpty;
+              return ChoiceChip(
+                avatar: written
+                    ? Icon(
+                        Ui.check,
+                        size: 14,
+                        color: selected ? theme.colorScheme.primary : null,
+                      )
+                    : null,
+                label: Text(
+                  catalogLanguageName(language),
+                  style: TextStyle(
+                    color: selected ? theme.colorScheme.primary : null,
+                    fontWeight: selected ? FontWeight.w600 : null,
+                  ),
+                ),
+                selected: selected,
+                showCheckmark: false,
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.dividerColor.withOpacity(0.25),
+                    width: selected ? 1.5 : 1,
+                  ),
+                ),
+                backgroundColor: Colors.transparent,
+                selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+                onSelected: (_) => setState(() => _noteLanguage = language),
+              );
+            }),
+        ],
+      ),
     );
   }
 
   List<String?> get _options {
-    List<String?> options = [..._languageNames.keys];
+    List<String?> options = [..._languageCodes];
     for (String? code in [
       widget.dictionary.sourceLanguage,
       widget.dictionary.targetLanguage
@@ -1739,9 +1811,11 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
               ],
             ),
             const SizedBox(height: 14),
+            if (admin && _noteLanguages.length > 1) _noteLanguagePicker(),
             if (admin)
               TextField(
-                controller: _note,
+                controller: _notes[_noteLanguage] ??
+                    _notes[_noteLanguages.first],
                 minLines: 2,
                 maxLines: 5,
                 maxLength: 1000,
@@ -1755,6 +1829,10 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
                 decoration: InputDecoration(
                   labelText: t.catalog_description,
                   hintText: t.catalog_description_hint,
+                  helperText: _noteLanguages.length > 1
+                      ? t.catalog_description_shown_in(
+                          language: catalogLanguageName(_noteLanguage))
+                      : null,
                   alignLabelWithHint: true,
                   filled: true,
                   fillColor: theme.dividerColor.withOpacity(0.08),

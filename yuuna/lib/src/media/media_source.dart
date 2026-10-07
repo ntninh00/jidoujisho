@@ -131,6 +131,7 @@ abstract class MediaSource {
   /// is no localisation, the fallback is [sourceName].
   String getLocalisedSourceName(AppModel appModel) {
     return sourceNameLocalisatiton[appModel.appLocale.toLanguageTag()] ??
+        t['addons.source.$uniqueKey.label'] as String? ??
         sourceName;
   }
 
@@ -138,6 +139,7 @@ abstract class MediaSource {
   /// there is no localisation, the fallback is [description].
   String getLocalisedDescription(AppModel appModel) {
     return descriptionLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.source.$uniqueKey.description'] as String? ??
         description;
   }
 

@@ -146,7 +146,11 @@ def test_duplicates_and_replacing(client, settings):
     again = upload(client, ja_en())
     assert again.status_code == 409
     assert "already on the server" in again.json()["error"]
-    client.patch(f"/api/dictionaries/{first['id']}", json={"note": "Kept", "targetLanguage": "vi"}, headers=auth(ADMIN))
+    client.patch(
+        f"/api/dictionaries/{first['id']}",
+        json={"notes": {"en": "Kept", "vi": "Giữ lại"}, "targetLanguage": "vi"},
+        headers=auth(ADMIN),
+    )
     replaced = upload(client, ja_en(), replace="1")
     assert replaced.status_code == 202
     assert replaced.json()["replaces"] == first["id"]
@@ -155,6 +159,7 @@ def test_duplicates_and_replacing(client, settings):
     assert first["id"] not in ids
     assert new["id"] in ids
     assert new["replaces"] is None
+    assert new["notes"] == {"en": "Kept", "vi": "Giữ lại"}
     assert new["note"] == "Kept"
     assert new["targetLanguage"] == "vi"
     assert not (settings.dictionaries_dir / first["id"]).exists()
@@ -210,7 +215,27 @@ def test_admins_describe_dictionaries(client):
     assert relabelled["note"] == "Best for N3 reading."
     cleared = client.patch(url, json={"note": "   "}, headers=auth(ADMIN)).json()
     assert cleared["note"] is None
+    assert cleared["notes"] == {}
     assert cleared["targetLanguage"] == "vi"
+
+
+def test_descriptions_per_app_language(client):
+    entry = added(client, ja_en())
+    url = f"/api/dictionaries/{entry['id']}"
+    assert entry["notes"] == {}
+    both = client.patch(url, json={"notes": {"en": "For N3", "vi": " Cho N3 "}}, headers=auth(ADMIN)).json()
+    assert both["notes"] == {"en": "For N3", "vi": "Cho N3"}
+    assert both["note"] == "For N3"
+    # Only the languages sent change.
+    vietnamese = client.patch(url, json={"notes": {"vi": "Dành cho N3"}}, headers=auth(ADMIN)).json()
+    assert vietnamese["notes"] == {"en": "For N3", "vi": "Dành cho N3"}
+    english_gone = client.patch(url, json={"notes": {"en": ""}}, headers=auth(ADMIN)).json()
+    assert english_gone["notes"] == {"vi": "Dành cho N3"}
+    assert english_gone["note"] is None
+    assert client.patch(url, json={"notes": {"Vietnamese!": "x"}}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"notes": ["x"]}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"notes": {"vi": 3}}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"notes": {"vi": "x" * 1001}}, headers=auth(ADMIN)).status_code == 400
 
 
 def test_older_catalogs_get_notes(settings):
@@ -234,7 +259,33 @@ def test_older_catalogs_get_notes(settings):
         )
     catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
     assert catalog.get("0123456789ab")["note"] is None
-    assert catalog.set_note("0123456789ab", "kept")["note"] == "kept"
+    assert catalog.get("0123456789ab")["notes"] == {}
+    assert catalog.set_notes("0123456789ab", {"vi": "giữ"})["notes"] == {"vi": "giữ"}
+
+
+def test_descriptions_from_before_languages_become_english(settings):
+    import sqlite3
+
+    from dictserver.store import Catalog
+
+    settings.catalog_path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(settings.catalog_path) as db:
+        db.execute(
+            """CREATE TABLE dictionaries (id TEXT PRIMARY KEY, title TEXT NOT NULL,
+               revision TEXT NOT NULL, format INTEGER NOT NULL, author TEXT, url TEXT,
+               description TEXT, attribution TEXT, source_language TEXT, target_language TEXT,
+               languages_guessed INTEGER NOT NULL DEFAULT 0, kinds TEXT NOT NULL DEFAULT '[]',
+               counts TEXT NOT NULL DEFAULT '{}', size INTEGER NOT NULL, sha256 TEXT NOT NULL,
+               file_name TEXT, uploaded_at REAL NOT NULL, status TEXT NOT NULL, error TEXT,
+               note TEXT, replaces TEXT)"""
+        )
+        db.execute(
+            """INSERT INTO dictionaries (id, title, revision, format, size, sha256,
+               uploaded_at, status, note) VALUES ('0123456789ab', 'Old', '1', 3, 1, 'x', 0, 'ready', 'Old words')"""
+        )
+    catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
+    assert catalog.get("0123456789ab")["notes"] == {"en": "Old words"}
+    assert catalog.get("0123456789ab")["note"] == "Old words"
 
 
 def test_delete_removes_files(client, settings):

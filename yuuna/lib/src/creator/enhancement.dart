@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/creator.dart';
+import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/models.dart';
 
 /// List of causes that may be of interest when executing an enhancement and
@@ -64,13 +65,16 @@ abstract class Enhancement {
   /// Get the best localisation for the label of this enhancement. If there
   /// is no localisation, the fallback is [label].
   String getLocalisedLabel(AppModel appModel) {
-    return labelLocalisation[appModel.appLocale.toLanguageTag()] ?? label;
+    return labelLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.enhancement.$uniqueKey.label'] as String? ??
+        label;
   }
 
   /// Get the best localisation for the description of this enhancement. If
   /// there is no localisation, the fallback is [description].
   String getLocalisedDescription(AppModel appModel) {
     return descriptionLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.enhancement.$uniqueKey.description'] as String? ??
         description;
   }
 

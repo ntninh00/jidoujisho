@@ -1655,10 +1655,18 @@ class AppModel with ChangeNotifier {
       dictionarySources[dictionary.name]?['revision'] as String? ??
       dictionaryIndexOf(dictionary)['revision'];
 
-  /// What the server's admin wrote about [dictionary], when it came from a
-  /// server that describes it.
-  String? dictionaryNoteOf(Dictionary dictionary) =>
-      dictionarySources[dictionary.name]?['note'] as String?;
+  /// What the server's admin wrote about [dictionary] for the language the
+  /// app is shown in, when it came from a server that describes it.
+  String? dictionaryNoteOf(Dictionary dictionary) {
+    Map<String, dynamic>? source = dictionarySources[dictionary.name];
+    String language = LocaleSettings.currentLocale.languageCode;
+    Object? notes = source?['notes'];
+    if (notes is Map) {
+      return notes[language] as String?;
+    }
+    // Kept before descriptions had languages, when the app only had English.
+    return language == 'en' ? (source?['note'] as String?) : null;
+  }
 
   /// Keeps the descriptions of dictionaries installed from the server at
   /// [url] as its [catalog] has them now.
@@ -1673,8 +1681,10 @@ class AppModel with ChangeNotifier {
       CatalogDictionary? remote = catalog.firstWhereOrNull((entry) =>
               entry.title == name && entry.revision == source['revision']) ??
           catalog.firstWhereOrNull((entry) => entry.title == name);
-      if (remote != null && source['note'] != remote.note) {
-        source['note'] = remote.note;
+      if (remote != null &&
+          jsonEncode(source['notes']) != jsonEncode(remote.notes)) {
+        source['notes'] = remote.notes;
+        source.remove('note');
         changed = true;
       }
     });

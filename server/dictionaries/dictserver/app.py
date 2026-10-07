@@ -13,7 +13,8 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
     GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
-    PATCH  /api/dictionaries/{id}                -> any of {"sourceLanguage", "targetLanguage", "note"}
+    PATCH  /api/dictionaries/{id}                -> any of {"sourceLanguage", "targetLanguage",
+                                                    "notes": {"en": "...", "vi": null}}
     DELETE /api/dictionaries/{id}
 """
 
@@ -49,6 +50,7 @@ ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_STYLES_BYTES = 1024 * 1024
 MAX_NOTE_LENGTH = 1000
+MAX_NOTE_LANGUAGES = 20
 # An upload that sends nothing for this long is given up, so its slot is
 # free again: a phone that changes network can leave the connection open.
 UPLOAD_STALL_SECONDS = 60
@@ -326,7 +328,8 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
 
     async def update(request: Request) -> Response:
         """Relabels a dictionary's languages, or sets the admin's own
-        description of it. Only what is sent changes."""
+        descriptions of it, one per app language: each shows only in the app
+        set to that language. Only what is sent changes."""
         require_admin(request)
         entry = dictionary_of(request, ready=False)
         try:
@@ -335,14 +338,24 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             raise Problem(400, "Send the changes as JSON.") from None
         if not isinstance(body, dict):
             raise Problem(400, "Send the changes as a JSON object.")
-        note = entry["note"]
+        sent: dict = {}
         if "note" in body:
-            note = body["note"]
+            # Apps from before descriptions had languages were all in English.
+            sent["en"] = body["note"]
+        if "notes" in body:
+            if not isinstance(body["notes"], dict) or len(body["notes"]) > MAX_NOTE_LANGUAGES:
+                raise Problem(400, 'Send the descriptions as an object such as {"en": "..."}.')
+            sent.update(body["notes"])
+        notes: dict[str, str | None] = {}
+        for language, note in sent.items():
+            if not LANGUAGE.match(language):
+                raise Problem(400, f"{language} should be a language code such as en or vi.")
             if note is not None and not isinstance(note, str):
                 raise Problem(400, "The description should be text.")
             note = (note or "").strip() or None
             if note is not None and len(note) > MAX_NOTE_LENGTH:
                 raise Problem(400, f"A description can be up to {MAX_NOTE_LENGTH} characters.")
+            notes[language] = note
         languages = None
         if "sourceLanguage" in body or "targetLanguage" in body:
             languages = []
@@ -353,8 +366,8 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
                 languages.append(value)
         if languages is not None:
             catalog.set_languages(entry["id"], *languages)
-        if "note" in body:
-            catalog.set_note(entry["id"], note)
+        if notes:
+            catalog.set_notes(entry["id"], notes)
         return JSONResponse(catalog.get(entry["id"]))
 
     def delete(request: Request) -> Response:

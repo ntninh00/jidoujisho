@@ -476,7 +476,7 @@ class _DictionaryDetailsSheetState
     Color muted = theme.unselectedWidgetColor;
     Map<String, String> index = appModel.dictionaryIndexOf(dictionary);
     Map<String, dynamic>? source = appModel.dictionarySources[dictionary.name];
-    String? note = source?['note'] as String?;
+    String? note = appModel.dictionaryNoteOf(dictionary);
     String? revision = appModel.installedRevisionOf(dictionary);
     DictionaryFormat? format = appModel.dictionaryFormats[dictionary.formatKey];
     String detail = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yuuna/dictionary.dart';
+import 'package:yuuna/i18n/strings.g.dart';
 import 'package:yuuna/models.dart';
 
 /// An entity that executes an action when selected on the upper-right of a
@@ -52,13 +53,16 @@ abstract class QuickAction {
   /// Get the best localisation for the label of this action. If there
   /// is no localisation, the fallback is [label].
   String getLocalisedLabel(AppModel appModel) {
-    return labelLocalisation[appModel.appLocale.toLanguageTag()] ?? label;
+    return labelLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.action.$uniqueKey.label'] as String? ??
+        label;
   }
 
   /// Get the best localisation for the description of this action. If
   /// there is no localisation, the fallback is [description].
   String getLocalisedDescription(AppModel appModel) {
     return descriptionLocalisation[appModel.appLocale.toLanguageTag()] ??
+        t['addons.action.$uniqueKey.description'] as String? ??
         description;
   }
 

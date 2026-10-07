@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
 import 'package:yuuna/dictionary.dart';
+import 'package:yuuna/i18n/strings.g.dart';
 
 /// Where a dictionary on the server belongs in the catalog.
 enum CatalogSection {
@@ -36,7 +37,7 @@ class CatalogDictionary {
         description = json['description'] as String?,
         attribution = json['attribution'] as String?,
         url = json['url'] as String?,
-        note = json['note'] as String?,
+        notes = _notesOf(json),
         sourceLanguage = json['sourceLanguage'] as String?,
         targetLanguage = json['targetLanguage'] as String?,
         languagesGuessed = json['languagesGuessed'] as bool? ?? false,
@@ -70,8 +71,25 @@ class CatalogDictionary {
   /// See [author].
   final String? url;
 
-  /// What the server's admin wrote about the dictionary, if anything.
-  final String? note;
+  /// What the server's admin wrote about the dictionary, by the language
+  /// of the app it was written for, such as `en`.
+  final Map<String, String> notes;
+
+  /// What the server's admin wrote for people using the app in the
+  /// language it is shown in now. Ones written for other languages don't
+  /// show.
+  String? get note => notes[LocaleSettings.currentLocale.languageCode];
+
+  static Map<String, String> _notesOf(Map<String, dynamic> json) {
+    Object? notes = json['notes'];
+    if (notes is Map) {
+      return notes.map((language, note) => MapEntry('$language', '$note'));
+    }
+    // Servers from before descriptions had languages, when the app only
+    // had English.
+    String? note = json['note'] as String?;
+    return note == null ? {} : {'en': note};
+  }
 
   /// Language of the words looked up, such as `ja`.
   final String? sourceLanguage;
@@ -345,16 +363,18 @@ class DictionaryServerException implements Exception {
 /// is sent, so the rest stays as it is.
 class CatalogChanges {
   /// Describe the changes.
-  const CatalogChanges({this.languages, this.note});
+  const CatalogChanges({this.languages, this.notes});
 
   /// The language of the words looked up and of the definitions.
   final ({String? source, String? target})? languages;
 
-  /// The admin's own description; empty clears it.
-  final String? note;
+  /// The admin's own descriptions to change, by the app language each is
+  /// for, such as `vi`; an empty one is removed. Each shows only in the app
+  /// set to its language.
+  final Map<String, String>? notes;
 
   /// Whether anything changes.
-  bool get isEmpty => languages == null && note == null;
+  bool get isEmpty => languages == null && (notes?.isEmpty ?? true);
 
   /// The changes as the server reads them.
   Map<String, Object?> toJson() => {
@@ -362,7 +382,7 @@ class CatalogChanges {
           'sourceLanguage': languages!.source,
           'targetLanguage': languages!.target,
         },
-        if (note != null) 'note': note,
+        if (notes?.isNotEmpty ?? false) 'notes': notes,
       };
 }
 

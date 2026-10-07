@@ -714,6 +714,7 @@
     "ttu_repaired_partly": "Parts of $title were missing from the file. The rest was added.",
     "catalog_description": "Description",
     "catalog_description_hint": "What it's good for, or who it's for",
+    "catalog_description_shown_in": "Shows only when the app is in $language",
     "import_replacing": "Replacing the older $name…",
     "catalog_update": "Update to this revision",
     "dictionary_about": "About",
@@ -751,5 +752,248 @@
     "ttu_add_tag": "Add a tag",
     "ttu_tags_none": "No tags yet",
     "ttu_tags_used_before": "Used before",
-    "ttu_tags_info": "Tags show on the book's cover. Pick one you used before or type a new one."
+    "ttu_tags_info": "Tags show on the book's cover. Pick one you used before or type a new one.",
+    "language_names": {
+        "ja": "Japanese",
+        "en": "English",
+        "vi": "Vietnamese",
+        "zh": "Chinese",
+        "ko": "Korean",
+        "fr": "French",
+        "de": "German",
+        "es": "Spanish",
+        "ru": "Russian",
+        "th": "Thai",
+        "ar": "Arabic"
+    },
+    "addons": {
+        "field": {
+            "sentence": {
+                "label": "Sentence",
+                "description": "Subtitles, book excerpts and other contextual information."
+            },
+            "term": {
+                "label": "Term",
+                "description": "Dictionary headword or phrase."
+            },
+            "reading": {
+                "label": "Reading",
+                "description": "Pronunciation or speech pattern."
+            },
+            "meaning": {
+                "label": "Meaning",
+                "description": "All dictionary definitions of a term."
+            },
+            "notes": {
+                "label": "Notes",
+                "description": "Supplementary information or personal observations."
+            },
+            "image": {
+                "label": "Image",
+                "description": "Visual supplement. Text field can be used to enter search terms for image sources."
+            },
+            "audio": {
+                "label": "Term Audio",
+                "description": "Audio pertaining to the term. Text field can be used to enter search terms for audio sources."
+            },
+            "audio_sentence": {
+                "label": "Sentence Audio",
+                "description": "Audio pertaining to the sentence. Text field can be used to enter search terms for audio sources."
+            },
+            "pitch_accent": {
+                "label": "Pitch Accent",
+                "description": "Pre-fills text to export for pitch accent diagrams."
+            },
+            "furigana": {
+                "label": "Furigana",
+                "description": "Pre-fills text to export for Furigana."
+            },
+            "frequency": {
+                "label": "Frequency",
+                "description": "Adds frequency of headword for sorting purposes, calculated using the harmonic mean."
+            },
+            "context": {
+                "label": "Context",
+                "description": "Name of current source media."
+            },
+            "cloze_before": {
+                "label": "Cloze Before",
+                "description": "Text before highlighted text in a sentence. Empty if nothing is highlighted."
+            },
+            "cloze_inside": {
+                "label": "Cloze Inside",
+                "description": "Highlighted text in a sentence."
+            },
+            "cloze_after": {
+                "label": "Cloze After",
+                "description": "Text after highlighted text in a sentence. Empty if nothing is highlighted."
+            },
+            "expanded_meaning": {
+                "label": "Expanded Meaning",
+                "description": "Dictionary definitions only from expanded dictionaries."
+            },
+            "collapsed_meaning": {
+                "label": "Collapsed Meaning",
+                "description": "Dictionary definitions only from collapsed dictionaries."
+            },
+            "hidden_meaning": {
+                "label": "Hidden Meaning",
+                "description": "Dictionary definitions only from hidden dictionaries."
+            },
+            "tags": {
+                "label": "Tags",
+                "description": "Organise notes in a deck with space-delimited labels."
+            }
+        },
+        "enhancement": {
+            "clear_field": {
+                "label": "Clear Field",
+                "description": "Quickly empty the content of a field."
+            },
+            "jpd101_audio": {
+                "label": "JapanesePod101 Audio",
+                "description": "Search for matching word pronunciations from JapanesePod101."
+            },
+            "forvo_audio": {
+                "label": "Forvo Audio",
+                "description": "Get word audio from Forvo."
+            },
+            "pick_audio": {
+                "label": "Pick Audio",
+                "description": "Pick an audio file to use with an external picker."
+            },
+            "audio_recorder": {
+                "label": "Audio Recorder",
+                "description": "Record and use audio captured from the device microphone."
+            },
+            "open_stash": {
+                "label": "Open Stash",
+                "description": "View and manage previously stashed text."
+            },
+            "pop_from_stash": {
+                "label": "Pop From Stash",
+                "description": "Quickly pop the latest item in the Stash."
+            },
+            "text_segmentation": {
+                "label": "Text Segmentation",
+                "description": "Search or select a new term from segmented text."
+            },
+            "bing_images_search": {
+                "label": "Bing Images Search",
+                "description": "Search Bing for images with the current image query or the word."
+            },
+            "crop_image": {
+                "label": "Crop Image",
+                "description": "Crop the current selected image."
+            },
+            "pick_image": {
+                "label": "Pick Image",
+                "description": "Pick a new image to use with an external picker."
+            },
+            "camera": {
+                "label": "Camera",
+                "description": "Take a new photo to use as the new image."
+            },
+            "sentence_picker": {
+                "label": "Sentence Picker",
+                "description": "Pick sentences delimited by punctuation and spacing."
+            },
+            "search_dictionary": {
+                "label": "Search Dictionary",
+                "description": "Search the dictionary with the content of a field."
+            },
+            "massif_example_sentences": {
+                "label": "Massif Example Sentences",
+                "description": "Get curated example sentences via Massif."
+            },
+            "tatoeba_example_sentences": {
+                "label": "Tatoeba Example Sentences",
+                "description": "Pick example phrases and sentences from Tatoeba."
+            },
+            "immersion_kit": {
+                "label": "ImmersionKit",
+                "description": "Get example sentences complete with an image and audio."
+            },
+            "save_tags": {
+                "label": "Save Tags",
+                "description": "Persist the current text in the Tags field."
+            }
+        },
+        "action": {
+            "card_creator": {
+                "label": "Card Creator",
+                "description": "Create a card with the selected dictionary entry parameters and edit before export."
+            },
+            "instant_export": {
+                "label": "Instant Export",
+                "description": "Export a card with the selected dictionary entry parameters."
+            },
+            "add_to_stash": {
+                "label": "Add To Stash",
+                "description": "Quickly save the headword of a dictionary entry to the Stash."
+            },
+            "my_words": {
+                "label": "My Terms",
+                "description": "Write your own meaning for a term. It shows first whenever you look the term up."
+            },
+            "copy_to_clipboard": {
+                "label": "Copy To Clipboard",
+                "description": "Copy the headword of a dictionary entry to the clipboard."
+            },
+            "share": {
+                "label": "Share",
+                "description": "Share the details of a dictionary term."
+            },
+            "play_audio": {
+                "label": "Play Audio",
+                "description": "Attempts to play audio based on the Audio enhancements. The auto is the top priority."
+            }
+        },
+        "source": {
+            "player_local_media": {
+                "label": "Local Media",
+                "description": "Play videos sourced from local device storage."
+            },
+            "player_youtube": {
+                "label": "YouTube",
+                "description": "Search and watch videos from YouTube."
+            },
+            "player_network_stream": {
+                "label": "Network Stream",
+                "description": "Stream videos from a direct URL."
+            },
+            "reader_ttu": {
+                "label": "ッツ Ebook Reader",
+                "description": "Read EPUBs and mine sentences via an embedded web reader."
+            },
+            "reader_mokuro": {
+                "label": "Mokuro",
+                "description": "Read manga volumes pre-processed as a single HTML file via Mokuro."
+            },
+            "reader_browser": {
+                "label": "Browser",
+                "description": "Navigate websites with a browser which allows searching and mining selected text."
+            },
+            "reader_lyrics": {
+                "label": "Lyrics",
+                "description": "Allows fetching and highlighting lyrics of current played media fetched from Google and Uta-Net."
+            },
+            "reader_chatgpt": {
+                "label": "ChatGPT",
+                "description": "Allows the user to interact with an AI language model with an official API key from OpenAI."
+            },
+            "reader_clipboard": {
+                "label": "Clipboard",
+                "description": "Allows text pasted from the clipboard to be displayed as selectable text."
+            },
+            "reader_websocket": {
+                "label": "WebSocket",
+                "description": "Select and mine text received from a WebSocket server."
+            },
+            "viewer_camera": {
+                "label": "Camera",
+                "description": "View images taken with the camera or picked from media."
+            }
+        }
+    }
 }

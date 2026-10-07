@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 1
-/// Strings: 719
+/// Strings: 841
 ///
-/// Built on 2026-10-07 at 03:51 UTC
+/// Built on 2026-10-07 at 05:38 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -825,6 +825,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String ttu_repaired_partly({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 	String get catalog_description => 'Description';
 	String get catalog_description_hint => 'What it\'s good for, or who it\'s for';
+	String catalog_description_shown_in({required Object language}) => 'Shows only when the app is in ${language}';
 	String import_replacing({required Object name}) => 'Replacing the older ${name}…';
 	String get catalog_update => 'Update to this revision';
 	String get dictionary_about => 'About';
@@ -863,6 +864,8 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_tags_none => 'No tags yet';
 	String get ttu_tags_used_before => 'Used before';
 	String get ttu_tags_info => 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
+	late final _StringsLanguageNamesEn language_names = _StringsLanguageNamesEn._(_root);
+	late final _StringsAddonsEn addons = _StringsAddonsEn._(_root);
 }
 
 // Path: retrying_in
@@ -889,6 +892,735 @@ class _StringsViewRepliesEn {
 		one: 'SHOW ${n} REPLY',
 		other: 'SHOW ${n} REPLIES',
 	);
+}
+
+// Path: language_names
+class _StringsLanguageNamesEn {
+	_StringsLanguageNamesEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get ja => 'Japanese';
+	String get en => 'English';
+	String get vi => 'Vietnamese';
+	String get zh => 'Chinese';
+	String get ko => 'Korean';
+	String get fr => 'French';
+	String get de => 'German';
+	String get es => 'Spanish';
+	String get ru => 'Russian';
+	String get th => 'Thai';
+	String get ar => 'Arabic';
+}
+
+// Path: addons
+class _StringsAddonsEn {
+	_StringsAddonsEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	late final _StringsAddonsFieldEn field = _StringsAddonsFieldEn._(_root);
+	late final _StringsAddonsEnhancementEn enhancement = _StringsAddonsEnhancementEn._(_root);
+	late final _StringsAddonsActionEn action = _StringsAddonsActionEn._(_root);
+	late final _StringsAddonsSourceEn source = _StringsAddonsSourceEn._(_root);
+}
+
+// Path: addons.field
+class _StringsAddonsFieldEn {
+	_StringsAddonsFieldEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	late final _StringsAddonsFieldSentenceEn sentence = _StringsAddonsFieldSentenceEn._(_root);
+	late final _StringsAddonsFieldTermEn term = _StringsAddonsFieldTermEn._(_root);
+	late final _StringsAddonsFieldReadingEn reading = _StringsAddonsFieldReadingEn._(_root);
+	late final _StringsAddonsFieldMeaningEn meaning = _StringsAddonsFieldMeaningEn._(_root);
+	late final _StringsAddonsFieldNotesEn notes = _StringsAddonsFieldNotesEn._(_root);
+	late final _StringsAddonsFieldImageEn image = _StringsAddonsFieldImageEn._(_root);
+	late final _StringsAddonsFieldAudioEn audio = _StringsAddonsFieldAudioEn._(_root);
+	late final _StringsAddonsFieldAudioSentenceEn audio_sentence = _StringsAddonsFieldAudioSentenceEn._(_root);
+	late final _StringsAddonsFieldPitchAccentEn pitch_accent = _StringsAddonsFieldPitchAccentEn._(_root);
+	late final _StringsAddonsFieldFuriganaEn furigana = _StringsAddonsFieldFuriganaEn._(_root);
+	late final _StringsAddonsFieldFrequencyEn frequency = _StringsAddonsFieldFrequencyEn._(_root);
+	late final _StringsAddonsFieldContextEn context = _StringsAddonsFieldContextEn._(_root);
+	late final _StringsAddonsFieldClozeBeforeEn cloze_before = _StringsAddonsFieldClozeBeforeEn._(_root);
+	late final _StringsAddonsFieldClozeInsideEn cloze_inside = _StringsAddonsFieldClozeInsideEn._(_root);
+	late final _StringsAddonsFieldClozeAfterEn cloze_after = _StringsAddonsFieldClozeAfterEn._(_root);
+	late final _StringsAddonsFieldExpandedMeaningEn expanded_meaning = _StringsAddonsFieldExpandedMeaningEn._(_root);
+	late final _StringsAddonsFieldCollapsedMeaningEn collapsed_meaning = _StringsAddonsFieldCollapsedMeaningEn._(_root);
+	late final _StringsAddonsFieldHiddenMeaningEn hidden_meaning = _StringsAddonsFieldHiddenMeaningEn._(_root);
+	late final _StringsAddonsFieldTagsEn tags = _StringsAddonsFieldTagsEn._(_root);
+}
+
+// Path: addons.enhancement
+class _StringsAddonsEnhancementEn {
+	_StringsAddonsEnhancementEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	late final _StringsAddonsEnhancementClearFieldEn clear_field = _StringsAddonsEnhancementClearFieldEn._(_root);
+	late final _StringsAddonsEnhancementJpd101AudioEn jpd101_audio = _StringsAddonsEnhancementJpd101AudioEn._(_root);
+	late final _StringsAddonsEnhancementForvoAudioEn forvo_audio = _StringsAddonsEnhancementForvoAudioEn._(_root);
+	late final _StringsAddonsEnhancementPickAudioEn pick_audio = _StringsAddonsEnhancementPickAudioEn._(_root);
+	late final _StringsAddonsEnhancementAudioRecorderEn audio_recorder = _StringsAddonsEnhancementAudioRecorderEn._(_root);
+	late final _StringsAddonsEnhancementOpenStashEn open_stash = _StringsAddonsEnhancementOpenStashEn._(_root);
+	late final _StringsAddonsEnhancementPopFromStashEn pop_from_stash = _StringsAddonsEnhancementPopFromStashEn._(_root);
+	late final _StringsAddonsEnhancementTextSegmentationEn text_segmentation = _StringsAddonsEnhancementTextSegmentationEn._(_root);
+	late final _StringsAddonsEnhancementBingImagesSearchEn bing_images_search = _StringsAddonsEnhancementBingImagesSearchEn._(_root);
+	late final _StringsAddonsEnhancementCropImageEn crop_image = _StringsAddonsEnhancementCropImageEn._(_root);
+	late final _StringsAddonsEnhancementPickImageEn pick_image = _StringsAddonsEnhancementPickImageEn._(_root);
+	late final _StringsAddonsEnhancementCameraEn camera = _StringsAddonsEnhancementCameraEn._(_root);
+	late final _StringsAddonsEnhancementSentencePickerEn sentence_picker = _StringsAddonsEnhancementSentencePickerEn._(_root);
+	late final _StringsAddonsEnhancementSearchDictionaryEn search_dictionary = _StringsAddonsEnhancementSearchDictionaryEn._(_root);
+	late final _StringsAddonsEnhancementMassifExampleSentencesEn massif_example_sentences = _StringsAddonsEnhancementMassifExampleSentencesEn._(_root);
+	late final _StringsAddonsEnhancementTatoebaExampleSentencesEn tatoeba_example_sentences = _StringsAddonsEnhancementTatoebaExampleSentencesEn._(_root);
+	late final _StringsAddonsEnhancementImmersionKitEn immersion_kit = _StringsAddonsEnhancementImmersionKitEn._(_root);
+	late final _StringsAddonsEnhancementSaveTagsEn save_tags = _StringsAddonsEnhancementSaveTagsEn._(_root);
+}
+
+// Path: addons.action
+class _StringsAddonsActionEn {
+	_StringsAddonsActionEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	late final _StringsAddonsActionCardCreatorEn card_creator = _StringsAddonsActionCardCreatorEn._(_root);
+	late final _StringsAddonsActionInstantExportEn instant_export = _StringsAddonsActionInstantExportEn._(_root);
+	late final _StringsAddonsActionAddToStashEn add_to_stash = _StringsAddonsActionAddToStashEn._(_root);
+	late final _StringsAddonsActionMyWordsEn my_words = _StringsAddonsActionMyWordsEn._(_root);
+	late final _StringsAddonsActionCopyToClipboardEn copy_to_clipboard = _StringsAddonsActionCopyToClipboardEn._(_root);
+	late final _StringsAddonsActionShareEn share = _StringsAddonsActionShareEn._(_root);
+	late final _StringsAddonsActionPlayAudioEn play_audio = _StringsAddonsActionPlayAudioEn._(_root);
+}
+
+// Path: addons.source
+class _StringsAddonsSourceEn {
+	_StringsAddonsSourceEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	late final _StringsAddonsSourcePlayerLocalMediaEn player_local_media = _StringsAddonsSourcePlayerLocalMediaEn._(_root);
+	late final _StringsAddonsSourcePlayerYoutubeEn player_youtube = _StringsAddonsSourcePlayerYoutubeEn._(_root);
+	late final _StringsAddonsSourcePlayerNetworkStreamEn player_network_stream = _StringsAddonsSourcePlayerNetworkStreamEn._(_root);
+	late final _StringsAddonsSourceReaderTtuEn reader_ttu = _StringsAddonsSourceReaderTtuEn._(_root);
+	late final _StringsAddonsSourceReaderMokuroEn reader_mokuro = _StringsAddonsSourceReaderMokuroEn._(_root);
+	late final _StringsAddonsSourceReaderBrowserEn reader_browser = _StringsAddonsSourceReaderBrowserEn._(_root);
+	late final _StringsAddonsSourceReaderLyricsEn reader_lyrics = _StringsAddonsSourceReaderLyricsEn._(_root);
+	late final _StringsAddonsSourceReaderChatgptEn reader_chatgpt = _StringsAddonsSourceReaderChatgptEn._(_root);
+	late final _StringsAddonsSourceReaderClipboardEn reader_clipboard = _StringsAddonsSourceReaderClipboardEn._(_root);
+	late final _StringsAddonsSourceReaderWebsocketEn reader_websocket = _StringsAddonsSourceReaderWebsocketEn._(_root);
+	late final _StringsAddonsSourceViewerCameraEn viewer_camera = _StringsAddonsSourceViewerCameraEn._(_root);
+}
+
+// Path: addons.field.sentence
+class _StringsAddonsFieldSentenceEn {
+	_StringsAddonsFieldSentenceEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Sentence';
+	String get description => 'Subtitles, book excerpts and other contextual information.';
+}
+
+// Path: addons.field.term
+class _StringsAddonsFieldTermEn {
+	_StringsAddonsFieldTermEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Term';
+	String get description => 'Dictionary headword or phrase.';
+}
+
+// Path: addons.field.reading
+class _StringsAddonsFieldReadingEn {
+	_StringsAddonsFieldReadingEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Reading';
+	String get description => 'Pronunciation or speech pattern.';
+}
+
+// Path: addons.field.meaning
+class _StringsAddonsFieldMeaningEn {
+	_StringsAddonsFieldMeaningEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Meaning';
+	String get description => 'All dictionary definitions of a term.';
+}
+
+// Path: addons.field.notes
+class _StringsAddonsFieldNotesEn {
+	_StringsAddonsFieldNotesEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Notes';
+	String get description => 'Supplementary information or personal observations.';
+}
+
+// Path: addons.field.image
+class _StringsAddonsFieldImageEn {
+	_StringsAddonsFieldImageEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Image';
+	String get description => 'Visual supplement. Text field can be used to enter search terms for image sources.';
+}
+
+// Path: addons.field.audio
+class _StringsAddonsFieldAudioEn {
+	_StringsAddonsFieldAudioEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Term Audio';
+	String get description => 'Audio pertaining to the term. Text field can be used to enter search terms for audio sources.';
+}
+
+// Path: addons.field.audio_sentence
+class _StringsAddonsFieldAudioSentenceEn {
+	_StringsAddonsFieldAudioSentenceEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Sentence Audio';
+	String get description => 'Audio pertaining to the sentence. Text field can be used to enter search terms for audio sources.';
+}
+
+// Path: addons.field.pitch_accent
+class _StringsAddonsFieldPitchAccentEn {
+	_StringsAddonsFieldPitchAccentEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Pitch Accent';
+	String get description => 'Pre-fills text to export for pitch accent diagrams.';
+}
+
+// Path: addons.field.furigana
+class _StringsAddonsFieldFuriganaEn {
+	_StringsAddonsFieldFuriganaEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Furigana';
+	String get description => 'Pre-fills text to export for Furigana.';
+}
+
+// Path: addons.field.frequency
+class _StringsAddonsFieldFrequencyEn {
+	_StringsAddonsFieldFrequencyEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Frequency';
+	String get description => 'Adds frequency of headword for sorting purposes, calculated using the harmonic mean.';
+}
+
+// Path: addons.field.context
+class _StringsAddonsFieldContextEn {
+	_StringsAddonsFieldContextEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Context';
+	String get description => 'Name of current source media.';
+}
+
+// Path: addons.field.cloze_before
+class _StringsAddonsFieldClozeBeforeEn {
+	_StringsAddonsFieldClozeBeforeEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Cloze Before';
+	String get description => 'Text before highlighted text in a sentence. Empty if nothing is highlighted.';
+}
+
+// Path: addons.field.cloze_inside
+class _StringsAddonsFieldClozeInsideEn {
+	_StringsAddonsFieldClozeInsideEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Cloze Inside';
+	String get description => 'Highlighted text in a sentence.';
+}
+
+// Path: addons.field.cloze_after
+class _StringsAddonsFieldClozeAfterEn {
+	_StringsAddonsFieldClozeAfterEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Cloze After';
+	String get description => 'Text after highlighted text in a sentence. Empty if nothing is highlighted.';
+}
+
+// Path: addons.field.expanded_meaning
+class _StringsAddonsFieldExpandedMeaningEn {
+	_StringsAddonsFieldExpandedMeaningEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Expanded Meaning';
+	String get description => 'Dictionary definitions only from expanded dictionaries.';
+}
+
+// Path: addons.field.collapsed_meaning
+class _StringsAddonsFieldCollapsedMeaningEn {
+	_StringsAddonsFieldCollapsedMeaningEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Collapsed Meaning';
+	String get description => 'Dictionary definitions only from collapsed dictionaries.';
+}
+
+// Path: addons.field.hidden_meaning
+class _StringsAddonsFieldHiddenMeaningEn {
+	_StringsAddonsFieldHiddenMeaningEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Hidden Meaning';
+	String get description => 'Dictionary definitions only from hidden dictionaries.';
+}
+
+// Path: addons.field.tags
+class _StringsAddonsFieldTagsEn {
+	_StringsAddonsFieldTagsEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Tags';
+	String get description => 'Organise notes in a deck with space-delimited labels.';
+}
+
+// Path: addons.enhancement.clear_field
+class _StringsAddonsEnhancementClearFieldEn {
+	_StringsAddonsEnhancementClearFieldEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Clear Field';
+	String get description => 'Quickly empty the content of a field.';
+}
+
+// Path: addons.enhancement.jpd101_audio
+class _StringsAddonsEnhancementJpd101AudioEn {
+	_StringsAddonsEnhancementJpd101AudioEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'JapanesePod101 Audio';
+	String get description => 'Search for matching word pronunciations from JapanesePod101.';
+}
+
+// Path: addons.enhancement.forvo_audio
+class _StringsAddonsEnhancementForvoAudioEn {
+	_StringsAddonsEnhancementForvoAudioEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Forvo Audio';
+	String get description => 'Get word audio from Forvo.';
+}
+
+// Path: addons.enhancement.pick_audio
+class _StringsAddonsEnhancementPickAudioEn {
+	_StringsAddonsEnhancementPickAudioEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Pick Audio';
+	String get description => 'Pick an audio file to use with an external picker.';
+}
+
+// Path: addons.enhancement.audio_recorder
+class _StringsAddonsEnhancementAudioRecorderEn {
+	_StringsAddonsEnhancementAudioRecorderEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Audio Recorder';
+	String get description => 'Record and use audio captured from the device microphone.';
+}
+
+// Path: addons.enhancement.open_stash
+class _StringsAddonsEnhancementOpenStashEn {
+	_StringsAddonsEnhancementOpenStashEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Open Stash';
+	String get description => 'View and manage previously stashed text.';
+}
+
+// Path: addons.enhancement.pop_from_stash
+class _StringsAddonsEnhancementPopFromStashEn {
+	_StringsAddonsEnhancementPopFromStashEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Pop From Stash';
+	String get description => 'Quickly pop the latest item in the Stash.';
+}
+
+// Path: addons.enhancement.text_segmentation
+class _StringsAddonsEnhancementTextSegmentationEn {
+	_StringsAddonsEnhancementTextSegmentationEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Text Segmentation';
+	String get description => 'Search or select a new term from segmented text.';
+}
+
+// Path: addons.enhancement.bing_images_search
+class _StringsAddonsEnhancementBingImagesSearchEn {
+	_StringsAddonsEnhancementBingImagesSearchEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Bing Images Search';
+	String get description => 'Search Bing for images with the current image query or the word.';
+}
+
+// Path: addons.enhancement.crop_image
+class _StringsAddonsEnhancementCropImageEn {
+	_StringsAddonsEnhancementCropImageEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Crop Image';
+	String get description => 'Crop the current selected image.';
+}
+
+// Path: addons.enhancement.pick_image
+class _StringsAddonsEnhancementPickImageEn {
+	_StringsAddonsEnhancementPickImageEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Pick Image';
+	String get description => 'Pick a new image to use with an external picker.';
+}
+
+// Path: addons.enhancement.camera
+class _StringsAddonsEnhancementCameraEn {
+	_StringsAddonsEnhancementCameraEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Camera';
+	String get description => 'Take a new photo to use as the new image.';
+}
+
+// Path: addons.enhancement.sentence_picker
+class _StringsAddonsEnhancementSentencePickerEn {
+	_StringsAddonsEnhancementSentencePickerEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Sentence Picker';
+	String get description => 'Pick sentences delimited by punctuation and spacing.';
+}
+
+// Path: addons.enhancement.search_dictionary
+class _StringsAddonsEnhancementSearchDictionaryEn {
+	_StringsAddonsEnhancementSearchDictionaryEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Search Dictionary';
+	String get description => 'Search the dictionary with the content of a field.';
+}
+
+// Path: addons.enhancement.massif_example_sentences
+class _StringsAddonsEnhancementMassifExampleSentencesEn {
+	_StringsAddonsEnhancementMassifExampleSentencesEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Massif Example Sentences';
+	String get description => 'Get curated example sentences via Massif.';
+}
+
+// Path: addons.enhancement.tatoeba_example_sentences
+class _StringsAddonsEnhancementTatoebaExampleSentencesEn {
+	_StringsAddonsEnhancementTatoebaExampleSentencesEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Tatoeba Example Sentences';
+	String get description => 'Pick example phrases and sentences from Tatoeba.';
+}
+
+// Path: addons.enhancement.immersion_kit
+class _StringsAddonsEnhancementImmersionKitEn {
+	_StringsAddonsEnhancementImmersionKitEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'ImmersionKit';
+	String get description => 'Get example sentences complete with an image and audio.';
+}
+
+// Path: addons.enhancement.save_tags
+class _StringsAddonsEnhancementSaveTagsEn {
+	_StringsAddonsEnhancementSaveTagsEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Save Tags';
+	String get description => 'Persist the current text in the Tags field.';
+}
+
+// Path: addons.action.card_creator
+class _StringsAddonsActionCardCreatorEn {
+	_StringsAddonsActionCardCreatorEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Card Creator';
+	String get description => 'Create a card with the selected dictionary entry parameters and edit before export.';
+}
+
+// Path: addons.action.instant_export
+class _StringsAddonsActionInstantExportEn {
+	_StringsAddonsActionInstantExportEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Instant Export';
+	String get description => 'Export a card with the selected dictionary entry parameters.';
+}
+
+// Path: addons.action.add_to_stash
+class _StringsAddonsActionAddToStashEn {
+	_StringsAddonsActionAddToStashEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Add To Stash';
+	String get description => 'Quickly save the headword of a dictionary entry to the Stash.';
+}
+
+// Path: addons.action.my_words
+class _StringsAddonsActionMyWordsEn {
+	_StringsAddonsActionMyWordsEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'My Terms';
+	String get description => 'Write your own meaning for a term. It shows first whenever you look the term up.';
+}
+
+// Path: addons.action.copy_to_clipboard
+class _StringsAddonsActionCopyToClipboardEn {
+	_StringsAddonsActionCopyToClipboardEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Copy To Clipboard';
+	String get description => 'Copy the headword of a dictionary entry to the clipboard.';
+}
+
+// Path: addons.action.share
+class _StringsAddonsActionShareEn {
+	_StringsAddonsActionShareEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Share';
+	String get description => 'Share the details of a dictionary term.';
+}
+
+// Path: addons.action.play_audio
+class _StringsAddonsActionPlayAudioEn {
+	_StringsAddonsActionPlayAudioEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Play Audio';
+	String get description => 'Attempts to play audio based on the Audio enhancements. The auto is the top priority.';
+}
+
+// Path: addons.source.player_local_media
+class _StringsAddonsSourcePlayerLocalMediaEn {
+	_StringsAddonsSourcePlayerLocalMediaEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Local Media';
+	String get description => 'Play videos sourced from local device storage.';
+}
+
+// Path: addons.source.player_youtube
+class _StringsAddonsSourcePlayerYoutubeEn {
+	_StringsAddonsSourcePlayerYoutubeEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'YouTube';
+	String get description => 'Search and watch videos from YouTube.';
+}
+
+// Path: addons.source.player_network_stream
+class _StringsAddonsSourcePlayerNetworkStreamEn {
+	_StringsAddonsSourcePlayerNetworkStreamEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Network Stream';
+	String get description => 'Stream videos from a direct URL.';
+}
+
+// Path: addons.source.reader_ttu
+class _StringsAddonsSourceReaderTtuEn {
+	_StringsAddonsSourceReaderTtuEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'ッツ Ebook Reader';
+	String get description => 'Read EPUBs and mine sentences via an embedded web reader.';
+}
+
+// Path: addons.source.reader_mokuro
+class _StringsAddonsSourceReaderMokuroEn {
+	_StringsAddonsSourceReaderMokuroEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Mokuro';
+	String get description => 'Read manga volumes pre-processed as a single HTML file via Mokuro.';
+}
+
+// Path: addons.source.reader_browser
+class _StringsAddonsSourceReaderBrowserEn {
+	_StringsAddonsSourceReaderBrowserEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Browser';
+	String get description => 'Navigate websites with a browser which allows searching and mining selected text.';
+}
+
+// Path: addons.source.reader_lyrics
+class _StringsAddonsSourceReaderLyricsEn {
+	_StringsAddonsSourceReaderLyricsEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Lyrics';
+	String get description => 'Allows fetching and highlighting lyrics of current played media fetched from Google and Uta-Net.';
+}
+
+// Path: addons.source.reader_chatgpt
+class _StringsAddonsSourceReaderChatgptEn {
+	_StringsAddonsSourceReaderChatgptEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'ChatGPT';
+	String get description => 'Allows the user to interact with an AI language model with an official API key from OpenAI.';
+}
+
+// Path: addons.source.reader_clipboard
+class _StringsAddonsSourceReaderClipboardEn {
+	_StringsAddonsSourceReaderClipboardEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Clipboard';
+	String get description => 'Allows text pasted from the clipboard to be displayed as selectable text.';
+}
+
+// Path: addons.source.reader_websocket
+class _StringsAddonsSourceReaderWebsocketEn {
+	_StringsAddonsSourceReaderWebsocketEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'WebSocket';
+	String get description => 'Select and mine text received from a WebSocket server.';
+}
+
+// Path: addons.source.viewer_camera
+class _StringsAddonsSourceViewerCameraEn {
+	_StringsAddonsSourceViewerCameraEn._(this._root);
+
+	final _StringsEn _root; // ignore: unused_field
+
+	// Translations
+	String get label => 'Camera';
+	String get description => 'View images taken with the camera or picked from media.';
 }
 
 /// Flat map(s) containing all translations.
@@ -1582,6 +2314,7 @@ extension on _StringsEn {
 			case 'ttu_repaired_partly': return ({required Object title}) => 'Parts of ${title} were missing from the file. The rest was added.';
 			case 'catalog_description': return 'Description';
 			case 'catalog_description_hint': return 'What it\'s good for, or who it\'s for';
+			case 'catalog_description_shown_in': return ({required Object language}) => 'Shows only when the app is in ${language}';
 			case 'import_replacing': return ({required Object name}) => 'Replacing the older ${name}…';
 			case 'catalog_update': return 'Update to this revision';
 			case 'dictionary_about': return 'About';
@@ -1620,6 +2353,127 @@ extension on _StringsEn {
 			case 'ttu_tags_none': return 'No tags yet';
 			case 'ttu_tags_used_before': return 'Used before';
 			case 'ttu_tags_info': return 'Tags show on the book\'s cover. Pick one you used before or type a new one.';
+			case 'language_names.ja': return 'Japanese';
+			case 'language_names.en': return 'English';
+			case 'language_names.vi': return 'Vietnamese';
+			case 'language_names.zh': return 'Chinese';
+			case 'language_names.ko': return 'Korean';
+			case 'language_names.fr': return 'French';
+			case 'language_names.de': return 'German';
+			case 'language_names.es': return 'Spanish';
+			case 'language_names.ru': return 'Russian';
+			case 'language_names.th': return 'Thai';
+			case 'language_names.ar': return 'Arabic';
+			case 'addons.field.sentence.label': return 'Sentence';
+			case 'addons.field.sentence.description': return 'Subtitles, book excerpts and other contextual information.';
+			case 'addons.field.term.label': return 'Term';
+			case 'addons.field.term.description': return 'Dictionary headword or phrase.';
+			case 'addons.field.reading.label': return 'Reading';
+			case 'addons.field.reading.description': return 'Pronunciation or speech pattern.';
+			case 'addons.field.meaning.label': return 'Meaning';
+			case 'addons.field.meaning.description': return 'All dictionary definitions of a term.';
+			case 'addons.field.notes.label': return 'Notes';
+			case 'addons.field.notes.description': return 'Supplementary information or personal observations.';
+			case 'addons.field.image.label': return 'Image';
+			case 'addons.field.image.description': return 'Visual supplement. Text field can be used to enter search terms for image sources.';
+			case 'addons.field.audio.label': return 'Term Audio';
+			case 'addons.field.audio.description': return 'Audio pertaining to the term. Text field can be used to enter search terms for audio sources.';
+			case 'addons.field.audio_sentence.label': return 'Sentence Audio';
+			case 'addons.field.audio_sentence.description': return 'Audio pertaining to the sentence. Text field can be used to enter search terms for audio sources.';
+			case 'addons.field.pitch_accent.label': return 'Pitch Accent';
+			case 'addons.field.pitch_accent.description': return 'Pre-fills text to export for pitch accent diagrams.';
+			case 'addons.field.furigana.label': return 'Furigana';
+			case 'addons.field.furigana.description': return 'Pre-fills text to export for Furigana.';
+			case 'addons.field.frequency.label': return 'Frequency';
+			case 'addons.field.frequency.description': return 'Adds frequency of headword for sorting purposes, calculated using the harmonic mean.';
+			case 'addons.field.context.label': return 'Context';
+			case 'addons.field.context.description': return 'Name of current source media.';
+			case 'addons.field.cloze_before.label': return 'Cloze Before';
+			case 'addons.field.cloze_before.description': return 'Text before highlighted text in a sentence. Empty if nothing is highlighted.';
+			case 'addons.field.cloze_inside.label': return 'Cloze Inside';
+			case 'addons.field.cloze_inside.description': return 'Highlighted text in a sentence.';
+			case 'addons.field.cloze_after.label': return 'Cloze After';
+			case 'addons.field.cloze_after.description': return 'Text after highlighted text in a sentence. Empty if nothing is highlighted.';
+			case 'addons.field.expanded_meaning.label': return 'Expanded Meaning';
+			case 'addons.field.expanded_meaning.description': return 'Dictionary definitions only from expanded dictionaries.';
+			case 'addons.field.collapsed_meaning.label': return 'Collapsed Meaning';
+			case 'addons.field.collapsed_meaning.description': return 'Dictionary definitions only from collapsed dictionaries.';
+			case 'addons.field.hidden_meaning.label': return 'Hidden Meaning';
+			case 'addons.field.hidden_meaning.description': return 'Dictionary definitions only from hidden dictionaries.';
+			case 'addons.field.tags.label': return 'Tags';
+			case 'addons.field.tags.description': return 'Organise notes in a deck with space-delimited labels.';
+			case 'addons.enhancement.clear_field.label': return 'Clear Field';
+			case 'addons.enhancement.clear_field.description': return 'Quickly empty the content of a field.';
+			case 'addons.enhancement.jpd101_audio.label': return 'JapanesePod101 Audio';
+			case 'addons.enhancement.jpd101_audio.description': return 'Search for matching word pronunciations from JapanesePod101.';
+			case 'addons.enhancement.forvo_audio.label': return 'Forvo Audio';
+			case 'addons.enhancement.forvo_audio.description': return 'Get word audio from Forvo.';
+			case 'addons.enhancement.pick_audio.label': return 'Pick Audio';
+			case 'addons.enhancement.pick_audio.description': return 'Pick an audio file to use with an external picker.';
+			case 'addons.enhancement.audio_recorder.label': return 'Audio Recorder';
+			case 'addons.enhancement.audio_recorder.description': return 'Record and use audio captured from the device microphone.';
+			case 'addons.enhancement.open_stash.label': return 'Open Stash';
+			case 'addons.enhancement.open_stash.description': return 'View and manage previously stashed text.';
+			case 'addons.enhancement.pop_from_stash.label': return 'Pop From Stash';
+			case 'addons.enhancement.pop_from_stash.description': return 'Quickly pop the latest item in the Stash.';
+			case 'addons.enhancement.text_segmentation.label': return 'Text Segmentation';
+			case 'addons.enhancement.text_segmentation.description': return 'Search or select a new term from segmented text.';
+			case 'addons.enhancement.bing_images_search.label': return 'Bing Images Search';
+			case 'addons.enhancement.bing_images_search.description': return 'Search Bing for images with the current image query or the word.';
+			case 'addons.enhancement.crop_image.label': return 'Crop Image';
+			case 'addons.enhancement.crop_image.description': return 'Crop the current selected image.';
+			case 'addons.enhancement.pick_image.label': return 'Pick Image';
+			case 'addons.enhancement.pick_image.description': return 'Pick a new image to use with an external picker.';
+			case 'addons.enhancement.camera.label': return 'Camera';
+			case 'addons.enhancement.camera.description': return 'Take a new photo to use as the new image.';
+			case 'addons.enhancement.sentence_picker.label': return 'Sentence Picker';
+			case 'addons.enhancement.sentence_picker.description': return 'Pick sentences delimited by punctuation and spacing.';
+			case 'addons.enhancement.search_dictionary.label': return 'Search Dictionary';
+			case 'addons.enhancement.search_dictionary.description': return 'Search the dictionary with the content of a field.';
+			case 'addons.enhancement.massif_example_sentences.label': return 'Massif Example Sentences';
+			case 'addons.enhancement.massif_example_sentences.description': return 'Get curated example sentences via Massif.';
+			case 'addons.enhancement.tatoeba_example_sentences.label': return 'Tatoeba Example Sentences';
+			case 'addons.enhancement.tatoeba_example_sentences.description': return 'Pick example phrases and sentences from Tatoeba.';
+			case 'addons.enhancement.immersion_kit.label': return 'ImmersionKit';
+			case 'addons.enhancement.immersion_kit.description': return 'Get example sentences complete with an image and audio.';
+			case 'addons.enhancement.save_tags.label': return 'Save Tags';
+			case 'addons.enhancement.save_tags.description': return 'Persist the current text in the Tags field.';
+			case 'addons.action.card_creator.label': return 'Card Creator';
+			case 'addons.action.card_creator.description': return 'Create a card with the selected dictionary entry parameters and edit before export.';
+			case 'addons.action.instant_export.label': return 'Instant Export';
+			case 'addons.action.instant_export.description': return 'Export a card with the selected dictionary entry parameters.';
+			case 'addons.action.add_to_stash.label': return 'Add To Stash';
+			case 'addons.action.add_to_stash.description': return 'Quickly save the headword of a dictionary entry to the Stash.';
+			case 'addons.action.my_words.label': return 'My Terms';
+			case 'addons.action.my_words.description': return 'Write your own meaning for a term. It shows first whenever you look the term up.';
+			case 'addons.action.copy_to_clipboard.label': return 'Copy To Clipboard';
+			case 'addons.action.copy_to_clipboard.description': return 'Copy the headword of a dictionary entry to the clipboard.';
+			case 'addons.action.share.label': return 'Share';
+			case 'addons.action.share.description': return 'Share the details of a dictionary term.';
+			case 'addons.action.play_audio.label': return 'Play Audio';
+			case 'addons.action.play_audio.description': return 'Attempts to play audio based on the Audio enhancements. The auto is the top priority.';
+			case 'addons.source.player_local_media.label': return 'Local Media';
+			case 'addons.source.player_local_media.description': return 'Play videos sourced from local device storage.';
+			case 'addons.source.player_youtube.label': return 'YouTube';
+			case 'addons.source.player_youtube.description': return 'Search and watch videos from YouTube.';
+			case 'addons.source.player_network_stream.label': return 'Network Stream';
+			case 'addons.source.player_network_stream.description': return 'Stream videos from a direct URL.';
+			case 'addons.source.reader_ttu.label': return 'ッツ Ebook Reader';
+			case 'addons.source.reader_ttu.description': return 'Read EPUBs and mine sentences via an embedded web reader.';
+			case 'addons.source.reader_mokuro.label': return 'Mokuro';
+			case 'addons.source.reader_mokuro.description': return 'Read manga volumes pre-processed as a single HTML file via Mokuro.';
+			case 'addons.source.reader_browser.label': return 'Browser';
+			case 'addons.source.reader_browser.description': return 'Navigate websites with a browser which allows searching and mining selected text.';
+			case 'addons.source.reader_lyrics.label': return 'Lyrics';
+			case 'addons.source.reader_lyrics.description': return 'Allows fetching and highlighting lyrics of current played media fetched from Google and Uta-Net.';
+			case 'addons.source.reader_chatgpt.label': return 'ChatGPT';
+			case 'addons.source.reader_chatgpt.description': return 'Allows the user to interact with an AI language model with an official API key from OpenAI.';
+			case 'addons.source.reader_clipboard.label': return 'Clipboard';
+			case 'addons.source.reader_clipboard.description': return 'Allows text pasted from the clipboard to be displayed as selectable text.';
+			case 'addons.source.reader_websocket.label': return 'WebSocket';
+			case 'addons.source.reader_websocket.description': return 'Select and mine text received from a WebSocket server.';
+			case 'addons.source.viewer_camera.label': return 'Camera';
+			case 'addons.source.viewer_camera.description': return 'View images taken with the camera or picked from media.';
 			default: return null;
 		}
 	}

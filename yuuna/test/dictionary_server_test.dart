@@ -189,12 +189,18 @@ void main() {
     expect(added.description, 'From the index');
 
     CatalogDictionary described = await server.update(
-        added.id, const CatalogChanges(note: '  Small, for testing.  '));
+        added.id,
+        const CatalogChanges(notes: {
+          'en': '  Small, for testing.  ',
+          'vi': 'Nhỏ, để thử',
+        }));
     expect(described.note, 'Small, for testing.');
+    expect(described.notes,
+        {'en': 'Small, for testing.', 'vi': 'Nhỏ, để thử'});
     expect(described.languagesGuessed, added.languagesGuessed);
     expect(named(await readServer().list(), title).note, 'Small, for testing.');
     await expectLater(
-      readServer().update(added.id, const CatalogChanges(note: 'x')),
+      readServer().update(added.id, const CatalogChanges(notes: {'en': 'x'})),
       throwsA(isA<DictionaryServerException>()
           .having((e) => e.statusCode, 'status', 403)),
     );
@@ -203,8 +209,9 @@ void main() {
         added.id, const CatalogChanges(languages: (source: 'ja', target: 'vi')));
     expect(relabelled.note, 'Small, for testing.');
     CatalogDictionary cleared =
-        await server.update(added.id, const CatalogChanges(note: ''));
+        await server.update(added.id, const CatalogChanges(notes: {'en': ''}));
     expect(cleared.note, isNull);
+    expect(cleared.notes, {'vi': 'Nhỏ, để thử'});
     expect(cleared.targetLanguage, 'vi');
     await server.delete(added.id);
   }, skip: skip, timeout: const Timeout(Duration(minutes: 2)));
