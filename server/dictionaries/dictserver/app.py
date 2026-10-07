@@ -293,17 +293,20 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
 
             index = checked.index
             existing = catalog.find(index["title"], index["revision"])
+            replaces = None
             if existing is not None:
                 if request.query_params.get("replace") != "1":
                     raise Problem(409, f"{index['title']} ({index['revision']}) is already on the server.")
-                catalog.delete(existing["id"])
+                # The one on the server stays until this one is ready, and
+                # stays for good if this one fails.
+                replaces = existing["id"]
 
             dictionary_id = uuid.uuid4().hex[:12]
             folder = catalog.folder(dictionary_id)
             folder.mkdir(parents=True)
             os.replace(temp, catalog.zip_path(dictionary_id))
             file_name = re.sub(r"[^\w\-. ()]+", "_", request.query_params.get("name", ""))[:200] or None
-            entry = catalog.add(dictionary_id, index, received, digest.hexdigest(), file_name)
+            entry = catalog.add(dictionary_id, index, received, digest.hexdigest(), file_name, replaces)
             jobs.put(dictionary_id)
             return JSONResponse(entry, status_code=202)
         finally:

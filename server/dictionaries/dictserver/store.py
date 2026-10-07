@@ -37,13 +37,15 @@ class Catalog:
                     uploaded_at REAL NOT NULL,
                     status TEXT NOT NULL,
                     error TEXT,
-                    note TEXT
+                    note TEXT,
+                    replaces TEXT
                 )"""
             )
-            # Catalogs from before notes get the column.
+            # Catalogs from before these columns get them.
             columns = {row["name"] for row in db.execute("PRAGMA table_info(dictionaries)")}
-            if "note" not in columns:
-                db.execute("ALTER TABLE dictionaries ADD COLUMN note TEXT")
+            for column in ("note", "replaces"):
+                if column not in columns:
+                    db.execute(f"ALTER TABLE dictionaries ADD COLUMN {column} TEXT")
 
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self._path, timeout=10)
@@ -72,6 +74,7 @@ class Catalog:
             "description": row["description"],
             "attribution": row["attribution"],
             "note": row["note"],
+            "replaces": row["replaces"],
             "sourceLanguage": row["source_language"],
             "targetLanguage": row["target_language"],
             "languagesGuessed": bool(row["languages_guessed"]),
@@ -85,18 +88,21 @@ class Catalog:
             "error": row["error"],
         }
 
-    def add(self, dictionary_id: str, index: dict, size: int, sha256: str, file_name: str | None) -> dict:
+    def add(self, dictionary_id: str, index: dict, size: int, sha256: str, file_name: str | None,
+            replaces: str | None = None) -> dict:
+        """A new dictionary, waiting to be indexed. With [replaces], the one it
+        takes the place of once it is ready."""
         with self._lock, self._connect() as db:
             db.execute(
                 """INSERT INTO dictionaries (id, title, revision, format, author, url,
                    description, attribution, source_language, target_language,
-                   size, sha256, file_name, uploaded_at, status)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting')""",
+                   size, sha256, file_name, uploaded_at, status, replaces)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'waiting', ?)""",
                 (
                     dictionary_id, index["title"], index["revision"], index["format"],
                     index.get("author"), index.get("url"), index.get("description"),
                     index.get("attribution"), index.get("sourceLanguage"),
-                    index.get("targetLanguage"), size, sha256, file_name, time.time(),
+                    index.get("targetLanguage"), size, sha256, file_name, time.time(), replaces,
                 ),
             )
         return self.get(dictionary_id)
@@ -112,11 +118,39 @@ class Catalog:
         return [self._public(row) for row in rows]
 
     def find(self, title: str, revision: str) -> dict | None:
+        """The dictionary with this title and revision, not counting one
+        still on its way to replace it."""
         with self._connect() as db:
             row = db.execute(
-                "SELECT * FROM dictionaries WHERE title = ? AND revision = ?", (title, revision)
+                """SELECT * FROM dictionaries WHERE title = ? AND revision = ?
+                   ORDER BY replaces IS NOT NULL, uploaded_at LIMIT 1""",
+                (title, revision),
             ).fetchone()
         return self._public(row) if row else None
+
+    @staticmethod
+    def _take_over(db: sqlite3.Connection, dictionary_id: str) -> str | None:
+        """A replacement that is ready takes the place of the one it
+        replaces, keeping the admin's description and checked languages
+        where it has none of its own. Returns the id of the one replaced,
+        whose files are then the caller's to remove."""
+        new = db.execute("SELECT * FROM dictionaries WHERE id = ?", (dictionary_id,)).fetchone()
+        if new is None or new["replaces"] is None:
+            return None
+        old = db.execute("SELECT * FROM dictionaries WHERE id = ?", (new["replaces"],)).fetchone()
+        if old is not None:
+            note = new["note"] if new["note"] is not None else old["note"]
+            source, target, guessed = new["source_language"], new["target_language"], new["languages_guessed"]
+            if new["languages_guessed"] and not old["languages_guessed"]:
+                source, target, guessed = old["source_language"], old["target_language"], 0
+            db.execute(
+                """UPDATE dictionaries SET note = ?, source_language = ?, target_language = ?,
+                   languages_guessed = ? WHERE id = ?""",
+                (note, source, target, guessed, dictionary_id),
+            )
+            db.execute("DELETE FROM dictionaries WHERE id = ?", (old["id"],))
+        db.execute("UPDATE dictionaries SET replaces = NULL WHERE id = ?", (dictionary_id,))
+        return new["replaces"]
 
     def with_status(self, *statuses: str) -> list[str]:
         marks = ",".join("?" for _ in statuses)
@@ -137,7 +171,8 @@ class Catalog:
     def set_indexed(self, dictionary_id: str, kinds: list[str], counts: dict,
                     source: str | None, target: str | None) -> None:
         """Records what indexing found. Languages index.json gave are kept;
-        only missing ones are filled in from the guess."""
+        only missing ones are filled in from the guess. A replacement then
+        takes the place of the one it replaces, in the same transaction."""
         with self._lock, self._connect() as db:
             row = db.execute(
                 "SELECT source_language, target_language FROM dictionaries WHERE id = ?",
@@ -156,6 +191,9 @@ class Catalog:
                    WHERE id = ?""",
                 (json.dumps(kinds), json.dumps(counts), source, target, int(guessed), dictionary_id),
             )
+            replaced = self._take_over(db, dictionary_id)
+        if replaced is not None:
+            shutil.rmtree(self.folder(replaced), ignore_errors=True)
 
     def set_languages(self, dictionary_id: str, source: str | None, target: str | None) -> dict | None:
         with self._lock, self._connect() as db:

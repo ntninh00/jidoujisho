@@ -146,12 +146,38 @@ def test_duplicates_and_replacing(client, settings):
     again = upload(client, ja_en())
     assert again.status_code == 409
     assert "already on the server" in again.json()["error"]
+    client.patch(f"/api/dictionaries/{first['id']}", json={"note": "Kept", "targetLanguage": "vi"}, headers=auth(ADMIN))
     replaced = upload(client, ja_en(), replace="1")
     assert replaced.status_code == 202
+    assert replaced.json()["replaces"] == first["id"]
+    new = ready(client, replaced.json()["id"])
     ids = [entry["id"] for entry in client.get("/api/dictionaries", headers=auth(READER)).json()]
     assert first["id"] not in ids
-    assert replaced.json()["id"] in ids
+    assert new["id"] in ids
+    assert new["replaces"] is None
+    assert new["note"] == "Kept"
+    assert new["targetLanguage"] == "vi"
     assert not (settings.dictionaries_dir / first["id"]).exists()
+
+
+def test_a_failed_replacement_keeps_the_one_it_replaced(client, settings, monkeypatch):
+    from dictserver import indexer
+
+    first = added(client, ja_en())
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("disk on fire")
+
+    monkeypatch.setattr(indexer, "build", broken)
+    replaced = upload(client, ja_en(), replace="1")
+    assert replaced.status_code == 202
+    failed = ready(client, replaced.json()["id"])
+    assert failed["status"] == "failed"
+    kept = client.get(f"/api/dictionaries/{first['id']}", headers=auth(READER)).json()
+    assert kept["status"] == "ready"
+    assert (settings.dictionaries_dir / first["id"]).exists()
+    search = client.get(f"/api/dictionaries/{first['id']}/search", params={"q": "猫"}, headers=auth(READER))
+    assert search.status_code == 200
 
 
 def test_relabel_languages(client):
