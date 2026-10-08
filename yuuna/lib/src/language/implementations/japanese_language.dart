@@ -435,8 +435,18 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
   } else {
     List<String> deinflectionsAlreadySearched = [];
 
+    /// Typed in a search bar, the text is a word or the start of one: it
+    /// finds that word and longer ones that begin with it. The shorter words
+    /// it starts with are only looked for when nothing matched, as when a
+    /// sentence is pasted. Text tapped in a book is looked up the other way,
+    /// longest match first.
+    bool typed = params.searchWithWildcards;
+
     bool startsWithAdded = false;
     for (int i = 0; i < searchTerm.length; i++) {
+      if (typed && i > 0 && uniqueHeadingsById.isNotEmpty) {
+        break;
+      }
       String partialTerm = searchTerm.substring(0, searchTerm.length - i);
 
       bool partialTermIsKana = kanaKit.isKana(partialTerm);
@@ -595,22 +605,14 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
       }
 
       if (params.maximumDictionaryTermsInResult > uniqueHeadingsById.length) {
-        if (params.searchWithWildcards) {
+        if (typed) {
           if (i == 0) {
             startsWithAdded = true;
-
-            List<DictionaryHeading> startsWithToAdd = database
-                .dictionaryHeadings
-                .where()
-                .termStartsWith(searchTerm)
-                .filter()
-                .entriesIsNotEmpty()
-                .sortByTermLength()
-                .findAllSync();
-
-            uniqueHeadingsById.addEntries(startsWithToAdd.map(
-              (heading) => MapEntry(heading.id, heading),
-            ));
+            uniqueHeadingsById.addEntries(
+              _headingsStartingWith(database, searchTerm, limit()).map(
+                (heading) => MapEntry(heading.id, heading),
+              ),
+            );
           }
         } else {
           if (!startsWithAdded && uniqueHeadingsById.isNotEmpty) {
@@ -733,6 +735,7 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
     }
   }
 
+  headings = _withoutRepeatedSpellings(headings);
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 
@@ -741,6 +744,90 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
     bestLength: bestLength,
     headingIds: headings.map((e) => e.id).toList(),
   );
+}
+
+/// Words longer than [text] that begin with it, written or read, the
+/// shortest and then the most popular first. Words without a reading, which
+/// some dictionaries use only to point to another spelling, come last.
+List<DictionaryHeading> _headingsStartingWith(
+    Isar database, String text, int limit) {
+  const KanaKit kanaKit = KanaKit();
+  bool kana = kanaKit.isKana(text);
+  String hiragana = kana ? kanaKit.toHiragana(text) : text;
+  String katakana = kana ? kanaKit.toKatakana(text) : text;
+  Map<int, DictionaryHeading> found = {};
+  void add(List<DictionaryHeading> headings) {
+    for (DictionaryHeading heading in headings) {
+      found.putIfAbsent(heading.id, () => heading);
+    }
+  }
+
+  for (String form in {text, katakana}) {
+    add(database.dictionaryHeadings
+        .where()
+        .termStartsWith(form)
+        .filter()
+        .entriesIsNotEmpty()
+        .sortByTermLength()
+        .limit(limit)
+        .findAllSync());
+  }
+  if (kana) {
+    for (String form in {hiragana, katakana}) {
+      add(database.dictionaryHeadings
+          .where()
+          .readingStartsWith(form)
+          .filter()
+          .entriesIsNotEmpty()
+          .sortByTermLength()
+          .limit(limit)
+          .findAllSync());
+    }
+  }
+
+  List<DictionaryHeading> headings = found.values
+      .where((heading) => heading.term != text && heading.reading != text)
+      .toList();
+  int length(DictionaryHeading heading) => kana && heading.reading.isNotEmpty
+      ? heading.reading.length
+      : heading.term.length;
+  for (DictionaryHeading heading in headings) {
+    heading.entries.loadSync();
+  }
+  headings.sort((a, b) {
+    int pointer = (a.reading.isEmpty ? 1 : 0).compareTo(b.reading.isEmpty ? 1 : 0);
+    if (pointer != 0) {
+      return pointer;
+    }
+    int shorter = length(a).compareTo(length(b));
+    if (shorter != 0) {
+      return shorter;
+    }
+    return b.popularitySum.compareTo(a.popularitySum);
+  });
+  return headings.take(limit).toList();
+}
+
+/// Spellings of one word that a dictionary lists one by one with the same
+/// meanings, such as 図々しい and 図図しい, show once: the first, as sorted.
+List<DictionaryHeading> _withoutRepeatedSpellings(
+    List<DictionaryHeading> headings) {
+  Set<String> seen = {};
+  List<DictionaryHeading> kept = [];
+  for (DictionaryHeading heading in headings) {
+    List<String> meanings = [
+      for (DictionaryEntry entry in heading.entries)
+        '${heading.reading}\u0000${fastHash(entry.definitions.join('\u0001'))}',
+    ];
+    if (heading.reading.isNotEmpty &&
+        meanings.isNotEmpty &&
+        meanings.every(seen.contains)) {
+      continue;
+    }
+    seen.addAll(meanings);
+    kept.add(heading);
+  }
+  return kept;
 }
 
 /// Rules for word deinflection.
