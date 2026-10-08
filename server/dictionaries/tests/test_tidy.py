@@ -181,6 +181,59 @@ def test_a_row_keeps_what_is_not_text():
     assert laid[5][1] == pointer
 
 
+WTY_SUM = (
+    "<b>sum (present infinitive esse); irregular</b><ol><li>(copulative) to be, exist<br>"
+    "<i>Cīvis rōmānus sum.</i> — I am a Roman citizen.<ul><li>to belong<br>"
+    "<i>Mihī est multum tempus.</i> — I have a lot of time.</li></ul></li>"
+    "<li>there be</li><li>it&#x27;s &amp; <a href=\"x\">this</a><img src=\"y\"><font>that</font></li></ol>"
+)
+
+
+def test_html_written_as_text_becomes_structured_content():
+    laid = tidy.parse_html(WTY_SUM)
+    assert laid["type"] == "structured-content"
+    headline, senses = laid["content"]
+    assert headline == {
+        "tag": "div",
+        "content": {"tag": "span", "style": {"fontWeight": "bold"}, "content": "sum (present infinitive esse); irregular"},
+    }
+    assert senses["tag"] == "ol"
+    first, second, third = senses["content"]
+    # The meaning on its own line, its example and translation beneath it.
+    assert texts(first)[:3] == [
+        (None, "(copulative) to be, exist"), ("example", "Cīvis rōmānus sum."), ("translation", "I am a Roman citizen."),
+    ]
+    assert first["content"][1]["data"] == {"jdj": "html-example"}
+    assert texts(first)[3:] == [
+        (None, "to belong"), ("example", "Mihī est multum tempus."), ("translation", "I have a lot of time."),
+    ]
+    assert second == {"tag": "li", "content": "there be"}
+    # Entities read, a link to nowhere kept as text, pictures and unknown
+    # tags left out around their text.
+    assert texts(third) == [(None, "it's & "), (None, "this"), (None, "that")]
+    assert tidy.parse_html("plain text, a < b") is None
+
+
+def test_html_dictionaries_are_laid_out_in_any_language():
+    def row(text):
+        return ["sum", "", "", "", 0, [text], 0, ""]
+
+    assert tidy.detect([row(WTY_SUM)] * 20) == "html"
+    assert tidy.detect([row(WTY_SUM)] * 5 + [row("to be")] * 15) is None
+    laid = tidy.rewrite_row(["sum", "", "", "", 0, [WTY_SUM, "plain"], 0, ""], "html")
+    assert laid[5][0]["type"] == "structured-content"
+    assert laid[5][1] == "plain"
+
+
+def test_each_layout_has_its_own_rules_number():
+    assert tidy.stamp("markup") == "markup@3" and tidy.is_current("markup@3")
+    assert tidy.stamp("html") == "html@1"
+    # Looked at before HTML was understood: looked at again.
+    assert not tidy.is_current("none@3") and tidy.is_current(tidy.stamp(None))
+    assert not tidy.is_current("") and not tidy.is_current(None) and not tidy.is_current("odd@3")
+    assert tidy.revision_suffix("html") == "+jdj1" and tidy.REVISION_SUFFIX == "+jdj3"
+
+
 def ovdp_zip(revision="1") -> bytes:
     return make_zip({
         "index.json": {"title": "Test Anh-Việt", "revision": revision, "format": 3},

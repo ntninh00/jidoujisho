@@ -18,6 +18,10 @@ preview here and Yomitan itself lay them out. The rules come from Cluebook's
 
 Only dictionaries with Vietnamese definitions are touched: English
 dictionaries use some of the same characters for other things.
+
+Definitions written as HTML in plain text, such as `<b>rosa f</b><ol><li>
+rose</li></ol>`, are rewritten in any language: Yomitan shows text as text,
+tags and all.
 """
 
 import json
@@ -26,26 +30,38 @@ import shutil
 import unicodedata
 import zipfile
 from dataclasses import dataclass, field
+from html.parser import HTMLParser
 from pathlib import Path
 
 from .checks import BANK
 
 # The rules below, numbered: a dictionary laid out by older ones is laid out
 # again from its original when the server starts.
-VERSION = 3
-# Marks the revision of a rewritten dictionary, so copies installed before
-# show as out of date.
-REVISION_SUFFIX = f"+jdj{VERSION}"
+# Each layout's rules have their own number, and so does finding a layout
+# (`none`), so a new layout looks again only at dictionaries that had none.
+VERSIONS = {"markup": 3, "babylon": 3, "prodict": 3, "html": 1, "none": 4}
 _SUFFIX = re.compile(r"\+jdj\d+$")
+
+
+def revision_suffix(layout: str) -> str:
+    """Marks the revision of a dictionary [layout] rewrote, so copies
+    installed before show as out of date, until its rules change again."""
+    return f"+jdj{VERSIONS[layout]}"
+
+
+# What the markup layouts mark revisions with.
+REVISION_SUFFIX = revision_suffix("markup")
 
 
 def stamp(layout: str | None) -> str:
     """What the catalog records: the layout, or `none`, and the rules' number."""
-    return f"{layout or 'none'}@{VERSION}"
+    name = layout or "none"
+    return f"{name}@{VERSIONS[name]}"
 
 
 def is_current(recorded: str | None) -> bool:
-    return recorded is not None and recorded.endswith(f"@{VERSION}")
+    name, _, number = (recorded or "").rpartition("@")
+    return name in VERSIONS and number == str(VERSIONS[name])
 
 
 def base_revision(revision: str) -> str:
@@ -100,6 +116,11 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
   color: color-mix(in srgb, var(--text-color) 62%, var(--background-color));
   margin-top: 0.1em;
   margin-bottom: 0.2em;
+}
+[data-sc-jdj="html-example"] {
+  margin-top: 0.1em;
+  margin-bottom: 0.3em;
+  padding-left: 0.7em;
 }
 """
 
@@ -417,6 +438,189 @@ def parse_prodict(definitions: list[str], term: str, vocabulary: set[str] | None
     return builder.finish()
 
 
+_HTML_TAG = re.compile(
+    r"</?(b|i|u|s|em|strong|small|sup|sub|ol|ul|li|br|div|span|p|a|table|tr|td|th)\b[^<>]*>", re.I
+)
+# Tags kept as they are: what Yomitan's structured content allows.
+_KEPT_TAGS = {
+    "br", "ruby", "rt", "rp", "table", "thead", "tbody", "tfoot", "tr", "td", "th",
+    "span", "div", "ol", "ul", "li", "details", "summary",
+}
+# The rest, as a span or div with the look the tag gives.
+_STYLED_TAGS = {
+    "b": ("span", {"fontWeight": "bold"}),
+    "strong": ("span", {"fontWeight": "bold"}),
+    "i": ("span", {"fontStyle": "italic"}),
+    "em": ("span", {"fontStyle": "italic"}),
+    "cite": ("span", {"fontStyle": "italic"}),
+    "u": ("span", {"textDecorationLine": "underline"}),
+    "s": ("span", {"textDecorationLine": "line-through"}),
+    "del": ("span", {"textDecorationLine": "line-through"}),
+    "small": ("span", {"fontSize": "0.85em"}),
+    "sup": ("span", {"verticalAlign": "super", "fontSize": "0.75em"}),
+    "sub": ("span", {"verticalAlign": "sub", "fontSize": "0.75em"}),
+    "p": ("div", {}),
+    "blockquote": ("div", {}),
+    "dl": ("div", {}),
+    "dd": ("div", {}),
+    "dt": ("div", {"fontWeight": "bold"}),
+    **{f"h{level}": ("div", {"fontWeight": "bold"}) for level in range(1, 7)},
+}
+_VOID_TAGS = {"br", "img", "hr", "wbr", "input", "meta", "link", "source", "col", "area"}
+
+
+class _HtmlReader(HTMLParser):
+    """HTML as structured content. Unknown tags give way to their contents;
+    pictures, which the dictionary does not carry, are left out."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.root: dict = {"tag": None, "content": []}
+        self.open: list[dict] = [self.root]
+
+    def handle_starttag(self, tag: str, attrs: list) -> None:
+        if tag in _VOID_TAGS:
+            if tag == "br":
+                self.open[-1]["content"].append({"tag": "br"})
+            return
+        if tag in _KEPT_TAGS:
+            node: dict = {"tag": tag}
+        elif tag in _STYLED_TAGS:
+            name, style = _STYLED_TAGS[tag]
+            node = {"tag": name, **({"style": dict(style)} if style else {})}
+        elif tag == "a":
+            href = dict(attrs).get("href") or ""
+            node = {"tag": "a", "href": href} if href.startswith(("http", "?")) else {"tag": "span"}
+        else:
+            node = {"tag": None}
+        node["source"] = tag
+        node["content"] = []
+        self.open[-1]["content"].append(node)
+        self.open.append(node)
+
+    def handle_startendtag(self, tag: str, attrs: list) -> None:
+        if tag in _VOID_TAGS:
+            self.handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag: str) -> None:
+        for at in range(len(self.open) - 1, 0, -1):
+            if self.open[at].get("source") == tag:
+                del self.open[at:]
+                return
+
+    def handle_data(self, data: str) -> None:
+        content = self.open[-1]["content"]
+        if content and isinstance(content[-1], str):
+            content[-1] += data
+        else:
+            content.append(data)
+
+
+def _examples(content: list) -> list:
+    """Wiktionary's `meaning<br><i>example</i> — translation` as an example
+    under its meaning, with the translation beneath it."""
+    out: list = []
+    at = 0
+    while at < len(content):
+        item = content[at]
+        following = content[at + 1] if at + 1 < len(content) else None
+        if (
+            isinstance(item, dict) and item.get("tag") == "br"
+            and isinstance(following, dict) and following.get("source") in ("i", "em")
+        ):
+            example: list = [{**_node("div", "example", following["content"]), "style": {"fontStyle": "italic"}}]
+            at += 2
+            rest = content[at] if at < len(content) else None
+            if isinstance(rest, str) and re.match(r"^\s*[—–-]\s", rest):
+                translation = re.sub(r"^\s*[—–-]\s*", "", rest).strip()
+                if translation:
+                    example.append(_node("div", "translation", translation))
+                at += 1
+            out.append(_node("div", "html-example", example))
+            continue
+        out.append(item)
+        at += 1
+    return out
+
+
+_BLOCK_TAGS = {"div", "ol", "ul", "table", "details"}
+
+
+def _blocks(content: list) -> list:
+    """Text beside blocks, such as a meaning before its examples, in a block
+    of its own, so it does not sit beside them."""
+    if not any(isinstance(item, dict) and item.get("tag") in _BLOCK_TAGS for item in content):
+        return content
+    out: list = []
+    run: list = []
+
+    def close() -> None:
+        while run and (run[-1] == {"tag": "br"} or (isinstance(run[-1], str) and not run[-1].strip())):
+            run.pop()
+        while run and (run[0] == {"tag": "br"} or (isinstance(run[0], str) and not run[0].strip())):
+            run.pop(0)
+        if run:
+            out.append({"tag": "div", "content": run[0] if len(run) == 1 else list(run)})
+        run.clear()
+
+    for item in content:
+        if isinstance(item, dict) and item.get("tag") in _BLOCK_TAGS:
+            close()
+            out.append(item)
+        else:
+            run.append(item)
+    close()
+    return out
+
+
+def _tidy_html(nodes: list) -> list:
+    """The nodes read as Yomitan wants them: unknown tags unwrapped and
+    empty elements dropped. Italics keep their source tag for [_examples]."""
+    out: list = []
+    for node in nodes:
+        if isinstance(node, str):
+            if node:
+                out.append(node)
+            continue
+        content = _tidy_html(node.get("content", []))
+        if node.get("source") == "li":
+            content = _blocks(_examples(content))
+        if node.get("tag") is None:
+            out.extend(content)
+            continue
+        element = {key: value for key, value in node.items() if key not in ("content", "source")}
+        if node["tag"] != "br":
+            if not content:
+                continue
+            element["content"] = content[0] if len(content) == 1 else content
+        if node.get("source") in ("i", "em"):
+            element["source"] = node["source"]
+        out.append(element)
+    return out
+
+
+def _without_sources(node: object) -> object:
+    if isinstance(node, list):
+        return [_without_sources(item) for item in node]
+    if isinstance(node, dict):
+        return {key: _without_sources(value) for key, value in node.items() if key != "source"}
+    return node
+
+
+def parse_html(text: str) -> dict | None:
+    """A definition written as HTML, as structured content, or None when it
+    has no tags."""
+    if not _HTML_TAG.search(text):
+        return None
+    reader = _HtmlReader()
+    reader.feed(text)
+    reader.close()
+    content = _without_sources(_blocks(_tidy_html(reader.root["content"])))
+    if not content:
+        return None
+    return {"type": "structured-content", "content": content}
+
+
 def _gloss(text: str) -> object:
     """A meaning, with a leading `{English}` that some exports go through
     set apart."""
@@ -478,6 +682,8 @@ def detect(rows: list) -> str | None:
     texts = [text for row in rows if isinstance(row, list) for text in _texts(row)]
     if not texts:
         return None
+    if sum(bool(_HTML_TAG.search(text)) for text in texts) / len(texts) >= 0.5:
+        return "html"
     vietnamese = sum(any(ch in _VIETNAMESE_ONLY for ch in text) for text in texts)
     if vietnamese / len(texts) < 0.05:
         return None
@@ -500,6 +706,12 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
     texts = [unicodedata.normalize("NFC", text) for text in _texts(row)]
     if not texts:
         return row
+    if layout == "html":
+        laid_out = [
+            (parse_html(unicodedata.normalize("NFC", item)) or item) if isinstance(item, str) else item
+            for item in row[5]
+        ]
+        return [*row[:5], laid_out, *row[6:]]
     term = row[0] if isinstance(row[0], str) else ""
     if layout == "prodict":
         body = parse_prodict(texts, term, vocabulary)
@@ -586,7 +798,7 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
                 data = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode()
             elif info.filename == "index.json":
                 index = json.loads(data.decode("utf-8-sig"))
-                index["revision"] = f"{base_revision(str(index.get('revision', '')))}{REVISION_SUFFIX}"
+                index["revision"] = f"{base_revision(str(index.get('revision', '')))}{revision_suffix(layout)}"
                 data = json.dumps(index, ensure_ascii=False, indent=2).encode()
             elif info.filename == "styles.css":
                 data = data + b"\n" + STYLES.encode()
