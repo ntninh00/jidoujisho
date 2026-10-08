@@ -201,6 +201,27 @@ void main() {
       expect(await search('xyz'), isEmpty);
     });
 
+    test('ranges of entries are indexed apart, each to its end', () async {
+      int before = isar.dictionaryMeanings.countSync();
+      List<int> ids = isar.dictionaryEntrys.where().idProperty().findAllSync();
+      isar.writeTxnSync(() => isar.dictionaryMeanings.clearSync());
+      int middle = ids[ids.length ~/ 2];
+      for (var (after, through) in [(0, middle), (middle, null)]) {
+        ReceivePort port = ReceivePort()..listen((_) {});
+        await compute(
+          indexMeaningsHelper,
+          IndexMeaningsParams(
+            directoryPath: directory.path,
+            after: after,
+            through: through,
+            sendPort: port.sendPort,
+          ),
+        ).timeout(const Duration(seconds: 20));
+        port.close();
+      }
+      expect(isar.dictionaryMeanings.countSync(), before);
+    });
+
     test('words go with their dictionary', () async {
       int before = isar.dictionaryMeanings.countSync();
       deleteDictionaryData(isar, 2);

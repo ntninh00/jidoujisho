@@ -116,13 +116,11 @@ List<String> meaningWordsOfText(String text) {
   Set<String> words = {};
   for (Match match in _word.allMatches(text.toLowerCase())) {
     String word = match.group(0)!;
-    if (_unspaced.hasMatch(word)) {
+    bool ascii = word.codeUnits.every((unit) => unit < 0x80);
+    if (ascii ? word.length == 1 : _unspaced.hasMatch(word)) {
       continue;
     }
-    if (word.length == 1 && word.codeUnitAt(0) < 0x80) {
-      continue;
-    }
-    String folded = foldMeaningText(word);
+    String folded = ascii ? word : foldMeaningText(word);
     if (_stopWords.contains(folded)) {
       continue;
     }
@@ -251,11 +249,12 @@ Object? _structured(String definition) {
 
 /// What [indexMeaningsHelper] needs, sent to another isolate.
 class IndexMeaningsParams {
-  /// Index entries after [after].
+  /// Index entries after [after], up to [through] if given.
   IndexMeaningsParams({
     required this.directoryPath,
     required this.after,
     required this.sendPort,
+    this.through,
   });
 
   /// Where the database is.
@@ -264,13 +263,18 @@ class IndexMeaningsParams {
   /// Entries up to this id have their words already.
   final int after;
 
+  /// The last entry for this to index, so several can index a range each;
+  /// null for every entry after [after], those added meanwhile too.
+  final int? through;
+
   /// Gets `[id, progress]` after each batch: the entries up to `id` have
   /// their words, and `progress` is the share done, from 0 to 1.
   final SendPort sendPort;
 }
 
-/// Entries handled in one transaction.
-const int _batch = 1000;
+/// Entries handled in one transaction: each is written to disk, so fewer
+/// and larger ones are quicker, four times so from 1000 to 10000.
+const int _batch = 5000;
 
 /// Gives the entries after [IndexMeaningsParams.after] their words, a
 /// batch at a time, in id order: new entries have higher ids than those
@@ -282,7 +286,9 @@ Future<int> indexMeaningsHelper(IndexMeaningsParams params) async {
         directory: params.directoryPath,
         maxSizeMiB: 8192,
       );
-  int last = isar.dictionaryEntrys
+  int? through = params.through;
+  int last = through ??
+      isar.dictionaryEntrys
           .where(sort: Sort.desc)
           .anyId()
           .idProperty()
@@ -290,13 +296,17 @@ Future<int> indexMeaningsHelper(IndexMeaningsParams params) async {
       0;
   int start = params.after;
   int done = params.after;
-  while (true) {
-    List<DictionaryEntry> entries = isar.dictionaryEntrys
-        .where()
-        .idGreaterThan(done)
+  /// Isar gives the upper bound again when asked for what lies between it
+  /// and itself, so the range's end is checked here.
+  while (through == null || done < through) {
+    List<DictionaryEntry> entries = (through == null
+            ? isar.dictionaryEntrys.where().idGreaterThan(done)
+            : isar.dictionaryEntrys
+                .where()
+                .idBetween(done + 1, through))
         .limit(_batch)
         .findAllSync();
-    if (entries.isEmpty) {
+    if (entries.isEmpty || entries.last.id! <= done) {
       break;
     }
     List<DictionaryMeaning> meanings = [];
