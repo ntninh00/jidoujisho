@@ -159,7 +159,9 @@ class Catalog:
         if old is not None:
             notes = {**json.loads(old["notes"] or "{}"), **json.loads(new["notes"] or "{}")}
             source, target, guessed = new["source_language"], new["target_language"], new["languages_guessed"]
-            if new["languages_guessed"] and not old["languages_guessed"]:
+            # Only an admin's own labels carry over; one that failed was
+            # never labelled at all.
+            if new["languages_guessed"] and not old["languages_guessed"] and old["status"] == "ready":
                 source, target, guessed = old["source_language"], old["target_language"], 0
             db.execute(
                 """UPDATE dictionaries SET notes = ?, source_language = ?, target_language = ?,

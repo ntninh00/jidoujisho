@@ -368,6 +368,8 @@ class Ui {
       IconData(0xedea, fontFamily: _solid); // note-sticky
   static const IconData folder =
       IconData(0xe8eb, fontFamily: _regular); // folder-open
+  static const IconData folderClosed =
+      IconData(0xe8d6, fontFamily: _regular); // folder
   static const IconData plus =
       IconData(0xef85, fontFamily: _regular); // plus
   static const IconData plusSmall =

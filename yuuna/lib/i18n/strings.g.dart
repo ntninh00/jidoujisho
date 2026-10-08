@@ -3,7 +3,7 @@
 /// Locales: 2
 /// Strings: 1694 (847 per locale)
 ///
-/// Built on 2026-10-07 at 06:28 UTC
+/// Built on 2026-10-08 at 13:14 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -842,7 +842,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_rename_group => TranslationOverrides.string(_root.$meta, 'ttu_rename_group', {}) ?? 'Rename';
 	String get ttu_delete_group => TranslationOverrides.string(_root.$meta, 'ttu_delete_group', {}) ?? 'Delete group';
 	String get ttu_group_info => TranslationOverrides.string(_root.$meta, 'ttu_group_info', {}) ?? 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
-	String get ttu_group_by_info => TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Favourites always come first. Tap a heading to fold it away.';
+	String get ttu_group_by_info => TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Favourites come first: in their own section, or at the top of their group when grouped by My groups. Tap a heading to fold it away; hold a group\'s heading and drag it to move the group.';
 	String get ttu_this_book => TranslationOverrides.string(_root.$meta, 'ttu_this_book', {}) ?? 'This book';
 	String get ttu_follow_links => TranslationOverrides.string(_root.$meta, 'ttu_follow_links', {}) ?? 'Follow links';
 	String get ttu_follow_links_info => TranslationOverrides.string(_root.$meta, 'ttu_follow_links_info', {}) ?? 'On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.';
@@ -2362,7 +2362,7 @@ class _StringsVi extends _StringsEn {
 	@override String get ttu_rename_group => TranslationOverrides.string(_root.$meta, 'ttu_rename_group', {}) ?? 'Đổi tên';
 	@override String get ttu_delete_group => TranslationOverrides.string(_root.$meta, 'ttu_delete_group', {}) ?? 'Xóa nhóm';
 	@override String get ttu_group_info => TranslationOverrides.string(_root.$meta, 'ttu_group_info', {}) ?? 'Sách sẽ hiển thị dưới nhóm khi kệ sách được nhóm theo Nhóm của tôi trong phần cài đặt kệ sách.';
-	@override String get ttu_group_by_info => TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Mục yêu thích luôn hiển thị đầu tiên. Chạm vào tiêu đề để thu gọn.';
+	@override String get ttu_group_by_info => TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Mục yêu thích hiển thị đầu tiên: trong mục riêng, hoặc ở đầu nhóm của chúng khi nhóm theo Nhóm của tôi. Chạm vào tiêu đề để thu gọn; giữ tiêu đề của một nhóm rồi kéo để đổi vị trí nhóm.';
 	@override String get ttu_this_book => TranslationOverrides.string(_root.$meta, 'ttu_this_book', {}) ?? 'Sách này';
 	@override String get ttu_follow_links => TranslationOverrides.string(_root.$meta, 'ttu_follow_links', {}) ?? 'Mở liên kết';
 	@override String get ttu_follow_links_info => TranslationOverrides.string(_root.$meta, 'ttu_follow_links_info', {}) ?? 'Khi bật, chạm vào liên kết sẽ đưa bạn đến nơi liên kết trỏ tới, kèm cách quay lại. Khi tắt, liên kết được đọc như văn bản thường và chạm vào sẽ tra từ.';
@@ -3867,7 +3867,7 @@ extension on _StringsEn {
 			case 'ttu_rename_group': return TranslationOverrides.string(_root.$meta, 'ttu_rename_group', {}) ?? 'Rename';
 			case 'ttu_delete_group': return TranslationOverrides.string(_root.$meta, 'ttu_delete_group', {}) ?? 'Delete group';
 			case 'ttu_group_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_info', {}) ?? 'Books show under their group when the shelf is grouped by My groups, in the shelf settings.';
-			case 'ttu_group_by_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Favourites always come first. Tap a heading to fold it away.';
+			case 'ttu_group_by_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Favourites come first: in their own section, or at the top of their group when grouped by My groups. Tap a heading to fold it away; hold a group\'s heading and drag it to move the group.';
 			case 'ttu_this_book': return TranslationOverrides.string(_root.$meta, 'ttu_this_book', {}) ?? 'This book';
 			case 'ttu_follow_links': return TranslationOverrides.string(_root.$meta, 'ttu_follow_links', {}) ?? 'Follow links';
 			case 'ttu_follow_links_info': return TranslationOverrides.string(_root.$meta, 'ttu_follow_links_info', {}) ?? 'On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.';
@@ -4726,7 +4726,7 @@ extension on _StringsVi {
 			case 'ttu_rename_group': return TranslationOverrides.string(_root.$meta, 'ttu_rename_group', {}) ?? 'Đổi tên';
 			case 'ttu_delete_group': return TranslationOverrides.string(_root.$meta, 'ttu_delete_group', {}) ?? 'Xóa nhóm';
 			case 'ttu_group_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_info', {}) ?? 'Sách sẽ hiển thị dưới nhóm khi kệ sách được nhóm theo Nhóm của tôi trong phần cài đặt kệ sách.';
-			case 'ttu_group_by_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Mục yêu thích luôn hiển thị đầu tiên. Chạm vào tiêu đề để thu gọn.';
+			case 'ttu_group_by_info': return TranslationOverrides.string(_root.$meta, 'ttu_group_by_info', {}) ?? 'Mục yêu thích hiển thị đầu tiên: trong mục riêng, hoặc ở đầu nhóm của chúng khi nhóm theo Nhóm của tôi. Chạm vào tiêu đề để thu gọn; giữ tiêu đề của một nhóm rồi kéo để đổi vị trí nhóm.';
 			case 'ttu_this_book': return TranslationOverrides.string(_root.$meta, 'ttu_this_book', {}) ?? 'Sách này';
 			case 'ttu_follow_links': return TranslationOverrides.string(_root.$meta, 'ttu_follow_links', {}) ?? 'Mở liên kết';
 			case 'ttu_follow_links_info': return TranslationOverrides.string(_root.$meta, 'ttu_follow_links_info', {}) ?? 'Khi bật, chạm vào liên kết sẽ đưa bạn đến nơi liên kết trỏ tới, kèm cách quay lại. Khi tắt, liên kết được đọc như văn bản thường và chạm vào sẽ tra từ.';

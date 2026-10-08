@@ -37,6 +37,18 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
     duration: const Duration(milliseconds: 1100),
   );
 
+  /// Where a press on a group's heading started, to tell a drag from a
+  /// long press.
+  Offset? _pressedAt;
+
+  /// While a group is dragged to a new place, the shelf shows only its
+  /// headings, so every group is in reach.
+  bool _reordering = false;
+
+  /// Whether the heading held now has moved, which makes it a drag rather
+  /// than a long press for the group's menu.
+  bool _dragMoved = false;
+
   @override
   void dispose() {
     _pulse.dispose();
@@ -231,15 +243,25 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
             )
           else
             for (_ShelfSection section in _sections(books)) ...[
+              // Keyed, so a heading being dragged stays the same widget
+              // while the shelf folds down to headings around it.
               if (section.title != null)
                 SliverToBoxAdapter(
-                  child: _buildSectionHeader(
-                    section,
-                    folded: folded.contains(section.id),
-                  ),
+                  key: ValueKey('heading:${section.id}'),
+                  child: section.group == null
+                      ? _buildSectionHeader(
+                          section,
+                          folded: folded.contains(section.id),
+                        )
+                      : _buildGroupHeader(
+                          section,
+                          folded: folded.contains(section.id),
+                        ),
                 ),
-              if (!folded.contains(section.id) || section.title == null)
+              if (!_reordering &&
+                  (!folded.contains(section.id) || section.title == null))
                 SliverPadding(
+                  key: ValueKey('books:${section.id}'),
                   padding: const EdgeInsets.fromLTRB(3, 0, 3, 8),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -274,14 +296,22 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
   }
 
   /// The shelf in sections: favourites first, then the books grouped as
-  /// chosen in the shelf settings. A section without a title is the whole
-  /// shelf, ungrouped.
+  /// chosen in the shelf settings. Grouped by the user's own groups, a
+  /// favourite stays in its group instead, at the top. A section without a
+  /// title is the whole shelf, ungrouped.
   List<_ShelfSection> _sections(List<TtuBook> books) {
     Set<String> favouriteKeys = mediaSource.favouriteBooks;
-    List<TtuBook> favourites =
-        books.where((book) => favouriteKeys.contains(book.key)).toList();
-    List<TtuBook> rest =
-        books.where((book) => !favouriteKeys.contains(book.key)).toList();
+    bool inGroups = mediaSource.shelfGrouping == TtuShelfGrouping.groups;
+    List<TtuBook> favourites = inGroups
+        ? const []
+        : books.where((book) => favouriteKeys.contains(book.key)).toList();
+    List<TtuBook> rest = inGroups
+        ? books
+        : books.where((book) => !favouriteKeys.contains(book.key)).toList();
+    List<TtuBook> favouritesFirst(List<TtuBook> books) => [
+          ...books.where((book) => favouriteKeys.contains(book.key)),
+          ...books.where((book) => !favouriteKeys.contains(book.key)),
+        ];
     List<_ShelfSection> sections = [
       if (favourites.isNotEmpty)
         _ShelfSection(
@@ -322,7 +352,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
               title: group,
               icon: Ui.folder,
               group: group,
-              books: inGroup,
+              books: favouritesFirst(inGroup),
             ));
           }
         }
@@ -330,7 +360,7 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
           sections.add(_ShelfSection(
             id: 'ungrouped',
             title: sections.isEmpty ? null : t.ttu_ungrouped,
-            books: ungrouped,
+            books: favouritesFirst(ungrouped),
           ));
         }
       case TtuShelfGrouping.language:
@@ -380,16 +410,19 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
   Widget _buildSectionHeader(_ShelfSection section, {required bool folded}) {
     Color muted = theme.unselectedWidgetColor;
     bool reduceMotion = MediaQuery.of(context).disableAnimations;
-    String? group = section.group;
+    IconData? icon = section.group == null
+        ? section.icon
+        : (folded || _reordering)
+            ? Ui.folderClosed
+            : Ui.folder;
     return InkWell(
-      onTap: () => mediaSource.toggleSection(section.id),
-      onLongPress: group == null ? null : () => _showGroupMenu(group),
+      onTap: _reordering ? null : () => mediaSource.toggleSection(section.id),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 10, 6),
         child: Row(
           children: [
-            if (section.icon != null) ...[
-              Icon(section.icon, size: 15, color: theme.colorScheme.primary),
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: theme.colorScheme.primary),
               const SizedBox(width: 7),
             ],
             Expanded(
@@ -419,6 +452,87 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
                   : const Duration(milliseconds: 160),
               child: Icon(Ui.angleDown, size: 18, color: muted),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// A group's heading. Held and moved, it drags the group to another
+  /// group's place; held and let go, it opens the group's menu.
+  Widget _buildGroupHeader(_ShelfSection section, {required bool folded}) {
+    String group = section.group!;
+    Widget header = _buildSectionHeader(section, folded: folded);
+    return DragTarget<String>(
+      onWillAccept: (dragged) => dragged != null && dragged != group,
+      onAccept: (dragged) {
+        setState(() => _reordering = false);
+        mediaSource.moveGroup(dragged, group);
+      },
+      builder: (context, candidates, _) => Listener(
+        onPointerDown: (event) => _pressedAt = event.position,
+        child: LongPressDraggable<String>(
+          data: group,
+          axis: Axis.vertical,
+          feedback: _buildGroupDragFeedback(section),
+          childWhenDragging: Opacity(opacity: 0.35, child: header),
+          onDragStarted: () => _dragMoved = false,
+          onDragUpdate: (details) {
+            Offset? start = _pressedAt;
+            if (!_dragMoved &&
+                start != null &&
+                (details.globalPosition - start).distance > 12) {
+              _dragMoved = true;
+              setState(() => _reordering = true);
+            }
+          },
+          onDragEnd: (_) {
+            bool moved = _dragMoved;
+            _dragMoved = false;
+            setState(() => _reordering = false);
+            if (!moved) {
+              _showGroupMenu(group);
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            margin: const EdgeInsets.symmetric(horizontal: 6),
+            decoration: BoxDecoration(
+              color: candidates.isEmpty
+                  ? Colors.transparent
+                  : theme.colorScheme.primary.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: header,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The heading under the finger while a group is dragged.
+  Widget _buildGroupDragFeedback(_ShelfSection section) {
+    return Material(
+      elevation: 6,
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: MediaQuery.of(context).size.width - 24,
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        child: Row(
+          children: [
+            Icon(Ui.folderClosed, size: 15, color: theme.colorScheme.primary),
+            const SizedBox(width: 7),
+            Expanded(
+              child: Text(
+                section.title ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    textTheme.titleSmall!.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Icon(Ui.grip, size: 18, color: theme.unselectedWidgetColor),
           ],
         ),
       ),

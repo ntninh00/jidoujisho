@@ -67,10 +67,16 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   bool get shouldPlaceholderBeShown => appModel.dictionaryHistory.isEmpty;
 
+  /// The tab opens blank, with only the search bar; earlier results show
+  /// once something has been looked up.
+  bool _searchedYet = false;
+
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
-      if (shouldPlaceholderBeShown)
+      if (!_searchedYet)
+        const SizedBox.expand()
+      else if (shouldPlaceholderBeShown)
         buildPlaceholder()
       else
         buildDictionaryHistory(),
@@ -139,7 +145,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         buildBackButton(),
       ],
       actions: [
-        buildDictionarySettingsButton(),
         buildMoreButton(),
         buildSearchButton(),
       ],
@@ -192,6 +197,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
     int maximumTerms = overrideMaximumTerms ?? appModel.maximumTerms;
     int serial = ++_searchSerial;
+    if (query.trim().isNotEmpty) {
+      _searchedYet = true;
+    }
 
     if (mounted) {
       setState(() {
@@ -253,8 +261,8 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  /// Clearing history is rare and destructive, so both clear actions live in
-  /// one labelled menu instead of two unlabelled icons on the bar.
+  /// Settings, My terms and clearing history, in one labelled menu instead
+  /// of several unlabelled icons on the bar.
   Widget buildMoreButton() {
     return FloatingSearchBarAction(
       showIfOpened: true,
@@ -273,6 +281,15 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Ui.myWords),
               title: Text(t.my_words),
+            ),
+          ),
+          PopupMenuItem<VoidCallback>(
+            value: _openDictionarySettings,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Ui.settings),
+              title: Text(t.dictionary_settings),
             ),
           ),
           const PopupMenuDivider(),
@@ -347,28 +364,17 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  /// Dictionary settings bar action.
-  Widget buildDictionarySettingsButton() {
-    return FloatingSearchBarAction(
-      showIfOpened: true,
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.dictionary_settings,
-        icon: Ui.settings,
-        onTap: () async {
-          double oldFontSize = appModel.dictionaryFontSize;
+  Future<void> _openDictionarySettings() async {
+    double oldFontSize = appModel.dictionaryFontSize;
 
-          await showDialog(
-            context: context,
-            builder: (context) => const DictionarySettingsDialogPage(),
-          );
-
-          if (appModel.dictionaryFontSize != oldFontSize) {
-            appModel.refresh();
-          }
-        },
-      ),
+    await showDialog(
+      context: context,
+      builder: (context) => const DictionarySettingsDialogPage(),
     );
+
+    if (appModel.dictionaryFontSize != oldFontSize) {
+      appModel.refresh();
+    }
   }
 
   void showDeleteSearchHistoryPrompt() async {

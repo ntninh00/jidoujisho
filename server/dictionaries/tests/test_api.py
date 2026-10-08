@@ -185,6 +185,24 @@ def test_a_failed_replacement_keeps_the_one_it_replaced(client, settings, monkey
     assert search.status_code == 200
 
 
+def test_replacing_a_failed_upload_keeps_the_new_guess(client, monkeypatch):
+    from dictserver import indexer
+
+    real_build = indexer.build
+
+    def broken(*args, **kwargs):
+        raise RuntimeError("damaged zip")
+
+    monkeypatch.setattr(indexer, "build", broken)
+    failed = ready(client, upload(client, ja_en()).json()["id"])
+    assert failed["status"] == "failed"
+    assert failed["sourceLanguage"] is None
+    monkeypatch.setattr(indexer, "build", real_build)
+    replaced = ready(client, upload(client, ja_en(), replace="1").json()["id"])
+    assert replaced["status"] == "ready"
+    assert (replaced["sourceLanguage"], replaced["targetLanguage"]) == ("ja", "en")
+
+
 def test_relabel_languages(client):
     entry = added(client, ja_en())
     response = client.patch(f"/api/dictionaries/{entry['id']}", json={"targetLanguage": "vi"}, headers=auth(ADMIN))

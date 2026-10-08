@@ -22,7 +22,16 @@ class HomePage extends BasePage {
 class _HomePageState extends BasePageState<HomePage>
     with WidgetsBindingObserver {
   late final List<Widget> mediaTypeBodies;
-  late final List<BottomNavigationBarItem> navBarItems;
+
+  /// The tabs, with their names in the app's current language.
+  List<BottomNavigationBarItem> get navBarItems => [
+        for (MediaType mediaType in appModel.mediaTypes.values)
+          BottomNavigationBarItem(
+            activeIcon: Icon(mediaType.icon),
+            icon: Icon(mediaType.outlinedIcon),
+            label: t[mediaType.uniqueKey],
+          ),
+      ];
 
   String get appName => appModel.packageInfo.appName;
   String get appVersion => appModel.packageInfo.version;
@@ -41,16 +50,6 @@ class _HomePageState extends BasePageState<HomePage>
     /// cannot be used here, [ref.read] is used instead, via [appModelNoUpdate].
     mediaTypeBodies = List.unmodifiable(
         appModelNoUpdate.mediaTypes.values.map((mediaType) => mediaType.home));
-    navBarItems = List.unmodifiable(
-      appModelNoUpdate.mediaTypes.values.map(
-        (mediaType) => BottomNavigationBarItem(
-          activeIcon: Icon(mediaType.icon),
-          icon: Icon(mediaType.outlinedIcon),
-          label: t[mediaType.uniqueKey],
-        ),
-      ),
-    );
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       appModel.populateDefaultMapping(appModel.targetLanguage);
       appModel.moveStashButtonToMyWords();
@@ -61,30 +60,11 @@ class _HomePageState extends BasePageState<HomePage>
             appModel.targetLanguage.standardFormat);
 
         appModel.setFirstTimeSetupFlag();
-      } else {
-        _openQuickSearch();
       }
       AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
       appModelNoUpdate.refreshAppStrings();
     });
   }
-
-  /// When the app was left on the Dictionary tab, it opens ready to type,
-  /// like a quick dictionary.
-  void _openQuickSearch() {
-    MediaType current =
-        appModel.mediaTypes.values.toList()[currentHomeTabIndex];
-    bool onTop = ModalRoute.of(context)?.isCurrent ?? false;
-    if (current is DictionaryMediaType &&
-        onTop &&
-        !appModel.isMediaOpen &&
-        current.floatingSearchBarController.isClosed) {
-      current.floatingSearchBarController.open();
-    }
-  }
-
-  /// When the app went to the background.
-  DateTime? _pausedAt;
 
   void refresh() {
     setState(() {});
@@ -100,17 +80,8 @@ class _HomePageState extends BasePageState<HomePage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (AppLifecycleState.paused == state) {
-      _pausedAt = DateTime.now();
-    }
     if (AppLifecycleState.resumed == state) {
       AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
-      DateTime? pausedAt = _pausedAt;
-      _pausedAt = null;
-      if (pausedAt != null &&
-          DateTime.now().difference(pausedAt) > const Duration(seconds: 30)) {
-        _openQuickSearch();
-      }
 
       /// Keep the search database ready.
       debugPrint('Lifecycle Resumed');

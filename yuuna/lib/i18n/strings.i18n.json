@@ -705,7 +705,7 @@
     "ttu_rename_group": "Rename",
     "ttu_delete_group": "Delete group",
     "ttu_group_info": "Books show under their group when the shelf is grouped by My groups, in the shelf settings.",
-    "ttu_group_by_info": "Favourites always come first. Tap a heading to fold it away.",
+    "ttu_group_by_info": "Favourites come first: in their own section, or at the top of their group when grouped by My groups. Tap a heading to fold it away; hold a group's heading and drag it to move the group.",
     "ttu_this_book": "This book",
     "ttu_follow_links": "Follow links",
     "ttu_follow_links_info": "On, tapping a link takes you where it points, with a way back. Off, links read as plain text and tapping one looks the word up.",

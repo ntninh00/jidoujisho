@@ -679,7 +679,7 @@
     "ttu_rename_group": "Đổi tên",
     "ttu_delete_group": "Xóa nhóm",
     "ttu_group_info": "Sách sẽ hiển thị dưới nhóm khi kệ sách được nhóm theo Nhóm của tôi trong phần cài đặt kệ sách.",
-    "ttu_group_by_info": "Mục yêu thích luôn hiển thị đầu tiên. Chạm vào tiêu đề để thu gọn.",
+    "ttu_group_by_info": "Mục yêu thích hiển thị đầu tiên: trong mục riêng, hoặc ở đầu nhóm của chúng khi nhóm theo Nhóm của tôi. Chạm vào tiêu đề để thu gọn; giữ tiêu đề của một nhóm rồi kéo để đổi vị trí nhóm.",
     "ttu_this_book": "Sách này",
     "ttu_follow_links": "Mở liên kết",
     "ttu_follow_links_info": "Khi bật, chạm vào liên kết sẽ đưa bạn đến nơi liên kết trỏ tới, kèm cách quay lại. Khi tắt, liên kết được đọc như văn bản thường và chạm vào sẽ tra từ.",

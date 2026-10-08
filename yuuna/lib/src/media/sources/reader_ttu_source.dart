@@ -219,7 +219,7 @@ class ReaderTtuSource extends ReaderMediaSource {
     _shelfChanged();
   }
 
-  /// The user's groups, in the order they were made.
+  /// The user's groups, in the order they put them on the shelf.
   List<String> get shelfGroups => List<String>.from(
       getPreference<List?>(key: 'shelf_groups', defaultValue: null) ??
           const []);
@@ -312,6 +312,20 @@ class ReaderTtuSource extends ReaderMediaSource {
         await setPreference<String>(key: '${entry.key}', value: next);
       }
     }
+    _shelfChanged();
+  }
+
+  /// Moves [group] to where [target] is on the shelf, before it when moving
+  /// up and after it when moving down.
+  Future<void> moveGroup(String group, String target) async {
+    List<String> groups = shelfGroups;
+    int from = groups.indexOf(group);
+    int to = groups.indexOf(target);
+    if (from < 0 || to < 0 || from == to) {
+      return;
+    }
+    groups.insert(to, groups.removeAt(from));
+    await setPreference<List<String>>(key: 'shelf_groups', value: groups);
     _shelfChanged();
   }
 
