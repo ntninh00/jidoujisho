@@ -2,13 +2,14 @@
 along its indexing is."""
 
 import json
+import re
 import shutil
 import sqlite3
 import threading
 import time
 from pathlib import Path
 
-from .tidy import REVISION_SUFFIX
+from . import tidy
 
 # waiting -> indexing -> ready, or failed with an error the uploader can read.
 STATUSES = ("waiting", "indexing", "ready", "failed")
@@ -146,10 +147,12 @@ class Catalog:
         still on its way to replace it. A dictionary laid out here counts as
         the revision it was uploaded as."""
         with self._connect() as db:
+            pattern = re.sub(r"([\\%_])", r"\\\1", revision) + "+jdj%"
             row = db.execute(
-                """SELECT * FROM dictionaries WHERE title = ? AND revision IN (?, ?)
+                """SELECT * FROM dictionaries WHERE title = ?
+                   AND (revision = ? OR revision LIKE ? ESCAPE '\\')
                    ORDER BY replaces IS NOT NULL, uploaded_at LIMIT 1""",
-                (title, revision, revision + REVISION_SUFFIX),
+                (title, revision, pattern),
             ).fetchone()
         return self._public(row) if row else None
 
@@ -246,12 +249,11 @@ class Catalog:
             )
 
     def untidied(self) -> list[str]:
-        """Ready dictionaries whose text has not been looked at yet."""
+        """Ready dictionaries whose text was not looked at by the current
+        layout rules."""
         with self._connect() as db:
-            rows = db.execute(
-                "SELECT id FROM dictionaries WHERE status = 'ready' AND tidy IS NULL"
-            ).fetchall()
-        return [row["id"] for row in rows]
+            rows = db.execute("SELECT id, tidy FROM dictionaries WHERE status = 'ready'").fetchall()
+        return [row["id"] for row in rows if not tidy.is_current(row["tidy"])]
 
     def set_notes(self, dictionary_id: str, changes: dict[str, str | None]) -> dict | None:
         """The admin's own descriptions, one per app language and kept apart

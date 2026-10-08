@@ -144,7 +144,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         zip_path = catalog.zip_path(dictionary_id)
         try:
             checked = check_zip(str(zip_path), limits)
-            if catalog.get(dictionary_id)["tidy"] is None:
+            if not tidy.is_current(catalog.get(dictionary_id)["tidy"]):
                 checked = lay_out(dictionary_id, zip_path) or checked
             summary = indexer.build(str(zip_path), str(catalog.search_path(dictionary_id)), checked)
             if catalog.get(dictionary_id) is None:
@@ -164,12 +164,12 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         it; see tidy.py. Returns the rewritten file's check, or None when it
         was left as it is. A dictionary it can't rewrite stays as uploaded."""
         try:
-            layout = tidy.apply(zip_path)
+            layout, changed = tidy.apply(zip_path)
         except Exception:
             traceback.print_exc()
-            layout = None
-        if layout is None:
-            catalog.set_tidy(dictionary_id, "")
+            layout, changed = None, False
+        if not changed:
+            catalog.set_tidy(dictionary_id, tidy.stamp(layout))
             return None
         with zipfile.ZipFile(zip_path) as archive:
             index = json.loads(archive.read("index.json").decode("utf-8-sig"))
@@ -178,7 +178,8 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             for chunk in iter(lambda: file.read(1 << 20), b""):
                 digest.update(chunk)
         catalog.set_tidy(
-            dictionary_id, layout, index.get("revision"), zip_path.stat().st_size, digest.hexdigest()
+            dictionary_id, tidy.stamp(layout), index.get("revision"), zip_path.stat().st_size,
+            digest.hexdigest(),
         )
         return check_zip(str(zip_path), limits)
 
@@ -187,12 +188,13 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         in the background, and those with text to lay out are indexed
         again."""
         for dictionary_id in catalog.untidied():
+            zip_path = catalog.zip_path(dictionary_id)
             try:
-                layout = tidy.layout_of(catalog.zip_path(dictionary_id))
+                layout = tidy.layout_of(zip_path)
             except Exception:
                 layout = None
-            if layout is None:
-                catalog.set_tidy(dictionary_id, "")
+            if layout is None and not zip_path.with_name("original.zip").exists():
+                catalog.set_tidy(dictionary_id, tidy.stamp(None))
             else:
                 catalog.set_status(dictionary_id, "waiting")
                 jobs.put(dictionary_id)

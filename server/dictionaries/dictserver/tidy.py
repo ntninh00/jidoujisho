@@ -30,9 +30,27 @@ from pathlib import Path
 
 from .checks import BANK
 
+# The rules below, numbered: a dictionary laid out by older ones is laid out
+# again from its original when the server starts.
+VERSION = 3
 # Marks the revision of a rewritten dictionary, so copies installed before
 # show as out of date.
-REVISION_SUFFIX = "+jdj1"
+REVISION_SUFFIX = f"+jdj{VERSION}"
+_SUFFIX = re.compile(r"\+jdj\d+$")
+
+
+def stamp(layout: str | None) -> str:
+    """What the catalog records: the layout, or `none`, and the rules' number."""
+    return f"{layout or 'none'}@{VERSION}"
+
+
+def is_current(recorded: str | None) -> bool:
+    return recorded is not None and recorded.endswith(f"@{VERSION}")
+
+
+def base_revision(revision: str) -> str:
+    """The revision a dictionary was uploaded as."""
+    return _SUFFIX.sub("", revision)
 
 _VIETNAMESE_ONLY = set("ăđơưĂĐƠƯ") | {chr(code) for code in range(0x1EA0, 0x1EFA)}
 _PLACEHOLDER = re.compile(r"^\?+$")
@@ -77,6 +95,12 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
 [data-sc-jdj="via"] {
   font-style: italic;
 }
+[data-sc-jdj="note"] {
+  font-size: 0.9em;
+  color: color-mix(in srgb, var(--text-color) 62%, var(--background-color));
+  margin-top: 0.1em;
+  margin-bottom: 0.2em;
+}
 """
 
 
@@ -90,6 +114,8 @@ class Example:
 class Sense:
     gloss: str
     examples: list[Example] = field(default_factory=list)
+    # Explanations of the meaning, set apart from it.
+    notes: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -132,6 +158,13 @@ class _Builder:
             section.senses.append(Sense(""))
         section.senses[-1].examples.append(example)
 
+    def note(self, text: str) -> None:
+        """An explanation of the meaning above."""
+        section = self._current()
+        if not section.senses:
+            section.senses.append(Sense(""))
+        section.senses[-1].notes.append(text)
+
     def last_example(self) -> Example | None:
         if self.body.sections and self.body.sections[-1].senses:
             examples = self.body.sections[-1].senses[-1].examples
@@ -149,7 +182,9 @@ class _Builder:
 
     def finish(self) -> Body:
         for section in self.body.sections:
-            section.senses = [sense for sense in section.senses if sense.gloss or sense.examples]
+            section.senses = [
+                sense for sense in section.senses if sense.gloss or sense.examples or sense.notes
+            ]
         self.body.sections = [
             section for section in self.body.sections if section.senses or section.kind == "idiom"
         ]
@@ -306,16 +341,25 @@ def _english_tail(text: str, vocabulary: set[str], term: str) -> int | None:
     return None
 
 
-def _prodict_segment(segment: str, vocabulary: set[str], term: str) -> tuple[str, list[Example]]:
+def _prodict_segment(
+    segment: str, vocabulary: set[str], term: str
+) -> tuple[str, list[Example], str | None]:
     """A meaning and the phrases run on after it:
     `hãngbusiness house: hãng buônhouse flag: cờ hãng` is `hãng` with
-    `business house` (hãng buôn) and `house flag` (cờ hãng)."""
+    `business house` (hãng buôn) and `house flag` (cờ hãng). A phrase run on
+    at the very end has its translation in the next part, after a no-break
+    space instead of a colon; it comes back on its own."""
     pieces = segment.split(": ")
+    trailing = None
+    at = _english_tail(pieces[-1], vocabulary, term)
+    if at:
+        trailing = pieces[-1][at:].strip()
+        pieces[-1] = pieces[-1][:at]
     if len(pieces) == 1:
-        return segment, []
+        return pieces[0].strip(), [], trailing
     at = _english_tail(pieces[0], vocabulary, term)
     if at is None:
-        return segment, []
+        return ": ".join(pieces).strip(), [], trailing
     gloss, phrase = pieces[0][:at].strip(), pieces[0][at:].strip()
     examples = []
     for piece in pieces[1:-1]:
@@ -328,29 +372,48 @@ def _prodict_segment(segment: str, vocabulary: set[str], term: str) -> tuple[str
         examples.append(Example(phrase, piece[:at].strip()))
         phrase = piece[at:].strip()
     examples.append(Example(phrase, pieces[-1].strip()))
-    return gloss, examples
+    return gloss, examples, trailing
 
 
 def parse_prodict(definitions: list[str], term: str, vocabulary: set[str] | None = None) -> Body:
     """Prodict marks lines with codes: `1` repeats the headword and `4` gives
     the field, then its meanings separated by no-break spaces. Phrases with
     their translations run straight on after a meaning, with nothing between
-    one translation and the next phrase."""
+    one translation and the next phrase, and so do a further field
+    (`Lĩnh vực:`) and an explanation (`Giải thích VN:`, `Giải thích EN:`)."""
     vocabulary = vocabulary or set()
     builder = _Builder()
     for definition in definitions:
         for code, text in re.findall(r"`(\d+)`([^`]*)", definition):
             if code == "1":
                 continue
+            text = re.sub(r"(Lĩnh vực:|Giải thích (?:VN|EN):)", "\xa0\\1", text)
             parts = [part.strip() for part in text.split("\xa0") if part.strip()]
-            if parts and parts[0].startswith("Lĩnh vực:"):
-                builder.section(parts.pop(0).removeprefix("Lĩnh vực:").strip(), "domain")
+            # A phrase whose translation is the next part.
+            pending: str | None = None
             for part in parts:
-                gloss, examples = _prodict_segment(part, vocabulary, term)
-                if gloss:
-                    builder.sense(gloss)
+                label = part.startswith(("Lĩnh vực:", "Giải thích VN:", "Giải thích EN:"))
+                if pending is not None and label:
+                    builder.example(Example(pending))
+                    pending = None
+                if part.startswith("Lĩnh vực:"):
+                    builder.section(part.removeprefix("Lĩnh vực:").strip(), "domain")
+                    continue
+                explanation = re.match(r"^Giải thích (?:VN|EN):\s*(.*)$", part, re.S)
+                if explanation:
+                    if explanation.group(1).strip():
+                        builder.note(explanation.group(1).strip())
+                    continue
+                lead, examples, trailing = _prodict_segment(part, vocabulary, term)
+                if pending is not None:
+                    builder.example(Example(pending, lead))
+                elif lead:
+                    builder.sense(lead)
                 for example in examples:
                     builder.example(example)
+                pending = trailing
+            if pending is not None:
+                builder.example(Example(pending))
     return builder.finish()
 
 
@@ -386,6 +449,8 @@ def to_structured(body: Body) -> dict | None:
             item: list = []
             if sense.gloss:
                 item.append(_node("div", "gloss", _gloss(sense.gloss)))
+            for note in sense.notes:
+                item.append(_node("div", "note", note))
             if sense.examples:
                 item.append(_node("ul", "examples", [
                     {"tag": "li", "content": [
@@ -484,20 +549,32 @@ def _vocabulary(archive: zipfile.ZipFile) -> set[str]:
     return words
 
 
+def _original(zip_path: Path) -> Path:
+    """The file as uploaded: kept beside a dictionary that was rewritten."""
+    original = zip_path.with_name("original.zip")
+    return original if original.exists() else zip_path
+
+
 def layout_of(zip_path: Path) -> str | None:
-    with zipfile.ZipFile(zip_path) as archive:
+    with zipfile.ZipFile(_original(zip_path)) as archive:
         return detect(_sample_rows(archive))
 
 
-def apply(zip_path: Path) -> str | None:
-    """Rewrites the dictionary at [zip_path] when its definitions have a
-    layout this understands, keeping the original beside it as
-    `original.zip`. Returns the layout, or None when nothing was done."""
+def apply(zip_path: Path) -> tuple[str | None, bool]:
+    """Rewrites the dictionary at [zip_path] from the file as uploaded when
+    its definitions have a layout this understands, keeping that file
+    beside it as `original.zip`. Returns the layout, or None, and whether
+    [zip_path] changed."""
+    original = zip_path.with_name("original.zip")
     layout = layout_of(zip_path)
     if layout is None:
-        return None
+        if original.exists():
+            # The rules no longer apply: back to the file as uploaded.
+            shutil.move(original, zip_path)
+            return None, True
+        return None, False
     temp = zip_path.with_name("tidy.zip")
-    with zipfile.ZipFile(zip_path) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
+    with zipfile.ZipFile(_original(zip_path)) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
         names = set(source.namelist())
         vocabulary = _vocabulary(source) if layout == "prodict" else None
         for info in source.infolist():
@@ -509,14 +586,14 @@ def apply(zip_path: Path) -> str | None:
                 data = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode()
             elif info.filename == "index.json":
                 index = json.loads(data.decode("utf-8-sig"))
-                index["revision"] = f"{index.get('revision', '')}{REVISION_SUFFIX}"
+                index["revision"] = f"{base_revision(str(index.get('revision', '')))}{REVISION_SUFFIX}"
                 data = json.dumps(index, ensure_ascii=False, indent=2).encode()
             elif info.filename == "styles.css":
                 data = data + b"\n" + STYLES.encode()
             target.writestr(info.filename, data)
         if "styles.css" not in names:
             target.writestr("styles.css", STYLES)
-    original = zip_path.with_name("original.zip")
-    shutil.move(zip_path, original)
+    if not original.exists():
+        shutil.move(zip_path, original)
     shutil.move(temp, zip_path)
-    return layout
+    return layout, True

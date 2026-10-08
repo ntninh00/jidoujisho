@@ -127,6 +127,39 @@ def test_prodict_phrases_are_pulled_apart():
     assert field.sections[0].senses[0].gloss == "giao thức nặc danh"
 
 
+def test_prodict_fields_and_explanations_run_on_too():
+    wiring = tidy.parse_prodict([
+        "`1`house wiring\n`4`Lĩnh vực: xây dựng\xa0điện nhàsymbols, house wiring: các ký hiệu điện "
+        "nhàLĩnh vực: điện\xa0hệ thống điện nhàGiải thích VN: Hệ thống điện mắc trong nhà.\xa0"
+        "mạng điện gia dụng"
+    ], "house wiring", {"symbols", "house", "wiring"})
+    assert [section.label for section in wiring.sections] == ["xây dựng", "điện"]
+    building, electrical = wiring.sections
+    assert building.senses[0].gloss == "điện nhà"
+    assert [(e.text, e.translation) for e in building.senses[0].examples] == [
+        ("symbols, house wiring", "các ký hiệu điện nhà")
+    ]
+    assert [sense.gloss for sense in electrical.senses] == ["hệ thống điện nhà", "mạng điện gia dụng"]
+    assert electrical.senses[0].notes == ["Hệ thống điện mắc trong nhà."]
+
+    keeping = tidy.parse_prodict([
+        "`1`housekeeping\n`4`Lĩnh vực: toán & tin\xa0housekeepingGiải thích VN: Để chỉ các tiện ích."
+        "\xa0nội dịchhousekeeping instruction: lệnh nội dịchhousekeeping data\xa0thông tin giữ nhà"
+        "housekeeping maintenance\xa0sự bảo dưỡng thường xuyên"
+    ], "housekeeping", {"housekeeping", "instruction", "data", "maintenance"})
+    first, second = keeping.sections[0].senses
+    assert (first.gloss, first.notes) == ("housekeeping", ["Để chỉ các tiện ích."])
+    assert second.gloss == "nội dịch"
+    # Phrases whose translation comes after a no-break space.
+    assert [(e.text, e.translation) for e in second.examples] == [
+        ("housekeeping instruction", "lệnh nội dịch"),
+        ("housekeeping data", "thông tin giữ nhà"),
+        ("housekeeping maintenance", "sự bảo dưỡng thường xuyên"),
+    ]
+    laid_out = texts(tidy.to_structured(keeping))
+    assert ("note", "Để chỉ các tiện ích.") in laid_out
+
+
 def test_only_vietnamese_dictionaries_with_markup_are_laid_out():
     def row(text):
         return ["house", "", "", "", 0, [text], 0, ""]
@@ -161,7 +194,7 @@ def test_uploads_with_markup_are_laid_out_and_kept(client, settings):
     response = upload(client, ovdp_zip())
     entry = ready(client, response.json()["id"])
     assert entry["status"] == "ready", entry["error"]
-    assert entry["tidy"] == "markup"
+    assert entry["tidy"] == tidy.stamp("markup")
     assert entry["revision"] == "1" + tidy.REVISION_SUFFIX
     folder = settings.dictionaries_dir / entry["id"]
     assert (folder / "original.zip").exists()
@@ -189,26 +222,36 @@ def test_dictionaries_from_before_are_laid_out_once(settings):
             "index.json": {"title": "Plain", "revision": "1", "format": 3},
             "term_bank_1.json": [["cat", "", "", "", 0, ["a small animal"], 0, ""]],
         }))
-        assert plain["tidy"] == ""
+        assert plain["tidy"] == tidy.stamp(None)
         app = client.app
         entry = added(client, ovdp_zip("7"))
-        assert entry["tidy"] == "markup"
+        assert entry["tidy"] == tidy.stamp("markup")
         # As a catalog from before laying out existed would have it.
         catalog = app.state.catalog
         folder = settings.dictionaries_dir / entry["id"]
         (folder / "original.zip").replace(folder / "dictionary.zip")
         catalog.set_tidy(entry["id"], None, "7")
+        # And one laid out by older rules.
+        older = added(client, make_zip({
+            "index.json": {"title": "Older", "revision": "3", "format": 3},
+            "term_bank_1.json": [["house", "", "", "", 0, [OVDP_HOUSE], 0, ""]] * 30,
+        }))
+        catalog.set_tidy(older["id"], "markup@1", "3+jdj1")
 
     with TestClient(create_app(settings)) as client:
         import time
 
         # Looked at in the background, then indexed again.
-        for _ in range(100):
+        for _ in range(200):
             again = client.get(f"/api/dictionaries/{entry['id']}", headers=auth(ADMIN)).json()
-            if again["tidy"] == "markup" and again["status"] == "ready":
+            relaid = client.get(f"/api/dictionaries/{older['id']}", headers=auth(ADMIN)).json()
+            if again["tidy"] == tidy.stamp("markup") and again["status"] == "ready" and tidy.is_current(relaid["tidy"]) and relaid["status"] == "ready":
                 break
             time.sleep(0.05)
         assert again["status"] == "ready"
-        assert again["tidy"] == "markup"
+        assert again["tidy"] == tidy.stamp("markup")
         assert again["revision"] == "7" + tidy.REVISION_SUFFIX
-        assert client.get(f"/api/dictionaries/{plain['id']}", headers=auth(ADMIN)).json()["tidy"] == ""
+        # Laid out again from the original, not from the older layout.
+        assert relaid["revision"] == "3" + tidy.REVISION_SUFFIX
+        assert relaid["status"] == "ready"
+        assert client.get(f"/api/dictionaries/{plain['id']}", headers=auth(ADMIN)).json()["tidy"] == tidy.stamp(None)
