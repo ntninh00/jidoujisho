@@ -56,7 +56,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from . import config, indexer, search
+from . import config, indexer, search, tidy
 from .checks import LANGUAGE, MEDIA_TYPES, Limits, Rejected, check_zip
 from .store import Catalog
 from .strings import CODE, Invalid, Strings
@@ -144,6 +144,8 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         zip_path = catalog.zip_path(dictionary_id)
         try:
             checked = check_zip(str(zip_path), limits)
+            if catalog.get(dictionary_id)["tidy"] is None:
+                checked = lay_out(dictionary_id, zip_path) or checked
             summary = indexer.build(str(zip_path), str(catalog.search_path(dictionary_id)), checked)
             if catalog.get(dictionary_id) is None:
                 return
@@ -156,6 +158,44 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         except Exception:
             traceback.print_exc()
             catalog.set_status(dictionary_id, "failed", "Indexing stopped with an unexpected error.")
+
+    def lay_out(dictionary_id: str, zip_path: Path) -> "Checked | None":
+        """Lays out a dictionary whose definitions are text with markup in
+        it; see tidy.py. Returns the rewritten file's check, or None when it
+        was left as it is. A dictionary it can't rewrite stays as uploaded."""
+        try:
+            layout = tidy.apply(zip_path)
+        except Exception:
+            traceback.print_exc()
+            layout = None
+        if layout is None:
+            catalog.set_tidy(dictionary_id, "")
+            return None
+        with zipfile.ZipFile(zip_path) as archive:
+            index = json.loads(archive.read("index.json").decode("utf-8-sig"))
+        digest = hashlib.sha256()
+        with open(zip_path, "rb") as file:
+            for chunk in iter(lambda: file.read(1 << 20), b""):
+                digest.update(chunk)
+        catalog.set_tidy(
+            dictionary_id, layout, index.get("revision"), zip_path.stat().st_size, digest.hexdigest()
+        )
+        return check_zip(str(zip_path), limits)
+
+    def look_at_untidied() -> None:
+        """Dictionaries from before laying out existed are looked at once,
+        in the background, and those with text to lay out are indexed
+        again."""
+        for dictionary_id in catalog.untidied():
+            try:
+                layout = tidy.layout_of(catalog.zip_path(dictionary_id))
+            except Exception:
+                layout = None
+            if layout is None:
+                catalog.set_tidy(dictionary_id, "")
+            else:
+                catalog.set_status(dictionary_id, "waiting")
+                jobs.put(dictionary_id)
 
     def worker() -> None:
         while True:
@@ -172,6 +212,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             jobs.put(dictionary_id)
         thread = threading.Thread(target=worker, name="indexer", daemon=True)
         thread.start()
+        threading.Thread(target=look_at_untidied, name="tidy-scan", daemon=True).start()
         yield
         jobs.put(None)
 

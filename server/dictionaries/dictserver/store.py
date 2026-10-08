@@ -8,6 +8,8 @@ import threading
 import time
 from pathlib import Path
 
+from .tidy import REVISION_SUFFIX
+
 # waiting -> indexing -> ready, or failed with an error the uploader can read.
 STATUSES = ("waiting", "indexing", "ready", "failed")
 
@@ -43,12 +45,13 @@ class Catalog:
                     error TEXT,
                     note TEXT,
                     replaces TEXT,
-                    notes TEXT NOT NULL DEFAULT '{}'
+                    notes TEXT NOT NULL DEFAULT '{}',
+                    tidy TEXT
                 )"""
             )
             # Catalogs from before these columns get them.
             columns = {row["name"] for row in db.execute("PRAGMA table_info(dictionaries)")}
-            for column in ("note", "replaces"):
+            for column in ("note", "replaces", "tidy"):
                 if column not in columns:
                     db.execute(f"ALTER TABLE dictionaries ADD COLUMN {column} TEXT")
             if "notes" not in columns:
@@ -89,6 +92,9 @@ class Catalog:
             "description": row["description"],
             "attribution": row["attribution"],
             "notes": notes,
+            # How its text definitions were laid out (see tidy.py): None
+            # before it was looked at, "" when they were left as they are.
+            "tidy": row["tidy"],
             # For apps from before descriptions had languages, which were
             # all in English.
             "note": notes.get("en"),
@@ -137,12 +143,13 @@ class Catalog:
 
     def find(self, title: str, revision: str) -> dict | None:
         """The dictionary with this title and revision, not counting one
-        still on its way to replace it."""
+        still on its way to replace it. A dictionary laid out here counts as
+        the revision it was uploaded as."""
         with self._connect() as db:
             row = db.execute(
-                """SELECT * FROM dictionaries WHERE title = ? AND revision = ?
+                """SELECT * FROM dictionaries WHERE title = ? AND revision IN (?, ?)
                    ORDER BY replaces IS NOT NULL, uploaded_at LIMIT 1""",
-                (title, revision),
+                (title, revision, revision + REVISION_SUFFIX),
             ).fetchone()
         return self._public(row) if row else None
 
@@ -203,11 +210,14 @@ class Catalog:
             guessed = (row["source_language"] is None and source is not None) or (
                 row["target_language"] is None and target is not None
             )
+            # Indexed again, a dictionary keeps whether its labels were
+            # checked.
             db.execute(
                 """UPDATE dictionaries SET kinds = ?, counts = ?,
                    source_language = COALESCE(source_language, ?),
                    target_language = COALESCE(target_language, ?),
-                   languages_guessed = ?, status = 'ready', error = NULL
+                   languages_guessed = CASE WHEN ? THEN 1 ELSE languages_guessed END,
+                   status = 'ready', error = NULL
                    WHERE id = ?""",
                 (json.dumps(kinds), json.dumps(counts), source, target, int(guessed), dictionary_id),
             )
@@ -223,6 +233,25 @@ class Catalog:
                 (source, target, dictionary_id),
             )
         return self.get(dictionary_id)
+
+    def set_tidy(self, dictionary_id: str, layout: str, revision: str | None = None,
+                 size: int | None = None, sha256: str | None = None) -> None:
+        """Records how the dictionary's text was laid out, and the file that
+        came of it when it was rewritten."""
+        with self._lock, self._connect() as db:
+            db.execute(
+                """UPDATE dictionaries SET tidy = ?, revision = COALESCE(?, revision),
+                   size = COALESCE(?, size), sha256 = COALESCE(?, sha256) WHERE id = ?""",
+                (layout, revision, size, sha256, dictionary_id),
+            )
+
+    def untidied(self) -> list[str]:
+        """Ready dictionaries whose text has not been looked at yet."""
+        with self._connect() as db:
+            rows = db.execute(
+                "SELECT id FROM dictionaries WHERE status = 'ready' AND tidy IS NULL"
+            ).fetchall()
+        return [row["id"] for row in rows]
 
     def set_notes(self, dictionary_id: str, changes: dict[str, str | None]) -> dict | None:
         """The admin's own descriptions, one per app language and kept apart
