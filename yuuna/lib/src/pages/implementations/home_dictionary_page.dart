@@ -410,8 +410,10 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     }
     return MeaningHighlight(
       words: meaningWordsOfText(_result!.searchTerm),
-      color: theme.colorScheme.primary
-          .withOpacity(appModel.isDarkMode ? 0.45 : 0.28),
+      color: meaningHighlightColor(
+        theme.colorScheme.primary,
+        dark: appModel.isDarkMode,
+      ),
       child: page,
     );
   }
