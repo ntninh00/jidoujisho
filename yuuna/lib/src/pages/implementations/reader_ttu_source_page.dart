@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' show FontFeature;
+import 'dart:ui' as ui;
 
 import 'package:collection/collection.dart';
 import 'package:document_file_save_plus/document_file_save_plus.dart';
@@ -89,6 +90,15 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
   bool _chipPending = false;
   bool _leaving = false;
   int _lookupSerial = 0;
+
+  /// A picture of the page, shown in place of the WebView while the book
+  /// closes. Android draws a live WebView again for every frame of the
+  /// route's animation, which stutters; a picture animates smoothly.
+  ui.Image? _still;
+
+  /// The screen as it was when the book began to close. The system bars
+  /// coming back must not resize the page during the animation.
+  MediaQueryData? _frozenMedia;
 
   /// The visit ended: the reader went back to their own place, or chose a
   /// chapter to read from.
@@ -212,6 +222,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _backChip.dispose();
     _searchAt.dispose();
     _focusNode.dispose();
+    _still?.dispose();
     super.dispose();
   }
 
@@ -289,6 +300,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     }
     _leaving = true;
 
+    Future<void> still = _showStill();
     TtuPosition? saved;
     TtuPosition? kept = _keptPlace;
     bool keptPlace = kept != null;
@@ -299,6 +311,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       saved = await _savePosition()
           .timeout(const Duration(milliseconds: 1500), onTimeout: () => null);
     }
+    await still;
 
     await onSourcePagePop();
     if (!mounted) {
@@ -329,6 +342,44 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       );
     }
     return true;
+  }
+
+  /// Puts a picture of the page in place of the WebView, for the book to
+  /// close smoothly. Without one, the WebView stays.
+  Future<void> _showStill() async {
+    InAppWebViewController? controller = _controller;
+    if (controller == null) {
+      return;
+    }
+    try {
+      Uint8List? bytes = await controller
+          .takeScreenshot(
+            screenshotConfiguration: ScreenshotConfiguration(
+              compressFormat: CompressFormat.JPEG,
+              quality: 90,
+            ),
+          )
+          .timeout(const Duration(milliseconds: 800));
+      if (bytes == null || !mounted) {
+        return;
+      }
+      ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      ui.Image image = (await codec.getNextFrame()).image;
+      codec.dispose();
+      if (!mounted) {
+        image.dispose();
+        return;
+      }
+      setState(() {
+        _frozenMedia = MediaQuery.of(context);
+        _still = image;
+      });
+      // Android takes a frame to stop showing the WebView.
+      await WidgetsBinding.instance.endOfFrame;
+      await WidgetsBinding.instance.endOfFrame;
+    } catch (error) {
+      debugPrint('Could not take a picture of the page: $error');
+    }
   }
 
   /// Puts ッツ's saved place back to where the reader was before this visit
@@ -479,25 +530,28 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         onWillPop: onWillPop,
         child: AnnotatedRegion<SystemUiOverlayStyle>(
           value: _systemBarStyle,
-          child: Scaffold(
-            backgroundColor:
-                mediaSource.fullScreen ? Colors.black : _pageColors[0],
-            resizeToAvoidBottomInset: false,
-            body: SafeArea(
-              top: !mediaSource.fullScreen ||
-                  !mediaSource.extendPageBeyondNavigationBar,
-              bottom: !mediaSource.fullScreen,
-              child: Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: <Widget>[
-                  buildBody(),
-                  buildMenu(),
-                  buildDictionary(),
-                  if (_maskBuilt) buildMask(),
-                  buildBackChip(),
-                  buildSearchBar(),
-                ],
+          child: MediaQuery(
+            data: _frozenMedia ?? MediaQuery.of(context),
+            child: Scaffold(
+              backgroundColor:
+                  mediaSource.fullScreen ? Colors.black : _pageColors[0],
+              resizeToAvoidBottomInset: false,
+              body: SafeArea(
+                top: !mediaSource.fullScreen ||
+                    !mediaSource.extendPageBeyondNavigationBar,
+                bottom: !mediaSource.fullScreen,
+                child: Stack(
+                  fit: StackFit.expand,
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    buildBody(),
+                    buildMenu(),
+                    buildDictionary(),
+                    if (_maskBuilt) buildMask(),
+                    buildBackChip(),
+                    buildSearchBar(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -1542,6 +1596,20 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         widget.item?.mediaIdentifier ??
         'http://localhost:${server.boundPort}/manage.html';
 
+    ui.Image? still = _still;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Offstage(
+          offstage: still != null,
+          child: buildWebView(initialUrl),
+        ),
+        if (still != null) RawImage(image: still, fit: BoxFit.fill),
+      ],
+    );
+  }
+
+  Widget buildWebView(String initialUrl) {
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(initialUrl)),
       initialUserScripts: UnmodifiableListView<UserScript>([
