@@ -334,9 +334,14 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
               if (progress == null) {
                 return const SizedBox.shrink();
               }
+
+              /// Its own colours: the dark theme's surfaces are light.
+              bool dark = appModel.isDarkMode;
               return Center(
                 child: Material(
-                  color: theme.colorScheme.surfaceVariant,
+                  color: dark
+                      ? const Color.fromARGB(255, 52, 52, 56)
+                      : const Color.fromARGB(255, 232, 232, 236),
                   shape: const StadiumBorder(),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -347,7 +352,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
                       t.meaning_index_progress(
                         percent: (progress * 100).floor(),
                       ),
-                      style: textTheme.bodySmall,
+                      style: textTheme.bodySmall!.copyWith(
+                        color: dark ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
                 ),
