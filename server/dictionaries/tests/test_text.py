@@ -35,6 +35,24 @@ def test_definition_languages(samples, language):
     assert guess_text_language(samples) == language
 
 
+# A Wiktionary German-Vietnamese dictionary: most entries are inflected forms
+# explained in English, the rest in Vietnamese.
+GERMAN_VIETNAMESE = ["abmagern future future-i infinitive"] * 18 + ["gầy đi, sụt cân"] * 2
+
+
+@pytest.mark.parametrize("samples, source, language", [
+    (GERMAN_VIETNAMESE, "de", "vi"),
+    # Without knowing the words aren't Vietnamese, it reads as English.
+    (GERMAN_VIETNAMESE, None, "en"),
+    # A Vietnamese-English dictionary quoting Vietnamese stays English.
+    (["house; home; domicile", "Săn sóc tại nhà", "Domiciliary care", "To read a letter"], "vi", "en"),
+    # Japanese-English with no Vietnamese at all.
+    (["a cat; puss(y)", "sensitive to hot food"], "ja", "en"),
+])
+def test_definitions_of_another_language_in_vietnamese(samples, source, language):
+    assert guess_text_language(samples, source) == language
+
+
 def test_a_pack_of_dictionaries_is_explained(tmp_path):
     path = tmp_path / "pack.zip"
     path.write_bytes(make_zip({"pack/readme.txt": b"hi", "pack/dict-a.zip": b"x", "pack/dict-b.zip": b"y"}))

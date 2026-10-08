@@ -52,6 +52,11 @@ _WORD = re.compile(r"[^\W\d_]+")
 # Vietnamese examples sit near 0.4.
 _VIETNAMESE_TERMS = 0.3
 _VIETNAMESE_TEXT = 0.6
+# Share of definitions with Vietnamese letters above which a dictionary of
+# another language's words explains them in Vietnamese. Wiktionary exports
+# explain most entries, the inflected forms, in English, so the share of
+# words alone can sit as low as 0.15 in a German-Vietnamese dictionary.
+_VIETNAMESE_ENTRIES = 0.05
 
 _NAMES = {
     "japanese": "ja",
@@ -134,10 +139,16 @@ def guess_term_language(samples: list[str]) -> str | None:
     return _majority(counts, samples, _VIETNAMESE_TERMS)
 
 
-def guess_text_language(samples: list[str]) -> str | None:
+def guess_text_language(samples: list[str], source: str | None = None) -> str | None:
     """The language definitions are written in: the script most of the text
     uses, so English definitions quoting Japanese examples count as
-    English. Kanji with kana around them are Japanese."""
+    English. Kanji with kana around them are Japanese. When the words are
+    not Vietnamese ([source]), Vietnamese in a real share of definitions
+    means they are explained in Vietnamese."""
+    if source not in (None, "vi") and samples:
+        with_vietnamese = sum(any(ch in _VIETNAMESE_ONLY for ch in sample) for sample in samples)
+        if with_vietnamese / len(samples) >= _VIETNAMESE_ENTRIES:
+            return "vi"
     counts = _scripts(samples)
     if counts["kana"]:
         counts["japanese"] = counts.pop("kana") + counts.pop("han", 0)

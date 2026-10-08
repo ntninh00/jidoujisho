@@ -7,6 +7,7 @@ clients only ever see one shape.
 
 import json
 import os
+import random
 import sqlite3
 import zipfile
 from dataclasses import dataclass, field
@@ -97,6 +98,33 @@ def _tag_row(row: list) -> list | None:
     return row[:5]
 
 
+class _Sample:
+    """Up to [size] items spread over all that is offered, so a dictionary
+    whose first banks differ from the rest is judged on all of it."""
+
+    def __init__(self, size: int) -> None:
+        self.size = size
+        self.items: list[str] = []
+        self._seen = 0
+        self._random = random.Random(0)
+
+    def offer(self, make) -> None:
+        """Takes [make]'s item if it is chosen; [make] runs only then."""
+        self._seen += 1
+        if len(self.items) < self.size:
+            self.items.append(make())
+            return
+        slot = self._random.randrange(self._seen)
+        if slot < self.size:
+            self.items[slot] = make()
+
+
+def _plain(content: object) -> str:
+    text: list[str] = []
+    plain_text(content, text, 200)
+    return " ".join(text)
+
+
 def build(zip_path: str, out_path: str, checked: Checked) -> Summary:
     """Writes the search database to [out_path], or raises [Rejected]."""
     temp_path = out_path + ".building"
@@ -105,8 +133,8 @@ def build(zip_path: str, out_path: str, checked: Checked) -> Summary:
     summary = Summary()
     counts = {"terms": 0, "kanji": 0, "termMeta": 0, "kanjiMeta": 0, "tags": 0, "media": len(checked.media)}
     meta_modes: set[str] = set()
-    term_samples: list[str] = []
-    gloss_samples: list[str] = []
+    term_samples = _Sample(3000)
+    gloss_samples = _Sample(1500)
     version = checked.index["format"]
 
     db = sqlite3.connect(temp_path)
@@ -143,21 +171,15 @@ def build(zip_path: str, out_path: str, checked: Checked) -> Summary:
                                 (search_key(row[0]), search_key(row[1]), int(row[4]), _dump(row)),
                             )
                             counts["terms"] += 1
-                            if len(term_samples) < 3000:
-                                term_samples.append(row[0] + row[1])
-                            if len(gloss_samples) < 1500:
-                                text: list[str] = []
-                                plain_text(row[5], text, 200)
-                                gloss_samples.append(" ".join(text))
+                            term_samples.offer(lambda: row[0] + row[1])
+                            gloss_samples.offer(lambda: _plain(row[5]))
                     elif kind == "kanji":
                         row = _kanji_row(raw, version)
                         if row:
                             db.execute("INSERT INTO kanji VALUES (?, ?)", (row[0], _dump(row)))
                             counts["kanji"] += 1
-                            if len(term_samples) < 3000:
-                                term_samples.append(row[1] + row[2])
-                            if len(gloss_samples) < 1500:
-                                gloss_samples.append(" ".join(m for m in row[4] if isinstance(m, str)))
+                            term_samples.offer(lambda: row[1] + row[2])
+                            gloss_samples.offer(lambda: " ".join(m for m in row[4] if isinstance(m, str)))
                     elif kind in ("term_meta", "kanji_meta"):
                         row = _meta_row(raw)
                         if row:
@@ -168,10 +190,10 @@ def build(zip_path: str, out_path: str, checked: Checked) -> Summary:
                             )
                             counts["termMeta" if kind == "term_meta" else "kanjiMeta"] += 1
                             meta_modes.add(row[1])
-                            if kind == "term_meta" and len(term_samples) < 3000:
+                            if kind == "term_meta":
                                 # Frequency and pitch data often carry the reading.
                                 reading = row[2].get("reading") if isinstance(row[2], dict) else None
-                                term_samples.append(row[0] + (reading if isinstance(reading, str) else ""))
+                                term_samples.offer(lambda: row[0] + (reading if isinstance(reading, str) else ""))
                     else:
                         row = _tag_row(raw)
                         if row:
@@ -206,7 +228,7 @@ def build(zip_path: str, out_path: str, checked: Checked) -> Summary:
         kinds.append("ipa")
     summary.counts = counts
     summary.kinds = kinds
-    summary.source_language = guess_term_language(term_samples)
+    summary.source_language = guess_term_language(term_samples.items)
     if counts["terms"] or counts["kanji"]:
-        summary.target_language = guess_text_language(gloss_samples)
+        summary.target_language = guess_text_language(gloss_samples.items, summary.source_language)
     return summary

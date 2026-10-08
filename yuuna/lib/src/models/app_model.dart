@@ -680,9 +680,14 @@ class AppModel with ChangeNotifier {
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
         ),
-        snackBarTheme: const SnackBarThemeData(
+        // The dark colour scheme is the light one marked dark, which would
+        // draw snack bars black on black; give them their own colours.
+        snackBarTheme: SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
+          backgroundColor: const Color.fromARGB(255, 52, 52, 56),
+          contentTextStyle: textTheme.bodyMedium?.copyWith(color: Colors.white),
+          actionTextColor: accentColor,
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
         ),
