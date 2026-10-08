@@ -63,17 +63,25 @@ class TtuBook {
   String get key => '$port/$id';
 
   /// The same book, looked up in [language].
-  TtuBook withLanguage(Language language) {
+  TtuBook withLanguage(Language language) => copyWith(language: language);
+
+  /// The same book with the given details changed.
+  TtuBook copyWith({
+    Language? language,
+    int? lastBookOpen,
+    int? exploredCharCount,
+    double? progress,
+  }) {
     return TtuBook(
-      language: language,
+      language: language ?? this.language,
       port: port,
       id: id,
       title: title,
       characters: characters,
-      lastBookOpen: lastBookOpen,
+      lastBookOpen: lastBookOpen ?? this.lastBookOpen,
       lastBookModified: lastBookModified,
-      exploredCharCount: exploredCharCount,
-      progress: progress,
+      exploredCharCount: exploredCharCount ?? this.exploredCharCount,
+      progress: progress ?? this.progress,
       coverPath: coverPath,
     );
   }

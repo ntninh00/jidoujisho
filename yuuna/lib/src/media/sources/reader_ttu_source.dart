@@ -407,6 +407,40 @@ class ReaderTtuSource extends ReaderMediaSource {
   Future<void> get shelfSettled => _shelfSettled;
   Future<void> _shelfSettled = Future.value();
 
+  /// Books just closed, by key, with when they were closed and where the
+  /// reader left them. The shelf shows them that way at once, so it is
+  /// already in its new order as the book closes, instead of changing when
+  /// it is listed again afterwards.
+  final ValueNotifier<Map<String, (int, TtuPosition?)>> justRead =
+      ValueNotifier(const {});
+
+  /// Notes that [book] was just closed at [position].
+  void markJustRead(TtuBook book, TtuPosition? position) {
+    justRead.value = {
+      ...justRead.value,
+      book.key: (DateTime.now().millisecondsSinceEpoch, position),
+    };
+  }
+
+  /// [books] as they stand after [justRead], most recently opened first.
+  List<TtuBook> withJustRead(List<TtuBook> books) {
+    Map<String, (int, TtuPosition?)> read = justRead.value;
+    if (read.isEmpty) {
+      return books;
+    }
+    return [
+      for (TtuBook book in books)
+        if (read[book.key] case (int closedAt, TtuPosition? position))
+          book.copyWith(
+            lastBookOpen: closedAt,
+            exploredCharCount: position?.characters,
+            progress: position?.progress,
+          )
+        else
+          book,
+    ]..sort((a, b) => b.lastBookOpen.compareTo(a.lastBookOpen));
+  }
+
   /// Holds back listing the shelf until [animation], the route of a book
   /// being closed, has run back to the shelf.
   void holdShelfUntilClosed(Animation<double>? animation) {

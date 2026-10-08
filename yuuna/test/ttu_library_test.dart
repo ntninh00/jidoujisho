@@ -152,4 +152,35 @@ void main() {
     expect(ttuPercent(0.87), '87%');
     expect(ttuPercent(1), '100%');
   });
+
+  test('a book just closed leads the shelf with its new place at once', () {
+    TtuBook shelved(int id, int lastBookOpen, double progress) => TtuBook(
+          language: JapaneseLanguage.instance,
+          port: 52059,
+          id: id,
+          title: 'Book $id',
+          characters: 1000,
+          lastBookOpen: lastBookOpen,
+          lastBookModified: 0,
+          exploredCharCount: (progress * 1000).round(),
+          progress: progress,
+          coverPath: null,
+        );
+    ReaderTtuSource source = ReaderTtuSource.instance;
+    List<TtuBook> shelf = [shelved(1, 200, 0.3), shelved(2, 100, 0.1)];
+    expect(source.withJustRead(shelf).map((book) => book.id), [1, 2]);
+
+    source.markJustRead(
+        shelf[1], const TtuPosition(characters: 450, progress: 0.45));
+    List<TtuBook> after = source.withJustRead(shelf);
+    expect(after.map((book) => book.id), [2, 1]);
+    expect(after.first.progress, 0.45);
+    expect(after.first.exploredCharCount, 450);
+
+    // Closed without a saved place, only its order changes.
+    source.justRead.value = const {};
+    source.markJustRead(shelf[1], null);
+    expect(source.withJustRead(shelf).first.progress, 0.1);
+    source.justRead.value = const {};
+  });
 }

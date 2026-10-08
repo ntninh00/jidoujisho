@@ -167,43 +167,56 @@ class _ReaderTtuSourceHistoryPageState<T extends HistoryReaderPage>
     AsyncValue<List<TtuBook>> shelf = ref.watch(ttuShelfProvider);
     List<ReaderMemo> memos =
         ref.watch(ttuMemosProvider).valueOrNull ?? const <ReaderMemo>[];
+    // Once the shelf is listed again it shows the books just read as they
+    // are, so what was noted about them can go, after a frame of both.
+    ref.listen<AsyncValue<List<TtuBook>>>(ttuShelfProvider, (_, next) {
+      if (next is AsyncData && !next.isLoading) {
+        WidgetsBinding.instance
+            .addPostFrameCallback((_) => mediaSource.justRead.value = const {});
+      }
+    });
 
     return ValueListenableBuilder<Set<String>>(
       valueListenable: mediaSource.removedBooks,
       builder: (context, removed, _) => ValueListenableBuilder<List<String>>(
         valueListenable: mediaSource.importing,
-        builder: (context, importing, _) {
-          List<TtuBook>? books = shelf.valueOrNull
-              ?.where((book) => !removed.contains(book.key))
-              .toList();
+        builder: (context, importing, _) => ValueListenableBuilder(
+          valueListenable: mediaSource.justRead,
+          builder: (context, _, __) {
+            List<TtuBook>? listed = shelf.valueOrNull
+                ?.where((book) => !removed.contains(book.key))
+                .toList();
+            List<TtuBook>? books =
+                listed == null ? null : mediaSource.withJustRead(listed);
 
-          if (books == null) {
-            if (shelf.hasError) {
-              return buildShelfError(shelf.error);
-            }
-            return buildSkeleton();
-          }
-
-          if (_pulse.isAnimating) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                _pulse.stop();
+            if (books == null) {
+              if (shelf.hasError) {
+                return buildShelfError(shelf.error);
               }
-            });
-          }
+              return buildSkeleton();
+            }
 
-          if (books.isEmpty &&
-              importing.isEmpty &&
-              mediaSource.shelfErrors.length ==
-                  mediaSource.shelfLanguages.length) {
-            return buildShelfError(mediaSource.shelfErrors.values.first);
-          }
+            if (_pulse.isAnimating) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _pulse.stop();
+                }
+              });
+            }
 
-          return ValueListenableBuilder<int>(
-            valueListenable: mediaSource.shelfChanges,
-            builder: (context, _, __) => buildShelf(books, memos, importing),
-          );
-        },
+            if (books.isEmpty &&
+                importing.isEmpty &&
+                mediaSource.shelfErrors.length ==
+                    mediaSource.shelfLanguages.length) {
+              return buildShelfError(mediaSource.shelfErrors.values.first);
+            }
+
+            return ValueListenableBuilder<int>(
+              valueListenable: mediaSource.shelfChanges,
+              builder: (context, _, __) => buildShelf(books, memos, importing),
+            );
+          },
+        ),
       ),
     );
   }
