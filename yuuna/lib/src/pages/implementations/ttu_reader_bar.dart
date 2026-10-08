@@ -4,7 +4,8 @@ import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
 /// The bar at the top of the Reader tab when ッツ Ebook Reader is the source:
-/// a labelled source switcher, Add, and one settings button, all one height.
+/// a labelled source switcher and Add, one height. Its settings are under
+/// the gear at the top of the home page.
 class TtuReaderBar extends BasePage {
   /// Create the bar.
   const TtuReaderBar({super.key});
@@ -96,27 +97,6 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Material(
-              color: surface,
-              shape: const CircleBorder(),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => source.showSettings(
-                  context: context,
-                  appModel: appModelNoUpdate,
-                  ref: ref,
-                ),
-                child: Tooltip(
-                  message: t.ttu_reader_settings,
-                  child: const SizedBox(
-                    width: _height,
-                    height: _height,
-                    child: Icon(Ui.settings_outlined, size: 20),
                   ),
                 ),
               ),

@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 import 'package:network_to_file_image/network_to_file_image.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:subtitle/subtitle.dart';
@@ -270,23 +269,16 @@ abstract class PlayerMediaSource extends MediaSource {
     return audioFile;
   }
 
-  /// Open the [PlayerSettingsDialogPage].
-  Widget buildSettingsButton(
-      {required BuildContext context,
-      required WidgetRef ref,
-      required AppModel appModel}) {
-    return FloatingSearchBarAction(
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.settings,
-        icon: Ui.settings,
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => const PlayerSettingsDialogPage(),
-          );
-        },
-      ),
-    );
+  /// Opens the [PlayerSettingsDialogPage].
+  @override
+  VoidCallback? settingsAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+  }) {
+    return () => showDialog(
+          context: context,
+          builder: (context) => const PlayerSettingsDialogPage(),
+        );
   }
 }

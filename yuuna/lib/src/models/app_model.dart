@@ -46,6 +46,7 @@ import 'package:yuuna/utils.dart';
 final List<CollectionSchema> globalSchemas = [
   DictionarySchema,
   DictionaryEntrySchema,
+  DictionaryMeaningSchema,
   DictionaryHeadingSchema,
   DictionaryPitchSchema,
   DictionaryFrequencySchema,
@@ -1408,6 +1409,10 @@ class AppModel with ChangeNotifier {
     MyWords.rename(_database);
     await _removeUnfinishedImport();
 
+    /// Dictionaries from before searching by meaning get their words, once,
+    /// after the app has settled.
+    Future.delayed(const Duration(seconds: 5), _indexStoredMeanings);
+
     /// Preloads the search database in memory.
     searchDictionary(
       searchTerm: targetLanguage.helloWorld,
@@ -2254,6 +2259,7 @@ class AppModel with ChangeNotifier {
 
       /// Should the app be closed while entries are written, the next start
       /// removes what was written. See [_removeUnfinishedImport].
+      int entriesBefore = _highestEntryId;
       await _preferences.put(_importInProgress, id);
       try {
         await compute(depositDictionaryDataHelper, prepareDictionaryParams);
@@ -2261,6 +2267,7 @@ class AppModel with ChangeNotifier {
         await _preferences.delete(_importInProgress);
       }
       removeImportLeftovers(resourceDirectory);
+      _indexMeanings(after: entriesBefore);
 
       if (updating) {
         progressNotifier.value = t.import_replacing(name: name);
@@ -2554,6 +2561,80 @@ class AppModel with ChangeNotifier {
         .toList();
   }
 
+  /// Whether the Dictionary tab finds words by what they mean.
+  bool get searchByMeaning =>
+      _preferences.get('search_by_meaning', defaultValue: false);
+
+  /// Switches [searchByMeaning].
+  Future<void> toggleSearchByMeaning() async {
+    await _preferences.put('search_by_meaning', !searchByMeaning);
+  }
+
+  /// How far entries are in getting their meaning words, from 0 to 1, while
+  /// they are; null otherwise. Searching by meaning finds only what has
+  /// them.
+  final ValueNotifier<double?> meaningIndexProgress = ValueNotifier(null);
+
+  /// Entries up to this id, stored before searching by meaning, have their
+  /// words; or -1 once all of them do.
+  static const String _storedMeaningsThrough = 'stored_meanings_through';
+
+  int get _highestEntryId =>
+      _database.dictionaryEntrys
+          .where(sort: Sort.desc)
+          .anyId()
+          .idProperty()
+          .findFirstSync() ??
+      0;
+
+  /// Meaning words are found one batch of entries at a time, one dictionary
+  /// after another.
+  Future<void> _meaningJobs = Future.value();
+
+  /// Gives the entries stored before searching by meaning their words, in
+  /// the background, picking up where it stopped if the app was closed.
+  void _indexStoredMeanings() {
+    int through = _preferences.get(_storedMeaningsThrough, defaultValue: 0);
+    if (through >= 0) {
+      _indexMeanings(after: through, stored: true);
+    }
+  }
+
+  /// Gives the entries after [after] their meaning words. [stored] marks
+  /// the pass over entries from before searching by meaning.
+  void _indexMeanings({required int after, bool stored = false}) {
+    _meaningJobs = _meaningJobs.then((_) async {
+      ReceivePort port = ReceivePort();
+      port.listen((message) {
+        if (message is List && message.length == 2) {
+          if (stored) {
+            _preferences.put(_storedMeaningsThrough, message[0] as int);
+          }
+          meaningIndexProgress.value = (message[1] as num).toDouble();
+        }
+      });
+      try {
+        meaningIndexProgress.value = 0;
+        await compute(
+          indexMeaningsHelper,
+          IndexMeaningsParams(
+            directoryPath: _databaseDirectory.path,
+            after: after,
+            sendPort: port.sendPort,
+          ),
+        );
+        if (stored) {
+          await _preferences.put(_storedMeaningsThrough, -1);
+        }
+      } catch (error) {
+        debugPrint('Could not find meaning words: $error');
+      } finally {
+        port.close();
+        meaningIndexProgress.value = null;
+      }
+    });
+  }
+
   /// Searches the dictionaries on the search worker. Returns as soon as the
   /// headings are known; the result is stored for history afterwards, see
   /// [DictionarySearchResult.pendingId].
@@ -2561,12 +2642,15 @@ class AppModel with ChangeNotifier {
   /// Searches with the same [channel], such as rapid taps in the reader,
   /// replace each other while waiting. A replaced search returns an empty
   /// result that callers ignore because a newer search is on its way.
+  ///
+  /// With [byMeaning], words are found by what they mean instead.
   Future<DictionarySearchResult> searchDictionary({
     required String searchTerm,
     required bool searchWithWildcards,
     int? overrideMaximumTerms,
     bool useCache = true,
     String? channel,
+    bool byMeaning = false,
   }) async {
     searchTerm = searchTerm.replaceAll('\n', ' ');
 
@@ -2576,6 +2660,7 @@ class AppModel with ChangeNotifier {
         searchTerm.length > 40 ? searchTerm.substring(0, 40) : searchTerm;
     Language language = targetLanguage;
     String cacheKey = '${language.languageCode}/$searchWithWildcards/'
+        '${byMeaning ? 'meaning/' : ''}'
         '${overrideMaximumTerms ?? maximumTerms}/$cacheTerm';
 
     DictionarySearchResult? cached = _dictionarySearchCache.remove(cacheKey);
@@ -2607,7 +2692,10 @@ class AppModel with ChangeNotifier {
     }
 
     DictionarySearchFunction function = language.prepareSearchResults;
-    if (language is JapaneseLanguage && isLatinOnly(params.searchTerm)) {
+    if (byMeaning) {
+      function = prepareSearchResultsByMeaning;
+    } else if (language is JapaneseLanguage &&
+        isLatinOnly(params.searchTerm)) {
       function = prepareSearchResultsLatinForJapanese;
     }
 

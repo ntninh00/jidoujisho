@@ -133,11 +133,6 @@ class PlayerYoutubeSource extends PlayerMediaSource {
     required AppModel appModel,
   }) {
     return [
-      buildSettingsButton(
-        appModel: appModel,
-        context: context,
-        ref: ref,
-      ),
       buildTrendingButton(
         context: context,
         ref: ref,

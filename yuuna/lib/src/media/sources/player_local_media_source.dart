@@ -46,11 +46,6 @@ class PlayerLocalMediaSource extends PlayerMediaSource {
     required AppModel appModel,
   }) {
     return [
-      buildSettingsButton(
-        appModel: appModel,
-        context: context,
-        ref: ref,
-      ),
       buildPickVideoButton(
         context: context,
         ref: ref,

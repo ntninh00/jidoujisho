@@ -58,13 +58,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     }
   }
 
-  void _openMyWords() {
-    showTtuSheet<void>(
-      context: context,
-      builder: (_) => const MyWordsSheet(),
-    );
-  }
-
   bool get shouldPlaceholderBeShown => appModel.dictionaryHistory.isEmpty;
 
   /// The tab opens blank, with only the search bar; earlier results show
@@ -119,7 +112,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   Widget buildFloatingSearchBar() {
     return FloatingSearchBar(
       isScrollControlled: true,
-      hint: t.search_ellipsis,
+      hint: appModel.searchByMeaning
+          ? t.search_by_meaning_hint
+          : t.search_ellipsis,
       controller: mediaType.floatingSearchBarController,
       builder: buildFloatingSearchBody,
       borderRadius: BorderRadius.circular(24),
@@ -145,7 +140,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         buildBackButton(),
       ],
       actions: [
-        buildMoreButton(),
+        buildMeaningToggle(),
         buildSearchButton(),
       ],
     );
@@ -214,6 +209,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         searchWithWildcards: true,
         overrideMaximumTerms: maximumTerms,
         channel: 'dictionary_tab',
+        byMeaning: appModel.searchByMeaning,
       );
     } catch (error) {
       debugPrint('Dictionary search failed: $error');
@@ -261,57 +257,20 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  /// Settings, My terms and clearing history, in one labelled menu instead
-  /// of several unlabelled icons on the bar.
-  Widget buildMoreButton() {
+  /// Switches between finding words by how they are written and by what
+  /// they mean.
+  Widget buildMeaningToggle() {
     return FloatingSearchBarAction(
       showIfOpened: true,
-      child: PopupMenuButton<VoidCallback>(
-        tooltip: t.show_menu,
-        icon: Icon(
-          Ui.more_vert,
-          size: textTheme.titleLarge?.fontSize,
-        ),
-        onSelected: (action) => action(),
-        itemBuilder: (context) => [
-          PopupMenuItem<VoidCallback>(
-            value: _openMyWords,
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Ui.myWords),
-              title: Text(t.my_words),
-            ),
-          ),
-          PopupMenuItem<VoidCallback>(
-            value: _openDictionarySettings,
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Ui.settings),
-              title: Text(t.dictionary_settings),
-            ),
-          ),
-          const PopupMenuDivider(),
-          PopupMenuItem<VoidCallback>(
-            value: showDeleteSearchHistoryPrompt,
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Ui.manage_search),
-              title: Text(t.clear_search_title),
-            ),
-          ),
-          PopupMenuItem<VoidCallback>(
-            value: showDeleteDictionaryHistoryPrompt,
-            child: ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Ui.delete_sweep),
-              title: Text(t.clear_dictionary_title),
-            ),
-          ),
-        ],
+      child: MeaningSearchToggle(
+        on: appModel.searchByMeaning,
+        onPressed: () async {
+          await appModel.toggleSearchByMeaning();
+          if (mounted) {
+            setState(() {});
+            searchAgain();
+          }
+        },
       ),
     );
   }
@@ -351,106 +310,56 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  Widget buildSearchClearButton() {
-    return FloatingSearchBarAction(
-      showIfOpened: true,
-      showIfClosed: false,
-      child: JidoujishoIconButton(
-        size: textTheme.titleLarge?.fontSize,
-        tooltip: t.clear_search_title,
-        icon: Ui.manage_search,
-        onTap: showDeleteSearchHistoryPrompt,
-      ),
-    );
-  }
-
-  Future<void> _openDictionarySettings() async {
-    double oldFontSize = appModel.dictionaryFontSize;
-
-    await showDialog(
-      context: context,
-      builder: (context) => const DictionarySettingsDialogPage(),
-    );
-
-    if (appModel.dictionaryFontSize != oldFontSize) {
-      appModel.refresh();
-    }
-  }
-
-  void showDeleteSearchHistoryPrompt() async {
-    Widget alertDialog = AlertDialog(
-      title: Text(t.clear_search_title),
-      content: Text(
-        t.clear_search_description,
-      ),
-      actions: <Widget>[
-        TextButton(
-          child: Text(
-            t.dialog_clear,
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          onPressed: () async {
-            appModel.clearSearchHistory(
-                historyKey: DictionaryMediaType.instance.uniqueKey);
-            mediaType.floatingSearchBarController.clear();
-
-            setState(() {});
-            Navigator.pop(context);
-          },
-        ),
-        TextButton(
-          child: Text(t.dialog_cancel),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-
-    await showDialog(
-      context: context,
-      builder: (context) => alertDialog,
-    );
-  }
-
-  void showDeleteDictionaryHistoryPrompt() async {
-    Widget alertDialog = AlertDialog(
-      title: Text(t.clear_dictionary_title),
-      content: Text(
-        t.clear_dictionary_description,
-      ),
-      actions: <Widget>[
-        TextButton(
-          child: Text(
-            t.dialog_clear,
-            style: TextStyle(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          onPressed: () async {
-            Navigator.pop(context);
-            await appModel.clearDictionaryHistory();
-
-            setState(() {});
-          },
-        ),
-        TextButton(
-          child: Text(t.dialog_cancel),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ],
-    );
-
-    await showDialog(
-      context: context,
-      builder: (context) => alertDialog,
-    );
-  }
-
   Widget buildFloatingSearchBody(
     BuildContext context,
     Animation<double> transition,
   ) {
+    Widget body = buildSearchBody();
+    if (!appModel.searchByMeaning) {
+      return body;
+    }
+
+    /// Words are found by meaning only once their entries have their words.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        body,
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 16,
+          child: ValueListenableBuilder<double?>(
+            valueListenable: appModel.meaningIndexProgress,
+            builder: (context, progress, _) {
+              if (progress == null) {
+                return const SizedBox.shrink();
+              }
+              return Center(
+                child: Material(
+                  color: theme.colorScheme.surfaceVariant,
+                  shape: const StadiumBorder(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      t.meaning_index_progress(
+                        percent: (progress * 100).floor(),
+                      ),
+                      style: textTheme.bodySmall,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget buildSearchBody() {
     if (appModel.dictionaries.isEmpty) {
       return buildImportDictionariesPlaceholderMessage();
     }
@@ -489,12 +398,21 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   }
 
   Widget buildSearchResult() {
-    return DictionaryResultPage(
+    Widget page = DictionaryResultPage(
       onSearch: onSearch,
       onStash: onStash,
       onShare: onShare,
       result: _result!,
       footerWidget: footerWidget,
+    );
+    if (!appModel.searchByMeaning) {
+      return page;
+    }
+    return MeaningHighlight(
+      words: meaningWordsOfText(_result!.searchTerm),
+      color: theme.colorScheme.primary
+          .withOpacity(appModel.isDarkMode ? 0.45 : 0.28),
+      child: page,
     );
   }
 

@@ -201,6 +201,9 @@ class _HomePageState extends BasePageState<HomePage>
     return [
       buildAutoBackupIndicator(),
       buildCreatorButton(),
+      TabSettingsButton(
+        mediaType: appModel.mediaTypes.values.toList()[currentHomeTabIndex],
+      ),
       buildShowMenuButton(),
     ];
   }

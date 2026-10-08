@@ -67,30 +67,25 @@ class ReaderChatgptSource extends ReaderMediaSource {
         ref: ref,
         appModel: appModel,
       ),
-      buildApiKeyButton(context: context, ref: ref, appModel: appModel),
     ];
   }
 
   /// Menu bar action.
-  Widget buildApiKeyButton(
-      {required BuildContext context,
-      required WidgetRef ref,
-      required AppModel appModel}) {
-    return FloatingSearchBarAction(
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.api_key,
-        icon: Ui.key,
-        onTap: () async {
-          await showDialog(
-            context: context,
-            builder: (context) => const ChatgptSettingsDialogPage(),
-          );
+  /// Opens the [ChatgptSettingsDialogPage], where the API key is set.
+  @override
+  VoidCallback? settingsAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+  }) {
+    return () async {
+      await showDialog(
+        context: context,
+        builder: (context) => const ChatgptSettingsDialogPage(),
+      );
 
-          mediaType.refreshTab();
-        },
-      ),
-    );
+      mediaType.refreshTab();
+    };
   }
 
   /// Menu bar action.

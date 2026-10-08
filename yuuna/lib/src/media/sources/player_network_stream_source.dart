@@ -52,11 +52,6 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
     required AppModel appModel,
   }) {
     return [
-      buildSettingsButton(
-        appModel: appModel,
-        context: context,
-        ref: ref,
-      ),
       FloatingSearchBarAction(
         child: JidoujishoIconButton(
           size: Theme.of(context).textTheme.titleLarge?.fontSize,

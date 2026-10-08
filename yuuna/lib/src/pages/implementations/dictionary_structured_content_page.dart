@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -31,18 +32,52 @@ final dictionaryCssProvider =
 });
 
 /// The HTML of a [DictionaryEntry], styled by its dictionary's stylesheet in
-/// the given theme. Kept while the entry is shown.
+/// the given theme, with the words a search by meaning found marked. Kept
+/// while the entry is shown.
 final dictionaryEntryHtmlProvider = Provider.autoDispose
-    .family<String, (DictionaryEntry, DictionaryCssTheme)>((ref, key) {
-  final (entry, theme) = key;
+    .family<String, (DictionaryEntry, DictionaryCssTheme, MeaningMarks?)>(
+        (ref, key) {
+  final (entry, theme, marks) = key;
   final dictionaryId = entry.dictionary.value?.id;
   final css = dictionaryId == null
       ? const <DictionaryCssRule>[]
       : ref.watch(dictionaryCssProvider(dictionaryId));
   return entry.definitions
-      .map((definition) => definitionHtml(definition, css: css, theme: theme))
+      .map((definition) =>
+          definitionHtml(definition, css: css, theme: theme, marks: marks))
       .join();
 });
+
+/// The words a search by meaning found, for the definitions below to mark.
+class MeaningHighlight extends InheritedWidget {
+  /// Mark [words], as [meaningWordsOfText] gives them, in [color].
+  const MeaningHighlight({
+    required this.words,
+    required this.color,
+    required super.child,
+    super.key,
+  });
+
+  /// The words, folded.
+  final List<String> words;
+
+  /// The colour behind them.
+  final Color color;
+
+  /// What definitions under [context] mark, if anything.
+  static MeaningMarks? of(BuildContext context) {
+    MeaningHighlight? highlight =
+        context.dependOnInheritedWidgetOfExactType<MeaningHighlight>();
+    if (highlight == null || highlight.words.isEmpty) {
+      return null;
+    }
+    return MeaningMarks(words: highlight.words, color: highlight.color);
+  }
+
+  @override
+  bool updateShouldNotify(MeaningHighlight oldWidget) =>
+      !listEquals(words, oldWidget.words) || color != oldWidget.color;
+}
 
 /// Get the [Directory] used as a resource directory for a certain [Dictionary].
 final dictionaryResourceDirectoryProvider =
@@ -95,11 +130,12 @@ class DictionaryHtmlWidget extends ConsumerWidget {
       fontSize: dictionaryFontSize,
     );
     final previewCss = ref.watch(dictionaryPreviewCssProvider);
+    final marks = MeaningHighlight.of(context);
     final body = previewCss == null
-        ? ref.watch(dictionaryEntryHtmlProvider((entry, cssTheme)))
+        ? ref.watch(dictionaryEntryHtmlProvider((entry, cssTheme, marks)))
         : entry.definitions
-            .map((definition) =>
-                definitionHtml(definition, css: previewCss, theme: cssTheme))
+            .map((definition) => definitionHtml(definition,
+                css: previewCss, theme: cssTheme, marks: marks))
             .join();
 
     /// The app's defaults go first, so a dictionary's styles win over them.

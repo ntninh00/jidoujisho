@@ -48,6 +48,8 @@ export 'src/pages/implementations/reader_websocket_page.dart';
 export 'src/pages/implementations/immersion_kit_sentences_dialog_page.dart';
 export 'src/pages/implementations/ttu_settings_dialog_page.dart';
 export 'src/pages/implementations/ttu_reader_bar.dart';
+export 'src/pages/implementations/tab_settings_button.dart';
+export 'src/pages/implementations/meaning_search_toggle.dart';
 export 'src/pages/implementations/ttu_sheets.dart';
 export 'src/pages/implementations/ttu_reader_menu.dart';
 export 'src/pages/implementations/ttu_memo_colors.dart';

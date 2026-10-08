@@ -165,6 +165,16 @@ abstract class MediaSource {
     return [];
   }
 
+  /// Opens this source's settings, from the gear at the top of the home
+  /// page while this source is on its tab; null for a source without any.
+  VoidCallback? settingsAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+  }) {
+    return null;
+  }
+
   /// The widget to show when this source is launched. An optional [MediaItem]
   /// can be supplied as a launch parameter.
   BaseSourcePage buildLaunchPage({MediaItem? item});

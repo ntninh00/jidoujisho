@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1694 (847 per locale)
+/// Strings: 1700 (850 per locale)
 ///
-/// Built on 2026-10-08 at 13:14 UTC
+/// Built on 2026-10-08 at 20:28 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -179,6 +179,9 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get back => TranslationOverrides.string(_root.$meta, 'back', {}) ?? 'Back';
 	String get search => TranslationOverrides.string(_root.$meta, 'search', {}) ?? 'Search';
 	String get search_ellipsis => TranslationOverrides.string(_root.$meta, 'search_ellipsis', {}) ?? 'Search...';
+	String get search_by_meaning => TranslationOverrides.string(_root.$meta, 'search_by_meaning', {}) ?? 'Search by meaning';
+	String get search_by_meaning_hint => TranslationOverrides.string(_root.$meta, 'search_by_meaning_hint', {}) ?? 'Search by meaning...';
+	String meaning_index_progress({required Object percent}) => TranslationOverrides.string(_root.$meta, 'meaning_index_progress', {'percent': percent}) ?? 'Getting meanings ready to search... ${percent}%';
 	String get show_more => TranslationOverrides.string(_root.$meta, 'show_more', {}) ?? 'Show More';
 	String get show_menu => TranslationOverrides.string(_root.$meta, 'show_menu', {}) ?? 'Show Menu';
 	String get stash => TranslationOverrides.string(_root.$meta, 'stash', {}) ?? 'Stash';
@@ -1699,6 +1702,9 @@ class _StringsVi extends _StringsEn {
 	@override String get back => TranslationOverrides.string(_root.$meta, 'back', {}) ?? 'Quay lại';
 	@override String get search => TranslationOverrides.string(_root.$meta, 'search', {}) ?? 'Tìm kiếm';
 	@override String get search_ellipsis => TranslationOverrides.string(_root.$meta, 'search_ellipsis', {}) ?? 'Tìm kiếm...';
+	@override String get search_by_meaning => TranslationOverrides.string(_root.$meta, 'search_by_meaning', {}) ?? 'Tìm theo nghĩa';
+	@override String get search_by_meaning_hint => TranslationOverrides.string(_root.$meta, 'search_by_meaning_hint', {}) ?? 'Tìm theo nghĩa...';
+	@override String meaning_index_progress({required Object percent}) => TranslationOverrides.string(_root.$meta, 'meaning_index_progress', {'percent': percent}) ?? 'Đang chuẩn bị tìm theo nghĩa... ${percent}%';
 	@override String get show_more => TranslationOverrides.string(_root.$meta, 'show_more', {}) ?? 'Xem thêm';
 	@override String get show_menu => TranslationOverrides.string(_root.$meta, 'show_menu', {}) ?? 'Hiện menu';
 	@override String get stash => TranslationOverrides.string(_root.$meta, 'stash', {}) ?? 'Kho tạm';
@@ -3198,6 +3204,9 @@ extension on _StringsEn {
 			case 'back': return TranslationOverrides.string(_root.$meta, 'back', {}) ?? 'Back';
 			case 'search': return TranslationOverrides.string(_root.$meta, 'search', {}) ?? 'Search';
 			case 'search_ellipsis': return TranslationOverrides.string(_root.$meta, 'search_ellipsis', {}) ?? 'Search...';
+			case 'search_by_meaning': return TranslationOverrides.string(_root.$meta, 'search_by_meaning', {}) ?? 'Search by meaning';
+			case 'search_by_meaning_hint': return TranslationOverrides.string(_root.$meta, 'search_by_meaning_hint', {}) ?? 'Search by meaning...';
+			case 'meaning_index_progress': return ({required Object percent}) => TranslationOverrides.string(_root.$meta, 'meaning_index_progress', {'percent': percent}) ?? 'Getting meanings ready to search... ${percent}%';
 			case 'show_more': return TranslationOverrides.string(_root.$meta, 'show_more', {}) ?? 'Show More';
 			case 'show_menu': return TranslationOverrides.string(_root.$meta, 'show_menu', {}) ?? 'Show Menu';
 			case 'stash': return TranslationOverrides.string(_root.$meta, 'stash', {}) ?? 'Stash';
@@ -4057,6 +4066,9 @@ extension on _StringsVi {
 			case 'back': return TranslationOverrides.string(_root.$meta, 'back', {}) ?? 'Quay lại';
 			case 'search': return TranslationOverrides.string(_root.$meta, 'search', {}) ?? 'Tìm kiếm';
 			case 'search_ellipsis': return TranslationOverrides.string(_root.$meta, 'search_ellipsis', {}) ?? 'Tìm kiếm...';
+			case 'search_by_meaning': return TranslationOverrides.string(_root.$meta, 'search_by_meaning', {}) ?? 'Tìm theo nghĩa';
+			case 'search_by_meaning_hint': return TranslationOverrides.string(_root.$meta, 'search_by_meaning_hint', {}) ?? 'Tìm theo nghĩa...';
+			case 'meaning_index_progress': return ({required Object percent}) => TranslationOverrides.string(_root.$meta, 'meaning_index_progress', {'percent': percent}) ?? 'Đang chuẩn bị tìm theo nghĩa... ${percent}%';
 			case 'show_more': return TranslationOverrides.string(_root.$meta, 'show_more', {}) ?? 'Xem thêm';
 			case 'show_menu': return TranslationOverrides.string(_root.$meta, 'show_menu', {}) ?? 'Hiện menu';
 			case 'stash': return TranslationOverrides.string(_root.$meta, 'stash', {}) ?? 'Kho tạm';

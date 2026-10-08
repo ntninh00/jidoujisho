@@ -165,6 +165,7 @@ Future<void> deleteDictionariesHelper(DeleteDictionaryParams params) async {
   database.writeTxnSync(() {
     database.dictionarySearchResults.clearSync();
     database.dictionaryTags.clearSync();
+    database.dictionaryMeanings.clearSync();
     database.dictionaryEntrys.clearSync();
     database.dictionaryHeadings.clearSync();
     database.dictionaryPitchs.clearSync();
@@ -193,10 +194,13 @@ void deleteDictionaryData(Isar database, int id) {
     return;
   }
   database.writeTxnSync(() {
-    database.dictionaryEntrys
+    List<int> entryIds = database.dictionaryEntrys
         .filter()
         .dictionary((q) => q.idEqualTo(id))
-        .deleteAllSync();
+        .idProperty()
+        .findAllSync();
+    database.dictionaryMeanings.deleteAllSync(entryIds);
+    database.dictionaryEntrys.deleteAllSync(entryIds);
     /// Tags carry their dictionary's id; imports do not link them to it.
     database.dictionaryTags.filter().dictionaryIdEqualTo(id).deleteAllSync();
     database.dictionaryPitchs

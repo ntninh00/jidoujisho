@@ -74,11 +74,6 @@ class ReaderBrowserSource extends ReaderMediaSource with ChangeNotifier {
     required AppModel appModel,
   }) {
     return [
-      buildTweaksButton(
-        context: context,
-        ref: ref,
-        appModel: appModel,
-      ),
       buildOpenLinkButton(
         context: context,
         ref: ref,
@@ -88,23 +83,16 @@ class ReaderBrowserSource extends ReaderMediaSource with ChangeNotifier {
   }
 
   /// Tweaks bar action.
-  Widget buildTweaksButton(
-      {required BuildContext context,
-      required WidgetRef ref,
-      required AppModel appModel}) {
-    return FloatingSearchBarAction(
-      child: JidoujishoIconButton(
-        size: Theme.of(context).textTheme.titleLarge?.fontSize,
-        tooltip: t.tweaks,
-        icon: Ui.tune,
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => const BrowserSettingsDialogPage(),
-          );
-        },
-      ),
-    );
+  @override
+  VoidCallback? settingsAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+  }) {
+    return () => showDialog(
+          context: context,
+          builder: (context) => const BrowserSettingsDialogPage(),
+        );
   }
 
   /// Helper to generate a media item with parameters.

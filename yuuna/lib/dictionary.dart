@@ -1,5 +1,6 @@
 export 'src/dictionary/dictionary.dart';
 export 'src/dictionary/dictionary_entry.dart';
+export 'src/dictionary/dictionary_meaning.dart';
 export 'src/dictionary/dictionary_utils.dart';
 export 'src/dictionary/dictionary_search_result.dart';
 export 'src/dictionary/dictionary_search_worker.dart';

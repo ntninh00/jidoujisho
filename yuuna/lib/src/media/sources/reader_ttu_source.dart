@@ -535,6 +535,15 @@ class ReaderTtuSource extends ReaderMediaSource {
   }
 
   @override
+  VoidCallback? settingsAction({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+  }) {
+    return () => showSettings(context: context, appModel: appModel, ref: ref);
+  }
+
+  @override
   BasePage buildHistoryPage({MediaItem? item}) {
     return const ReaderTtuSourceHistoryPage();
   }

@@ -292,7 +292,13 @@ class MyWords {
       );
       entry.heading.value = heading;
       entry.dictionary.value = mine;
-      return database.dictionaryEntrys.putSync(entry);
+      int id = database.dictionaryEntrys.putSync(entry);
+      List<String> words = meaningWordsOf(entry.definitions);
+      if (words.isNotEmpty) {
+        database.dictionaryMeanings
+            .putSync(DictionaryMeaning(id: id, words: words));
+      }
+      return id;
     });
   }
 
@@ -309,6 +315,7 @@ class MyWords {
     entry.heading.loadSync();
     DictionaryHeading? heading = entry.heading.value;
     database.dictionaryEntrys.deleteSync(entryId);
+    database.dictionaryMeanings.deleteSync(entryId);
 
     /// A heading made only for this term goes with it.
     if (heading != null &&

@@ -1,7 +1,32 @@
 import 'dart:convert';
+import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:yuuna/dictionary.dart';
+
+/// Words a search by meaning found, to mark wherever a definition has
+/// them, with or without accents.
+@immutable
+class MeaningMarks {
+  /// Mark [words], as [meaningWordsOfText] gives them, in [color].
+  const MeaningMarks({required this.words, required this.color});
+
+  /// The words, folded.
+  final List<String> words;
+
+  /// The colour behind them.
+  final Color color;
+
+  @override
+  bool operator ==(Object other) =>
+      other is MeaningMarks &&
+      listEquals(words, other.words) &&
+      color == other.color;
+
+  @override
+  int get hashCode => Object.hash(Object.hashAll(words), color);
+}
 
 /// Tags Yomitan allows in structured content. Anything else becomes a span.
 const Set<String> _tags = {
@@ -48,11 +73,12 @@ const Set<String> _emNumbers = {
 /// shows it, with each part marked the way dictionary stylesheets expect
 /// (`data-sc-*` attributes and `gloss-sc-*` classes), or plain text with
 /// its line breaks. [css] and [theme] style the result for the app's
-/// renderer.
+/// renderer. [marks], if any, are marked last, over the dictionary's styles.
 String definitionHtml(
   String definition, {
   required List<DictionaryCssRule> css,
   required DictionaryCssTheme theme,
+  MeaningMarks? marks,
 }) {
   Object? content;
   String trimmed = definition.trimLeft();
@@ -73,13 +99,72 @@ String definitionHtml(
       }
       root.append(dom.Text(lines[i]));
     }
+    _mark(root, marks);
     return root.outerHtml;
   }
   for (dom.Node node in _nodes(content)) {
     root.append(node);
   }
   applyDictionaryCss(root, css, theme);
+  _mark(root, marks);
   return root.outerHtml;
+}
+
+/// Wraps each of [marks]' words in the text under [root] in a marked span:
+/// whole words, found without accents and marked as written.
+void _mark(dom.Element root, MeaningMarks? marks) {
+  if (marks == null || marks.words.isEmpty) {
+    return;
+  }
+  RegExp word = RegExp(
+    '(?<![\\p{L}\\p{M}\\p{N}])'
+    '(?:${marks.words.map(RegExp.escape).join('|')})'
+    '(?![\\p{L}\\p{M}\\p{N}])',
+    unicode: true,
+  );
+  String style = 'background-color:${cssColor(marks.color)};';
+
+  List<dom.Text> texts = [];
+  void collect(dom.Node node) {
+    for (dom.Node child in node.nodes) {
+      if (child is dom.Text) {
+        texts.add(child);
+      } else if (child is dom.Element && child.localName != 'rt') {
+        collect(child);
+      }
+    }
+  }
+
+  collect(root);
+  for (dom.Text text in texts) {
+    String data = text.data;
+    List<int> origins = [];
+    String folded = foldMeaningText(data, origins);
+    List<RegExpMatch> found = word.allMatches(folded).toList();
+    if (found.isEmpty) {
+      continue;
+    }
+    dom.Node parent = text.parentNode!;
+    int at = 0;
+    for (RegExpMatch match in found) {
+      int start = origins[match.start];
+      int end = match.end < origins.length ? origins[match.end] : data.length;
+      if (start > at) {
+        parent.insertBefore(dom.Text(data.substring(at, start)), text);
+      }
+      parent.insertBefore(
+        dom.Element.tag('span')
+          ..attributes['style'] = style
+          ..append(dom.Text(data.substring(start, end))),
+        text,
+      );
+      at = end;
+    }
+    if (at < data.length) {
+      parent.insertBefore(dom.Text(data.substring(at)), text);
+    }
+    text.remove();
+  }
 }
 
 /// Structured content as DOM nodes. Content may be text, a list, an
