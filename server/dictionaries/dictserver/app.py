@@ -158,8 +158,11 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
         catalog.set_status(dictionary_id, "indexing")
         zip_path = catalog.zip_path(dictionary_id)
         try:
-            checked = check_zip(str(zip_path), limits)
-            if not tidy.is_current(catalog.get(dictionary_id)["tidy"]):
+            current = tidy.is_current(catalog.get(dictionary_id)["tidy"])
+            # One laid out again starts from the file as uploaded, which is
+            # what is checked: the last layout may be what failed.
+            checked = check_zip(str(zip_path if current else tidy.uploaded(zip_path)), limits)
+            if not current:
                 checked = lay_out(dictionary_id, zip_path) or checked
             summary = indexer.build(str(zip_path), str(catalog.search_path(dictionary_id)), checked)
             if catalog.get(dictionary_id) is None:

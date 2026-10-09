@@ -1319,6 +1319,11 @@ def _original(zip_path: Path) -> Path:
     return original if original.exists() else zip_path
 
 
+def uploaded(zip_path: Path) -> Path:
+    """The file as uploaded, of a dictionary at [zip_path]."""
+    return _original(zip_path)
+
+
 def layout_of(zip_path: Path) -> str | None:
     with zipfile.ZipFile(_original(zip_path)) as archive:
         return detect(_sample_rows(archive))
