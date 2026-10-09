@@ -54,12 +54,31 @@ void main() {
   });
 
   test('inflected forms link to their words', () {
-    String? definition = YomichanFormat.processDefinition([
-      'strap',
-      ['present participle'],
+    List<String> definitions = YomichanFormat.processDefinitions([
+      [
+        'strap',
+        ['present participle'],
+      ],
     ]);
-    String html = definitionHtml(definition!, css: const [], theme: _theme);
+    String html =
+        definitionHtml(definitions.single, css: const [], theme: _theme);
     expect(html, contains('query="strap"'));
     expect(html, contains('strap</a> (present participle)'));
+  });
+
+  test('a redirect with a link of its own keeps only that', () {
+    List<String> definitions = YomichanFormat.processDefinitions([
+      {
+        'type': 'structured-content',
+        'content': ['⟶ 労働相'],
+      },
+      [
+        '労働相',
+        ['redirected from 勞働相'],
+      ],
+    ]);
+    expect(definitions, [
+      jsonEncode(['⟶ 労働相'])
+    ]);
   });
 }

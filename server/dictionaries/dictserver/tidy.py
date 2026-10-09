@@ -45,7 +45,7 @@ from .checks import BANK
 # (`none`), so a new layout looks again only at dictionaries that had none.
 VERSIONS = {
     "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
-    "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 1, "none": 6,
+    "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2, "none": 7,
 }
 # Layouts of dictionaries whose definitions are in Vietnamese.
 _VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
@@ -1028,11 +1028,17 @@ def _forms(definitions: list, vietnamese: bool) -> dict:
     return {"type": "structured-content", "content": content}
 
 
+def _only_forms(row: list) -> bool:
+    """A row that is only inflected forms' pointers. Jitendex gives its
+    redirects a pointer beside a link of its own, which stays as it is."""
+    return len(row) > 5 and isinstance(row[5], list) and bool(row[5]) and all(_is_form(item) for item in row[5])
+
+
 def _forms_share(rows: list) -> float:
     rows = [row for row in rows if isinstance(row, list) and len(row) > 5 and isinstance(row[5], list)]
     if not rows:
         return 0
-    return sum(any(_is_form(item) for item in row[5]) for row in rows) / len(rows)
+    return sum(_only_forms(row) for row in rows) / len(rows)
 
 
 def detect(rows: list) -> str | None:
@@ -1084,10 +1090,8 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
     them was understood, and inflected forms' pointers made links. Other
     definitions, such as structured content, stay as they are. None for a
     row that says nothing."""
-    if len(row) > 5 and isinstance(row[5], list) and any(_is_form(item) for item in row[5]):
-        forms = [item for item in row[5] if _is_form(item)]
-        rest = [item for item in row[5] if not _is_form(item)]
-        row = [*row[:5], [*rest, _forms(forms, layout in _VIETNAMESE_LAYOUTS)], *row[6:]]
+    if _only_forms(row):
+        row = [*row[:5], [_forms(row[5], layout in _VIETNAMESE_LAYOUTS)], *row[6:]]
     if layout == "forms":
         return row
     # Letters written as a base and a separate accent, as some exports do,

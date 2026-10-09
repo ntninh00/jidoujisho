@@ -131,6 +131,19 @@ class YomichanFormat extends DictionaryFormat {
     return element.outerHtml;
   }
 
+  /// For [prepareEntriesYomichanFormat]: a row's definitions. A row that
+  /// only has inflected forms' pointers, which Yomitan follows, gets links
+  /// to their words instead of nothing. Jitendex's redirects have a link of
+  /// their own beside the pointer, so a row with anything else keeps that.
+  static List<String> processDefinitions(List<dynamic> definitions) {
+    List<String> processed =
+        definitions.map(processDefinition).whereType<String>().toList();
+    if (processed.isNotEmpty) {
+      return processed;
+    }
+    return definitions.map(_formOf).whereType<String>().toList();
+  }
+
   /// For [prepareEntriesYomichanFormat].
   static String? processDefinition(var definition) {
     if (definition is String) {
@@ -147,33 +160,37 @@ class YomichanFormat extends DictionaryFormat {
         case 'image':
           return jsonEncode(definition['content']);
       }
-    } else if (definition is List &&
-        definition.length == 2 &&
-        definition[0] is String &&
-        definition[1] is List) {
-      /// An inflected form's pointer to its word, which Yomitan follows: a
-      /// link to the word here, with what kind of form it is.
-      final String word = definition[0];
-      final String kinds =
-          (definition[1] as List).whereType<String>().join('; ');
-      return jsonEncode([
-        {
-          'tag': 'div',
-          'data': {'jdj': 'form-of'},
-          'content': [
-            '→ ',
-            {
-              'tag': 'a',
-              'href': '?query=${Uri.encodeQueryComponent(word)}&wildcards=off',
-              'content': word,
-            },
-            if (kinds.isNotEmpty) ' ($kinds)',
-          ],
-        }
-      ]);
     }
 
     return null;
+  }
+
+  /// An inflected form's pointer to its word as a link to the word, with
+  /// what kind of form it is.
+  static String? _formOf(var definition) {
+    if (definition is! List ||
+        definition.length != 2 ||
+        definition[0] is! String ||
+        definition[1] is! List) {
+      return null;
+    }
+    final String word = definition[0];
+    final String kinds = (definition[1] as List).whereType<String>().join('; ');
+    return jsonEncode([
+      {
+        'tag': 'div',
+        'data': {'jdj': 'form-of'},
+        'content': [
+          '→ ',
+          {
+            'tag': 'a',
+            'href': '?query=${Uri.encodeQueryComponent(word)}&wildcards=off',
+            'content': word,
+          },
+          if (kinds.isNotEmpty) ' ($kinds)',
+        ],
+      }
+    ]);
   }
 }
 
@@ -296,10 +313,8 @@ void prepareEntriesYomichanFormat({
         List<String> entryTagNames =
             spaceSeparatedDefinitionTags?.split(' ') ?? [];
         List<String> headingTagNames = spaceSeparatedTermTags.split(' ');
-        final List<String> definitions = rawDefinitions
-            .map(YomichanFormat.processDefinition)
-            .whereType<String>()
-            .toList();
+        final List<String> definitions =
+            YomichanFormat.processDefinitions(rawDefinitions);
 
         int headingId = DictionaryHeading.hash(
           term: term,

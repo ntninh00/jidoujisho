@@ -245,10 +245,8 @@ class CatalogResults {
       DictionaryEntry entry = DictionaryEntry(
         // Unsaved entries are told apart by id, so each gets its own.
         id: _nextId--,
-        definitions: (row[5] as List? ?? const [])
-            .map(YomichanFormat.processDefinition)
-            .whereType<String>()
-            .toList(),
+        definitions:
+            YomichanFormat.processDefinitions(row[5] as List? ?? const []),
         popularity: row[4] is num ? (row[4] as num).toDouble() : 0,
         entryTagNames: entryTags,
         headingTagNames: names(row.length > 7 ? row[7] : null),

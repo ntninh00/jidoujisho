@@ -239,6 +239,13 @@ def test_inflected_forms_become_links_to_their_words():
     english = tidy.rewrite_row(["strapping", "", "", "", 0, [["strap", ["participle present"]]], 0, ""], "forms")
     assert ("form-labels", "present participle") in texts(english[5][0])
     assert tidy.rewrite_row(["кошка", "", "", "", 0, [["кот", ["first/third-person singular"]]], 0, ""], "markup")[5][0]["content"][0]["content"][-1]["content"] == "ngôi thứ nhất/ba số ít"
+    # Jitendex's redirects have a link of their own beside the pointer.
+    redirect = ["勞働相", "", "old kanji form", "", -101, [
+        {"type": "structured-content", "content": ["⟶", {"tag": "a", "href": "?query=労働相", "content": "労働相"}]},
+        ["労働相", ["redirected from 勞働相"]],
+    ], 0, ""]
+    assert tidy.rewrite_row(redirect, "forms") == redirect
+    assert tidy.detect([redirect] * 20) is None
 
 
 def test_dictionaries_with_only_inflected_forms_to_rewrite():
@@ -361,7 +368,7 @@ def test_each_layout_has_its_own_rules_number():
     assert not tidy.is_current("markup@3")
     assert tidy.stamp("html") == "html@1"
     # Looked at before newer layouts were understood: looked at again.
-    assert not tidy.is_current("none@5") and tidy.is_current(tidy.stamp(None))
+    assert not tidy.is_current("none@6") and tidy.is_current(tidy.stamp(None))
     assert not tidy.is_current("") and not tidy.is_current(None) and not tidy.is_current("odd@3")
     assert tidy.revision_suffix("html") == "+jdj1" and tidy.REVISION_SUFFIX == "+jdj4"
 
