@@ -64,6 +64,14 @@ class _HomePageState extends BasePageState<HomePage>
       AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
       appModelNoUpdate.refreshAppStrings();
       appModelNoUpdate.updates.check();
+
+      /// The first lookup, in a book or the Dictionary tab, need not wait
+      /// for the search worker to start and open the database.
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          appModelNoUpdate.warmUpDictionarySearch();
+        }
+      });
     });
   }
 

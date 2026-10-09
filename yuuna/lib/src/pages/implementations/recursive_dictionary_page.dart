@@ -171,6 +171,8 @@ class _RecursiveDictionaryPageState
 
   void onQueryChanged(String query) async {
     if (!appModel.autoSearchEnabled) {
+      /// The search still runs, unseen, so pressing search shows it at once.
+      appModel.prefetchDictionarySearch(query);
       return;
     }
 

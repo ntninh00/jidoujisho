@@ -162,6 +162,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   @override
   void onFocusChanged({required bool focused}) async {
+    if (focused) {
+      appModel.warmUpDictionarySearch();
+    }
     if (mediaType.floatingSearchBarController.isOpen != _lastOpenedState) {
       _lastOpenedState = mediaType.floatingSearchBarController.isOpen;
       if (!_lastOpenedState) {
@@ -180,6 +183,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   void onQueryChanged(String query) async {
     if (!appModel.autoSearchEnabled) {
+      /// The search still runs, unseen, so pressing search shows it at once.
+      appModel.prefetchDictionarySearch(query,
+          byMeaning: appModel.searchByMeaning);
       return;
     }
 

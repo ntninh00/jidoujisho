@@ -2770,6 +2770,76 @@ class AppModel with ChangeNotifier {
       return cached;
     }
 
+    /// The same search already on its way, as one begun unseen while typing
+    /// (see [prefetchDictionarySearch]), gives its result to this one too.
+    Future<DictionarySearchResult?>? running = _searchesRunning[cacheKey];
+    if (running != null && useCache) {
+      DictionarySearchResult? done = await running;
+      if (done != null) {
+        return done;
+      }
+    }
+
+    Future<DictionarySearchResult?> search = _searchUncached(
+      searchTerm: searchTerm,
+      cacheKey: cacheKey,
+      language: language,
+      searchWithWildcards: searchWithWildcards,
+      overrideMaximumTerms: overrideMaximumTerms,
+      channel: channel,
+      byMeaning: byMeaning,
+      persist: persist,
+    );
+    _searchesRunning[cacheKey] = search;
+    DictionarySearchResult? result;
+    try {
+      result = await search;
+    } finally {
+      if (identical(_searchesRunning[cacheKey], search)) {
+        _searchesRunning.remove(cacheKey);
+      }
+    }
+    return result ?? DictionarySearchResult(searchTerm: searchTerm);
+  }
+
+  /// Searches running now, by the key of [_dictionarySearchCache].
+  final Map<String, Future<DictionarySearchResult?>> _searchesRunning = {};
+
+  /// Runs the search the search bars would for [query], unseen and
+  /// unstored, so that pressing search shows it at once: for when
+  /// searching as you type is off. A newer one replaces it while it waits.
+  void prefetchDictionarySearch(String query, {bool byMeaning = false}) {
+    if (query.trim().isEmpty) {
+      return;
+    }
+    searchDictionary(
+      searchTerm: query,
+      searchWithWildcards: true,
+      overrideMaximumTerms: maximumTerms,
+      channel: 'prefetch',
+      byMeaning: byMeaning,
+      persist: false,
+    );
+  }
+
+  /// Starts the search worker and opens the database on it ahead of the
+  /// first search, which otherwise waits for both.
+  void warmUpDictionarySearch() {
+    DictionarySearchWorker.instance.warmUp(_databaseDirectory.path);
+  }
+
+  /// [searchDictionary] past its cache: null when a newer search on the
+  /// same [channel] replaced this one before it ran.
+  Future<DictionarySearchResult?> _searchUncached({
+    required String searchTerm,
+    required String cacheKey,
+    required Language language,
+    required bool searchWithWildcards,
+    required int? overrideMaximumTerms,
+    required String? channel,
+    required bool byMeaning,
+    required bool persist,
+  }) async {
     searchTerm = _removeEmoji.clean(searchTerm, ' ', false);
 
     /// Strip lone surrogates that may crash the search.
@@ -2808,7 +2878,7 @@ class AppModel with ChangeNotifier {
 
     /// A newer search on the same channel replaced this one.
     if (reply == null) {
-      return DictionarySearchResult(searchTerm: searchTerm);
+      return null;
     }
 
     DictionarySearchOutcome? outcome = reply.outcome;

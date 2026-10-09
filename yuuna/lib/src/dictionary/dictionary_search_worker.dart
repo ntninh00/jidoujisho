@@ -121,6 +121,17 @@ class DictionarySearchWorker {
     return job.reply.future;
   }
 
+  /// Starts the worker and opens the database on it, so the first search
+  /// waits for neither.
+  Future<void> warmUp(String directoryPath) async {
+    try {
+      SendPort port = await _ensureStarted();
+      port.send(<Object?>['open', directoryPath]);
+    } catch (error) {
+      debugPrint('Search worker did not start: $error');
+    }
+  }
+
   Future<SendPort> _ensureStarted() {
     if (_sendPort != null) {
       return SynchronousFuture(_sendPort!);
@@ -225,6 +236,23 @@ Future<void> _workerMain(SendPort mainPort) async {
   mainPort.send(port.sendPort);
 
   await for (Object? message in port) {
+    if (message is List && message.length == 2 && message[0] == 'open') {
+      try {
+        Isar database = Isar.getInstance() ??
+            await Isar.open(
+              globalSchemas,
+              directory: message[1] as String,
+              maxSizeMiB: 8192,
+            );
+
+        /// One look into the word index brings its first pages in, which
+        /// the first real search would otherwise wait for.
+        database.dictionaryHeadings.where().termEqualTo('の').findFirstSync();
+      } catch (error) {
+        debugPrint('Search worker could not open the database: $error');
+      }
+      continue;
+    }
     if (message is! List || message.length != 4) {
       continue;
     }
