@@ -487,7 +487,11 @@ class _DictionaryTermTagsWrap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    List<Widget> children = heading.tags.map((tag) {
+    /// Dictionaries made from the same source, such as JMdict in two
+    /// languages, give a word the same tags: each shows once.
+    Set<String> shown = {};
+    List<Widget> children =
+        heading.tags.where((tag) => shown.add(tag.name)).map((tag) {
       return JidoujishoTag(
         text: tag.name,
         message: tag.notes,
