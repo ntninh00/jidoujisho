@@ -101,8 +101,51 @@ def test_babylon_chinese_pairs_examples_with_translations():
         "xử lý như vầy, vẫn có thể xem là một biện pháp hay"
     ])
     sense = body.sections[0].senses[0]
-    assert sense.gloss == "vẫn có thể xem là。还可以算得上。"
+    assert (sense.gloss, sense.notes) == ("vẫn có thể xem là", ["还可以算得上。"])
     assert sense.examples[0].translation == "xử lý như vầy, vẫn có thể xem là một biện pháp hay"
+
+
+MTBAB_HAO = (
+    "Từ phồn thể: (好)\n[hǎo]\nBộ: 女 - Nữ\nSố nét: 6\nHán Việt: HẢO\n"
+    "1. tốt; lành; hay。优点多的;使人满意的(跟'坏'相对)。\n好人\nngười tốt\n"
+    "庄稼长得很好。\nhoa màu mọc rất tốt.\n2. đẹp; ngon; tốt。用在动词前。\n好看\nđẹp; coi được.\n"
+    "Ghi chú: 另见hào\nTừ ghép:\n好比 ; 好不 ; 好处[hào]\nBộ: 女(Nữ)\nHán Việt: HIẾU\n"
+    "1. thích; yêu thích。喜爱(跟'恶'相对)。\n好学\nham học"
+)
+
+
+def test_babylon_chinese_entries_with_characters_readings_and_compounds():
+    body = tidy.parse_babylon([MTBAB_HAO])
+    assert body.han_viet == "HẢO"
+    assert body.facts == "6 nét · bộ nữ 女 · phồn thể 好"
+    first, compounds, second = body.sections
+    good, pretty = first.senses
+    assert (good.gloss, good.notes) == ("tốt; lành; hay", ["优点多的;使人满意的(跟'坏'相对)。"])
+    assert [(e.text, e.translation) for e in good.examples] == [
+        ("好人", "người tốt"), ("庄稼长得很好。", "hoa màu mọc rất tốt."),
+    ]
+    assert pretty.notes == ["用在动词前。", "xem thêm hào"]
+    assert compounds.label == "Từ ghép" and compounds.senses[0].refs == ["好比", "好不", "好处"]
+    # The second reading has a part of its own.
+    assert second.label == "hào · HIẾU"
+    assert second.senses[0].gloss == "thích; yêu thích"
+    assert second.senses[0].examples[0].translation == "ham học"
+    laid_out = tidy.to_structured(body)
+    assert texts(laid_out)[:2] == [("han-viet", "HẢO"), ("facts", "6 nét · bộ nữ 女 · phồn thể 好")]
+    # Compounds are links, without an arrow.
+    assert '"href": "?query=%E5%A5%BD%E6%AF%94&wildcards=off"' in json.dumps(laid_out)
+    assert ("refs", "→ ") not in texts(laid_out)
+
+
+def test_babylon_word_classes_on_their_own_line():
+    # The explanation is longer than the meaning before it.
+    body = tidy.parse_babylon(["[xuéxí]\n动\nhọc tập; học。从阅读、听讲、研究、实践中获得知识或技能。\n学习文化\nhọc văn hoá"])
+    assert body.sections[0].label == "động từ"
+    sense = body.sections[0].senses[0]
+    assert (sense.gloss, sense.examples[0].text) == ("học tập; học", "学习文化")
+    assert tidy._meaning("đi bước một; từng bước một. 一个脚步接一个脚步") == (
+        "đi bước một; từng bước một", "一个脚步接一个脚步",
+    )
 
 
 def test_prodict_phrases_are_pulled_apart():
@@ -173,12 +216,50 @@ def test_only_vietnamese_dictionaries_with_markup_are_laid_out():
 
 
 def test_a_row_keeps_what_is_not_text():
-    pointer = ["butterfly", ["plural"]]
-    row = ["butterflies", "", "", "", 0, [pointer], 0, ""]
-    assert tidy.rewrite_row(row, "markup") == row
-    laid = tidy.rewrite_row(["house", "", "", "", 0, [OVDP_HOUSE, pointer], 0, ""], "markup")
+    image = {"type": "image", "path": "house.png"}
+    laid = tidy.rewrite_row(["house", "", "", "", 0, [OVDP_HOUSE, image], 0, ""], "markup")
     assert laid[5][0]["type"] == "structured-content"
-    assert laid[5][1] == pointer
+    assert laid[5][1] == image
+
+
+def test_inflected_forms_become_links_to_their_words():
+    row = ["confectionnés", "", "non-lemma", "", 0, [
+        ["confectionner", ["masculine plural", "plural masculine"]],
+        ["confectionner", ["past participle"]],
+    ], 0, ""]
+    laid = tidy.rewrite_row(row, "markup")
+    assert laid[:5] == row[:5] and len(laid[5]) == 1
+    assert texts(laid[5][0]) == [
+        ("form-of", "→ "), ("form-of", "confectionner"), ("form-of", " "),
+        ("form-labels", "giống đực số nhiều; quá khứ phân từ"),
+    ]
+    assert '"href": "?query=confectionner&wildcards=off"' in json.dumps(laid)
+    # In a dictionary not in Vietnamese the labels stay in English, in the
+    # usual order.
+    english = tidy.rewrite_row(["strapping", "", "", "", 0, [["strap", ["participle present"]]], 0, ""], "forms")
+    assert ("form-labels", "present participle") in texts(english[5][0])
+    assert tidy.rewrite_row(["кошка", "", "", "", 0, [["кот", ["first/third-person singular"]]], 0, ""], "markup")[5][0]["content"][0]["content"][-1]["content"] == "ngôi thứ nhất/ba số ít"
+
+
+def test_dictionaries_with_only_inflected_forms_to_rewrite():
+    def row(definition):
+        return ["word", "", "", "", 0, [definition], 0, ""]
+
+    rows = [row("plain English")] * 15 + [row(["word", ["plural"]])] * 5
+    assert tidy.detect(rows) == "forms"
+    assert tidy.detect([row("plain English")] * 20) is None
+    # Their text stays as it is.
+    assert tidy.rewrite_row(row("a small animal"), "forms") == row("a small animal")
+
+
+def test_rows_that_say_nothing_or_repeat_go():
+    assert tidy.rewrite_row(["дом", "", "n", "n", 0, ["@дом\nдом"], 0, ""], "markup") is None
+    seen = set()
+    first = ["好", "hǎo", "", "", 0, ["x"], 0, ""]
+    assert not tidy._repeated(first, "babylon", seen)
+    # Another reading of the same character with the same entry.
+    assert tidy._repeated(["好", "hào", "", "", 0, ["x"], 0, ""], "babylon", seen)
+    assert not tidy._repeated(["好", "hào", "", "", 0, ["x"], 0, ""], "markup", seen)
 
 
 WTY_SUM = (
@@ -276,12 +357,13 @@ def test_japanese_dictionaries_get_their_own_layouts():
 
 
 def test_each_layout_has_its_own_rules_number():
-    assert tidy.stamp("markup") == "markup@3" and tidy.is_current("markup@3")
+    assert tidy.stamp("markup") == "markup@4" and tidy.is_current("markup@4")
+    assert not tidy.is_current("markup@3")
     assert tidy.stamp("html") == "html@1"
     # Looked at before newer layouts were understood: looked at again.
-    assert not tidy.is_current("none@4") and tidy.is_current(tidy.stamp(None))
+    assert not tidy.is_current("none@5") and tidy.is_current(tidy.stamp(None))
     assert not tidy.is_current("") and not tidy.is_current(None) and not tidy.is_current("odd@3")
-    assert tidy.revision_suffix("html") == "+jdj1" and tidy.REVISION_SUFFIX == "+jdj3"
+    assert tidy.revision_suffix("html") == "+jdj1" and tidy.REVISION_SUFFIX == "+jdj4"
 
 
 def ovdp_zip(revision="1") -> bytes:

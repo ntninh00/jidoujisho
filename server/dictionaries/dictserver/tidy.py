@@ -21,9 +21,12 @@ dictionaries use some of the same characters for other things.
 
 Definitions written as HTML in plain text, such as `<b>rosa f</b><ol><li>
 rose</li></ol>`, are rewritten in any language: Yomitan shows text as text,
-tags and all.
+tags and all. So are inflected forms, `["strap", ["participle present"]]`,
+which Yomitan follows to the word itself but the app has no way to show:
+they become a link to that word.
 """
 
+import hashlib
 import json
 import re
 import shutil
@@ -41,9 +44,11 @@ from .checks import BANK
 # Each layout's rules have their own number, and so does finding a layout
 # (`none`), so a new layout looks again only at dictionaries that had none.
 VERSIONS = {
-    "markup": 3, "babylon": 3, "prodict": 3, "html": 1,
-    "jmarkup": 1, "javidic": 1, "mazii": 1, "none": 5,
+    "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
+    "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 1, "none": 6,
 }
+# Layouts of dictionaries whose definitions are in Vietnamese.
+_VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
 _SUFFIX = re.compile(r"\+jdj\d+$")
 
 
@@ -135,6 +140,14 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
   margin-bottom: 0.3em;
   padding-left: 0.7em;
 }
+[data-sc-jdj="facts"] {
+  font-size: 0.9em;
+  color: color-mix(in srgb, var(--text-color) 62%, var(--background-color));
+  margin-bottom: 0.25em;
+}
+[data-sc-jdj="form-labels"] {
+  color: color-mix(in srgb, var(--text-color) 62%, var(--background-color));
+}
 """
 
 
@@ -168,6 +181,8 @@ class Body:
     sections: list[Section] = field(default_factory=list)
     # The Sino-Vietnamese reading of a Japanese word, as MIÊU for 猫.
     han_viet: str = ""
+    # Facts about a character, such as its strokes and radical.
+    facts: str = ""
 
 
 class _Builder:
@@ -334,26 +349,122 @@ def parse_markup(definitions: list[str]) -> Body:
     return builder.finish()
 
 
+# Word classes and registers, as Chinese dictionaries mark them on a line of
+# their own, in Vietnamese.
+_CHINESE_CLASSES = {
+    "名": "danh từ", "动": "động từ", "形": "tính từ", "副": "phó từ", "副词": "phó từ",
+    "连": "liên từ", "连词": "liên từ", "代": "đại từ", "代词": "đại từ", "数": "số từ",
+    "量": "lượng từ", "助": "trợ từ", "叹": "thán từ", "叹词": "thán từ", "介": "giới từ",
+    "介词": "giới từ", "书": "văn viết", "方": "phương ngữ", "口": "khẩu ngữ",
+    "成": "thành ngữ", "古": "từ cổ", "谚语": "tục ngữ",
+}
+# A reading in pinyin, which opens each reading's part of a Babylon entry.
+_PINYIN = re.compile(r"\[([A-Za-zÀ-ɏḀ-ỿ' ]{1,40})\]")
+
+
+def _chinese(line: str) -> bool:
+    """Written in Chinese more than in letters."""
+    han = len(_HAN.findall(line))
+    return han > 0 and han >= sum(ch.isalpha() and not _HAN.match(ch) for ch in line)
+
+
+def _meaning(text: str) -> tuple[str, str]:
+    """`tốt; lành; hay。优点多的` as the meaning and its explanation in
+    Chinese, which some entries set off with a full stop instead."""
+    stop = re.search(r"。|\.\s+(?=[㐀-䶿一-鿿])", text)
+    if stop and stop.start() > 0 and not _chinese(text[:stop.start()]) and _HAN.search(text[stop.end():]):
+        return text[:stop.start()].strip(), text[stop.end():].strip()
+    return text.rstrip("。").strip(), ""
+
+
 def parse_babylon(definitions: list[str]) -> Body:
-    """Babylon exports open with the headword or its reading in brackets,
-    which the popup shows already. Chinese ones then give the meaning, and
-    pairs of lines: an example in Chinese and its translation."""
+    """Babylon exports open with the headword's reading in brackets. Chinese
+    ones then give a character's traditional form, radical, strokes and
+    Sino-Vietnamese reading, word classes on lines of their own, numbered
+    meanings with an explanation in Chinese after `。`, pairs of lines that
+    are an example and its translation, notes, and compounds to look up.
+    A character with more readings has a part for each, opening with the
+    reading in brackets, often straight after the last line of the part
+    before."""
     builder = _Builder()
+    facts: dict[str, str] = {}
+    readings = 0
+    compounds = False
     for definition in definitions:
-        lines = [line.strip() for line in re.sub(r"^\s*\[[^\]]*\]\s*", "", definition).split("\n")]
+        marked = _PINYIN.sub(lambda match: f"\n\0{match.group(1)}\n", definition)
+        lines = [line.strip() for line in marked.split("\n")]
         lines = [line for line in lines if line and not _PLACEHOLDER.match(line)]
-        if not lines:
-            continue
-        builder.sense(lines[0])
-        rest = lines[1:]
-        if all(_HAN.search(line) for line in rest[0::2]) and not any(_HAN.search(line) for line in rest[1::2]):
-            for at in range(0, len(rest), 2):
-                translation = rest[at + 1] if at + 1 < len(rest) else ""
-                builder.example(Example(rest[at], translation))
-        else:
-            for line in rest:
-                builder.carry_on(line)
-    return builder.finish()
+        at = 0
+        while at < len(lines):
+            line = lines[at]
+            at += 1
+            if line.startswith("\0"):
+                readings += 1
+                compounds = False
+                if readings > 1:
+                    builder.section(line[1:], "idiom")
+                continue
+            field, _, value = line.partition(":")
+            field, value = field.strip(), value.strip()
+            if field == "Hán Việt" and value:
+                if readings > 1 and builder.body.sections:
+                    builder.body.sections[-1].label += f" · {value}"
+                else:
+                    builder.body.han_viet = builder.body.han_viet or value
+                continue
+            if field in ("Bộ", "Số nét", "Từ phồn thể"):
+                if readings <= 1:
+                    radical = re.match(r"^(.+?)\s*(?:-\s*|\()\s*([^()]+?)\)?$", value)
+                    if field == "Số nét":
+                        facts[field] = f"{value} nét"
+                    elif field == "Bộ":
+                        facts[field] = f"bộ {radical.group(2).lower()} {radical.group(1)}" if radical else f"bộ {value}"
+                    else:
+                        facts[field] = f"phồn thể {value.strip('()')}"
+                continue
+            if field == "Từ ghép":
+                builder.section("Từ ghép", "compounds")
+                compounds = True
+                if value:
+                    lines.insert(at, value)
+                continue
+            if field in ("Ghi chú", "Chú ý", "Xem") and (value or at < len(lines)):
+                compounds = False
+                if not value:
+                    value = lines[at]
+                    at += 1
+                builder.note(value.replace("另见", "xem thêm "))
+                continue
+            if compounds:
+                for word in re.split(r"\s*[;；]\s*", line):
+                    if word:
+                        builder.ref(word)
+                continue
+            if line in _CHINESE_CLASSES:
+                builder.section(_CHINESE_CLASSES[line], "pos")
+                continue
+            numbered = re.match(r"^\d+\.\s*(.*)$", line)
+            # A meaning may be followed by a longer explanation in Chinese.
+            if numbered or not _chinese(line.split("。", 1)[0]):
+                gloss, explanation = _meaning(numbered.group(1) if numbered else line)
+                builder.sense(gloss)
+                if explanation:
+                    builder.note(explanation)
+                continue
+            # An example, with its translation on the next line.
+            section = builder._current()
+            if not section.senses:
+                builder.note(line)
+                continue
+            translation = ""
+            if at < len(lines) and not _chinese(lines[at]) and not lines[at].startswith("\0") \
+                    and not re.match(r"^\d+\.", lines[at]) and ":" not in lines[at][:12]:
+                translation = lines[at]
+                at += 1
+            builder.example(Example(line, translation))
+    body = builder.finish()
+    body.facts = " · ".join(facts[field] for field in ("Số nét", "Bộ", "Từ phồn thể") if field in facts)
+    return body
 
 
 _WORD = re.compile(r"[A-Za-z]+")
@@ -792,6 +903,8 @@ def to_structured(body: Body) -> dict | None:
     content: list = []
     if body.han_viet:
         content.append(_node("div", "han-viet", body.han_viet))
+    if body.facts:
+        content.append(_node("div", "facts", body.facts))
     if body.pronunciation:
         content.append(_node("div", "ipa", f"/{body.pronunciation}/"))
     for section in body.sections:
@@ -806,7 +919,7 @@ def to_structured(body: Body) -> dict | None:
             for note in sense.notes:
                 item.append(_node("div", "note", note))
             if sense.refs:
-                links: list = ["→ "]
+                links: list = [] if section.kind == "compounds" else ["→ "]
                 for number, word in enumerate(sense.refs):
                     links += [", "] if number else []
                     links.append(_ref(word))
@@ -832,9 +945,108 @@ def _texts(row: list) -> list[str]:
     return [item for item in row[5] if isinstance(item, str)] if len(row) > 5 and isinstance(row[5], list) else []
 
 
+def _is_form(definition: object) -> bool:
+    """An inflected form's pointer to its word: `["strap", ["participle present"]]`."""
+    return (
+        isinstance(definition, list) and len(definition) == 2 and isinstance(definition[0], str)
+        and isinstance(definition[1], list) and all(isinstance(label, str) for label in definition[1])
+    )
+
+
+# The words of Wiktionary's grammatical labels, in Vietnamese.
+_GRAMMAR = {
+    "singular": "số ít", "plural": "số nhiều", "first-person": "ngôi thứ nhất",
+    "second-person": "ngôi thứ hai", "third-person": "ngôi thứ ba",
+    "first/second-person": "ngôi thứ nhất/hai", "first/third-person": "ngôi thứ nhất/ba",
+    "second/third-person": "ngôi thứ hai/ba", "first/second/third-person": "ngôi thứ nhất/hai/ba",
+    "masculine": "giống đực", "feminine": "giống cái", "neuter": "giống trung",
+    "all-gender": "mọi giống", "nominative": "chủ cách", "accusative": "đối cách",
+    "genitive": "sở hữu cách", "dative": "tặng cách", "instrumental": "công cụ cách",
+    "prepositional": "giới cách", "locative": "vị trí cách", "vocative": "hô cách",
+    "partitive": "bộ phận cách", "all-case": "mọi cách",
+    "present": "hiện tại", "past": "quá khứ", "future": "tương lai", "future-i": "tương lai I",
+    "future-ii": "tương lai II", "perfect": "hoàn thành", "pluperfect": "quá khứ hoàn thành",
+    "preterite": "quá khứ", "imperfect": "quá khứ chưa hoàn thành", "historic": "đơn",
+    "anterior": "trước", "simple": "đơn", "indicative": "trình bày", "subjunctive": "giả định",
+    "subjunctive-i": "giả định I", "subjunctive-ii": "giả định II", "imperative": "mệnh lệnh",
+    "conditional": "điều kiện", "infinitive": "nguyên mẫu", "participle": "phân từ",
+    "gerund": "danh động từ", "comparative": "so sánh hơn", "superlative": "so sánh nhất",
+    "degree": "", "strong": "mạnh", "weak": "yếu", "mixed": "hỗn hợp",
+    "with-article": "có mạo từ", "without-article": "không mạo từ", "definite": "xác định",
+    "indefinite": "bất định", "subordinate-clause": "mệnh đề phụ", "predicative": "vị ngữ",
+    "dependent": "phụ thuộc", "rare": "hiếm", "uncommon": "ít dùng", "formal": "trang trọng",
+    "informal": "thân mật", "colloquial": "khẩu ngữ", "regional": "địa phương",
+    "nonstandard": "không chuẩn", "reflexive": "phản thân", "active": "chủ động",
+    "passive": "bị động", "perfective": "hoàn thành thể", "imperfective": "chưa hoàn thành thể",
+    "alternative": "dạng khác", "diminutive": "giảm nhẹ", "augmentative": "tăng nghĩa",
+    "endearing": "âu yếm", "animate": "hữu sinh", "inanimate": "vô sinh",
+    "short-form": "dạng ngắn", "adverbial": "trạng ngữ", "irregular": "bất quy tắc",
+    "variant": "biến thể", "abbreviation": "viết tắt", "US": "Mỹ", "UK": "Anh",
+    "female": "giống cái", "equivalent": "tương đương", "agent": "chủ thể", "noun": "danh từ",
+    "adjective": "tính từ", "infinitive-zu": "nguyên mẫu với zu", "zu-infinitive": "nguyên mẫu với zu",
+    "I": "I", "II": "II",
+}
+# English labels Wiktionary's tags put in an unusual order.
+_ENGLISH_LABELS = {
+    "participle past": "past participle", "participle present": "present participle",
+    "present singular third-person": "third-person singular present",
+}
+
+
+def _form_label(label: str, vietnamese: bool) -> str:
+    if not vietnamese:
+        return _ENGLISH_LABELS.get(label, label)
+    words = []
+    for word in label.split():
+        if word in _GRAMMAR:
+            words.append(_GRAMMAR[word])
+        elif "/" in word and all(part in _GRAMMAR for part in word.split("/")):
+            words.append("/".join(_GRAMMAR[part] for part in word.split("/")))
+        else:
+            words.append(word)
+    return " ".join(word for word in words if word)
+
+
+def _forms(definitions: list, vietnamese: bool) -> dict:
+    """Inflected forms' pointers as links to their words, each with what
+    kind of form it is: the same kind once, however its tags are ordered."""
+    labels: dict[str, list[str]] = {}
+    seen: dict[str, set] = {}
+    for word, tags in definitions:
+        kinds, known = labels.setdefault(word, []), seen.setdefault(word, set())
+        for tag in tags:
+            key = frozenset(tag.split())
+            if key and key not in known:
+                known.add(key)
+                kinds.append(_form_label(tag, vietnamese))
+    content = []
+    for word, kinds in labels.items():
+        line: list = ["→ ", _ref(word)]
+        if kinds:
+            line += [" ", {"tag": "span", "data": {"jdj": "form-labels"}, "content": "; ".join(kinds)}]
+        content.append(_node("div", "form-of", line))
+    return {"type": "structured-content", "content": content}
+
+
+def _forms_share(rows: list) -> float:
+    rows = [row for row in rows if isinstance(row, list) and len(row) > 5 and isinstance(row[5], list)]
+    if not rows:
+        return 0
+    return sum(any(_is_form(item) for item in row[5]) for row in rows) / len(rows)
+
+
 def detect(rows: list) -> str | None:
     """Which layout a dictionary's term rows call for, if any: judged on a
-    sample, and only for definitions written in Vietnamese."""
+    sample. Text is laid out only in Vietnamese dictionaries, and HTML
+    written as text in any; a dictionary with none of that but with
+    inflected forms has those rewritten alone."""
+    layout = _text_layout(rows)
+    if layout is None and _forms_share(rows) >= 0.02:
+        return "forms"
+    return layout
+
+
+def _text_layout(rows: list) -> str | None:
     texts = [text for row in rows if isinstance(row, list) for text in _texts(row)]
     if not texts:
         return None
@@ -859,22 +1071,39 @@ def detect(rows: list) -> str | None:
     return None
 
 
-def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> list:
+def _says_nothing(texts: list[str], term: str) -> bool:
+    """Text that only repeats the headword, as `@дом\nдом`: a meaning lost
+    on the way to Yomitan."""
+    lines = [line.strip() for text in texts for line in text.split("\n")]
+    lines = [line for line in lines if line and not line.startswith("@")]
+    return bool(lines) and all(line == term for line in lines)
+
+
+def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> list | None:
     """[row] with its text definitions laid out, or as it was when nothing in
-    them was understood. Other definitions, such as structured content or
-    an inflected form's pointer, stay as they are."""
+    them was understood, and inflected forms' pointers made links. Other
+    definitions, such as structured content, stay as they are. None for a
+    row that says nothing."""
+    if len(row) > 5 and isinstance(row[5], list) and any(_is_form(item) for item in row[5]):
+        forms = [item for item in row[5] if _is_form(item)]
+        rest = [item for item in row[5] if not _is_form(item)]
+        row = [*row[:5], [*rest, _forms(forms, layout in _VIETNAMESE_LAYOUTS)], *row[6:]]
+    if layout == "forms":
+        return row
     # Letters written as a base and a separate accent, as some exports do,
     # are joined so every font draws them.
     texts = [unicodedata.normalize("NFC", text) for text in _texts(row)]
     if not texts:
         return row
+    term = row[0] if isinstance(row[0], str) else ""
+    if layout == "markup" and len(texts) == len(row[5]) and _says_nothing(texts, term):
+        return None
     if layout == "html":
         laid_out = [
             (parse_html(unicodedata.normalize("NFC", item)) or item) if isinstance(item, str) else item
             for item in row[5]
         ]
         return [*row[:5], laid_out, *row[6:]]
-    term = row[0] if isinstance(row[0], str) else ""
     if layout == "prodict":
         body = parse_prodict(texts, term, vocabulary)
     elif layout == "babylon":
@@ -929,6 +1158,20 @@ def _vocabulary(archive: zipfile.ZipFile) -> set[str]:
     return words
 
 
+def _repeated(row: object, layout: str, seen: set[bytes]) -> bool:
+    """Whether a row only repeats one before it, as many exports do. Babylon
+    ones give each reading of a character the whole entry again, every
+    reading in it."""
+    if not isinstance(row, list) or len(row) < 6:
+        return False
+    key = [row[0], row[5]] if layout == "babylon" else [row[0], row[1], row[2], row[5]]
+    digest = hashlib.blake2b(json.dumps(key, ensure_ascii=False).encode(), digest_size=16).digest()
+    if digest in seen:
+        return True
+    seen.add(digest)
+    return False
+
+
 def _original(zip_path: Path) -> Path:
     """The file as uploaded: kept beside a dictionary that was rewritten."""
     original = zip_path.with_name("original.zip")
@@ -954,6 +1197,7 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
             return None, True
         return None, False
     temp = zip_path.with_name("tidy.zip")
+    seen: set[bytes] = set()
     with zipfile.ZipFile(_original(zip_path)) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
         names = set(source.namelist())
         vocabulary = _vocabulary(source) if layout == "prodict" else None
@@ -963,6 +1207,7 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
             if match and match.group(1) == "term":
                 rows = json.loads(data.decode("utf-8-sig"))
                 rows = [rewrite_row(row, layout, vocabulary) if isinstance(row, list) else row for row in rows]
+                rows = [row for row in rows if row is not None and not _repeated(row, layout, seen)]
                 data = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode()
             elif info.filename == "index.json":
                 index = json.loads(data.decode("utf-8-sig"))
