@@ -182,14 +182,20 @@ class _RecursiveDictionaryPageState
   bool _showMore = false;
   String lastQuery = '';
 
+  /// The dictionaries' revision when [lastQuery] was searched.
+  int _lastRevision = -1;
+
   void search(
     String query, {
     int? overrideMaximumTerms,
   }) async {
-    if (lastQuery == query && overrideMaximumTerms == null) {
+    if (lastQuery == query &&
+        _lastRevision == appModel.dictionariesRevision &&
+        overrideMaximumTerms == null) {
       return;
     } else {
       lastQuery = query;
+      _lastRevision = appModel.dictionariesRevision;
     }
 
     overrideMaximumTerms ??= appModel.maximumTerms;
@@ -432,7 +438,9 @@ class _RecursiveDictionaryPageState
         return const SizedBox.shrink();
       }
     }
-    if (_result == null || _result!.headingIds.isEmpty) {
+    if (_result == null ||
+        _result!.headingIds.isEmpty ||
+        !appModel.showsAnything(_result!)) {
       return buildNoSearchResultsPlaceholderMessage();
     }
 

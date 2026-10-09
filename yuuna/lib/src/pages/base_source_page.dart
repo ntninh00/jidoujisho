@@ -438,7 +438,8 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           return const SizedBox(height: 120, width: double.infinity);
         }
 
-        if (_dictionaryResultNotifier.value!.headingIds.isEmpty) {
+        if (_dictionaryResultNotifier.value!.headingIds.isEmpty ||
+            !appModel.showsAnything(_dictionaryResultNotifier.value!)) {
           return SizedBox(
             height: 140,
             child: buildNoSearchResultsPlaceholderMessage(),

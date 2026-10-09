@@ -825,6 +825,7 @@ class AppModel with ChangeNotifier {
     _database.writeTxnSync(() {
       _database.dictionarys.putAllSync(newDictionaries);
     });
+    dictionariesRevision++;
   }
 
   /// Update the user-defined order of a given dictionary in the database.
@@ -2408,6 +2409,7 @@ class AppModel with ChangeNotifier {
   /// Toggle a dictionary's between collapsed and expanded state. This will
   /// affect how a dictionary's search results are shown by default.
   void toggleDictionaryCollapsed(Dictionary dictionary) {
+    dictionariesRevision++;
     _database.writeTxnSync(() {
       if (dictionary.isCollapsed(targetLanguage)) {
         dictionary.collapsedLanguages = [...dictionary.collapsedLanguages]
@@ -2425,6 +2427,7 @@ class AppModel with ChangeNotifier {
   /// Toggle a dictionary's between hidden and shown state. This will
   /// affect how a dictionary's search results are shown by default.
   void toggleDictionaryHidden(Dictionary dictionary) {
+    dictionariesRevision++;
     _database.writeTxnSync(() {
       if (dictionary.isHidden(targetLanguage)) {
         dictionary.hiddenLanguages = [...dictionary.hiddenLanguages]
@@ -2563,6 +2566,19 @@ class AppModel with ChangeNotifier {
   /// wrong.
   void clearDictionaryResultsCache() {
     _dictionarySearchCache.clear();
+    dictionariesRevision++;
+  }
+
+  /// Changes whenever dictionaries are added, removed, shown, hidden,
+  /// collapsed or reordered, so a search that would otherwise be skipped as
+  /// a repeat is run again and shown as they are now.
+  int dictionariesRevision = 0;
+
+  /// Whether [result] has anything to show: its words may all be in
+  /// dictionaries that are hidden.
+  bool showsAnything(DictionarySearchResult result) {
+    return headingsOf(result).any((heading) => heading.entries.any(
+        (entry) => !(entry.dictionary.value?.isHidden(targetLanguage) ?? true)));
   }
 
   /// One port for the search parameters, instead of one per search.

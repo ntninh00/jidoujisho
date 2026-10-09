@@ -177,6 +177,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   bool _showMore = false;
   String lastQuery = '';
 
+  /// The dictionaries' revision when [lastQuery] was searched.
+  int _lastRevision = -1;
+
   /// Counts searches so a slow, older search never replaces a newer one.
   int _searchSerial = 0;
 
@@ -184,10 +187,13 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     String query, {
     int? overrideMaximumTerms,
   }) async {
-    if (lastQuery == query && overrideMaximumTerms == null) {
+    if (lastQuery == query &&
+        _lastRevision == appModel.dictionariesRevision &&
+        overrideMaximumTerms == null) {
       return;
     } else {
       lastQuery = query;
+      _lastRevision = appModel.dictionariesRevision;
     }
 
     int maximumTerms = overrideMaximumTerms ?? appModel.maximumTerms;
@@ -397,7 +403,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       }
     }
 
-    if (_result == null || _result!.headingIds.isEmpty) {
+    if (_result == null ||
+        _result!.headingIds.isEmpty ||
+        !appModel.showsAnything(_result!)) {
       return buildNoSearchResultsPlaceholderMessage();
     }
 
