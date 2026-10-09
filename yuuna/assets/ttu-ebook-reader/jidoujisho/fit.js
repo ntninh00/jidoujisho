@@ -32,6 +32,10 @@
       '.book-content[class*="writing-vertical"]{overflow-y:clip!important}' +
       '.book-content pre{white-space:pre-wrap!important;overflow-wrap:anywhere!important}' +
       '.book-content svg{max-inline-size:100%}' +
+      /* A book's CSS often sizes a picture to its page, as width and height
+       * 100%; on a phone's tall screen that stretches it. It keeps its shape
+       * inside that box instead. */
+      '.book-content img{object-fit:contain!important}' +
       '.book-content [' + MARK + ']{cursor:zoom-in}' +
       /* ッツ's header over a book, and the strip that brings it back. */
       'div.elevation-4.writing-horizontal-tb.fixed.inset-x-0.top-0,' +
@@ -130,6 +134,11 @@
       return 0;
     }
     var vertical = isVertical(root);
+    /* The same for pictures drawn in SVG told to fill their box. */
+    var stretched = root.querySelectorAll('svg[preserveAspectRatio^="none"], svg image[preserveAspectRatio^="none"]');
+    for (var s = 0; s < stretched.length; s++) {
+      stretched[s].setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    }
     var els = outermost(root.querySelectorAll(CANDIDATES));
     var i;
     for (i = 0; i < els.length; i++) {
