@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1702 (851 per locale)
+/// Strings: 1706 (853 per locale)
 ///
-/// Built on 2026-10-09 at 03:47 UTC
+/// Built on 2026-10-09 at 06:31 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -740,6 +740,8 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get catalog_all => TranslationOverrides.string(_root.$meta, 'catalog_all', {}) ?? 'All';
 	String get catalog_section_bilingual => TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Bilingual';
 	String get catalog_section_monolingual => TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Monolingual';
+	String get catalog_section_grammar => TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Grammar';
+	String get catalog_grammar => TranslationOverrides.string(_root.$meta, 'catalog_grammar', {}) ?? 'Grammar dictionary';
 	String get catalog_section_kanji => TranslationOverrides.string(_root.$meta, 'catalog_section_kanji', {}) ?? 'Kanji';
 	String get catalog_section_frequency => TranslationOverrides.string(_root.$meta, 'catalog_section_frequency', {}) ?? 'Frequency';
 	String get catalog_section_pronunciation => TranslationOverrides.string(_root.$meta, 'catalog_section_pronunciation', {}) ?? 'Pronunciation';
@@ -2264,6 +2266,8 @@ class _StringsVi extends _StringsEn {
 	@override String get catalog_all => TranslationOverrides.string(_root.$meta, 'catalog_all', {}) ?? 'Tất cả';
 	@override String get catalog_section_bilingual => TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Song ngữ';
 	@override String get catalog_section_monolingual => TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Đơn ngữ';
+	@override String get catalog_section_grammar => TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Ngữ pháp';
+	@override String get catalog_grammar => TranslationOverrides.string(_root.$meta, 'catalog_grammar', {}) ?? 'Từ điển ngữ pháp';
 	@override String get catalog_section_kanji => TranslationOverrides.string(_root.$meta, 'catalog_section_kanji', {}) ?? 'Kanji';
 	@override String get catalog_section_frequency => TranslationOverrides.string(_root.$meta, 'catalog_section_frequency', {}) ?? 'Tần suất';
 	@override String get catalog_section_pronunciation => TranslationOverrides.string(_root.$meta, 'catalog_section_pronunciation', {}) ?? 'Phát âm';
@@ -3773,6 +3777,8 @@ extension on _StringsEn {
 			case 'catalog_all': return TranslationOverrides.string(_root.$meta, 'catalog_all', {}) ?? 'All';
 			case 'catalog_section_bilingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Bilingual';
 			case 'catalog_section_monolingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Monolingual';
+			case 'catalog_section_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Grammar';
+			case 'catalog_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_grammar', {}) ?? 'Grammar dictionary';
 			case 'catalog_section_kanji': return TranslationOverrides.string(_root.$meta, 'catalog_section_kanji', {}) ?? 'Kanji';
 			case 'catalog_section_frequency': return TranslationOverrides.string(_root.$meta, 'catalog_section_frequency', {}) ?? 'Frequency';
 			case 'catalog_section_pronunciation': return TranslationOverrides.string(_root.$meta, 'catalog_section_pronunciation', {}) ?? 'Pronunciation';
@@ -4636,6 +4642,8 @@ extension on _StringsVi {
 			case 'catalog_all': return TranslationOverrides.string(_root.$meta, 'catalog_all', {}) ?? 'Tất cả';
 			case 'catalog_section_bilingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Song ngữ';
 			case 'catalog_section_monolingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Đơn ngữ';
+			case 'catalog_section_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Ngữ pháp';
+			case 'catalog_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_grammar', {}) ?? 'Từ điển ngữ pháp';
 			case 'catalog_section_kanji': return TranslationOverrides.string(_root.$meta, 'catalog_section_kanji', {}) ?? 'Kanji';
 			case 'catalog_section_frequency': return TranslationOverrides.string(_root.$meta, 'catalog_section_frequency', {}) ?? 'Tần suất';
 			case 'catalog_section_pronunciation': return TranslationOverrides.string(_root.$meta, 'catalog_section_pronunciation', {}) ?? 'Phát âm';

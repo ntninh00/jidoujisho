@@ -13,8 +13,9 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
     GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
-    PATCH  /api/dictionaries/{id}                -> any of {"sourceLanguage", "targetLanguage",
-                                                    "notes": {"en": "...", "vi": null}}
+    PATCH  /api/dictionaries/{id}                -> any of {"title", "sourceLanguage", "targetLanguage",
+                                                    "notes": {"en": "...", "vi": null},
+                                                    "section": "grammar" | "" | null}
     DELETE /api/dictionaries/{id}
 
 The app's own wording, which both kinds of token can change (see strings.py):
@@ -58,7 +59,7 @@ from starlette.routing import Route
 
 from . import config, indexer, search, tidy
 from .checks import LANGUAGE, MEDIA_TYPES, Limits, Rejected, check_zip
-from .store import Catalog
+from .store import SECTIONS, Catalog
 from .strings import CODE, Invalid, Strings
 
 ID = re.compile(r"^[0-9a-f]{12}$")
@@ -412,9 +413,10 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             temp.unlink(missing_ok=True)
 
     async def update(request: Request) -> Response:
-        """Renames a dictionary, relabels its languages, or sets the admin's
-        own descriptions of it, one per app language: each shows only in the
-        app set to that language. Only what is sent changes."""
+        """Renames a dictionary, relabels its languages, puts it in a section
+        of the catalog, or sets the admin's own descriptions of it, one per
+        app language: each shows only in the app set to that language. Only
+        what is sent changes."""
         require_admin(request)
         entry = dictionary_of(request, ready=False)
         try:
@@ -462,6 +464,11 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
                 if value is not None and (not isinstance(value, str) or not LANGUAGE.match(value)):
                     raise Problem(400, f"{key} should be a language code such as ja or en.")
                 languages.append(value)
+        # A section, "" for none, or null for the server's guess.
+        if "section" in body and body["section"] is not None and body["section"] not in ("", *SECTIONS):
+            raise Problem(400, f"section should be one of {', '.join(SECTIONS)}, \"\" or null.")
+        if "section" in body:
+            catalog.set_section(entry["id"], body["section"])
         if languages is not None:
             catalog.set_languages(entry["id"], *languages)
         if notes:

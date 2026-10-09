@@ -603,6 +603,8 @@
     "catalog_all": "All",
     "catalog_section_bilingual": "Bilingual",
     "catalog_section_monolingual": "Monolingual",
+    "catalog_section_grammar": "Grammar",
+    "catalog_grammar": "Grammar dictionary",
     "catalog_section_kanji": "Kanji",
     "catalog_section_frequency": "Frequency",
     "catalog_section_pronunciation": "Pronunciation",

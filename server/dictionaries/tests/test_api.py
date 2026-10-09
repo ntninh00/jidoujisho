@@ -233,6 +233,21 @@ def test_admins_rename_dictionaries(client):
     assert client.patch(url, json={"title": "Mine"}, headers=auth(READER)).status_code == 403
 
 
+def test_grammar_dictionaries_have_a_section(client):
+    plain = added(client, ja_en())
+    assert plain["section"] is None
+    guessed = added(client, ja_en(title="日本語文法辞典"))
+    assert guessed["section"] == "grammar"
+    url = f"/api/dictionaries/{plain['id']}"
+    assert client.patch(url, json={"section": "grammar"}, headers=auth(ADMIN)).json()["section"] == "grammar"
+    assert client.patch(url, json={"section": "kanji"}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"section": "grammar"}, headers=auth(READER)).status_code == 403
+    # "" takes a guessed one out of the section; null guesses again.
+    url = f"/api/dictionaries/{guessed['id']}"
+    assert client.patch(url, json={"section": ""}, headers=auth(ADMIN)).json()["section"] is None
+    assert client.patch(url, json={"section": None}, headers=auth(ADMIN)).json()["section"] == "grammar"
+
+
 def test_admins_describe_dictionaries(client):
     entry = added(client, ja_en(description="From the index"))
     url = f"/api/dictionaries/{entry['id']}"

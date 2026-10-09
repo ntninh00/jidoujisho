@@ -13,6 +13,9 @@ enum CatalogSection {
   /// Definitions in the same language as the words.
   monolingual,
 
+  /// Grammar points, as 〜に関して: what they mean and how they are used.
+  grammar,
+
   /// Characters with their readings and meanings.
   kanji,
 
@@ -48,7 +51,8 @@ class CatalogDictionary {
         ),
         size = (json['size'] as num?)?.toInt() ?? 0,
         status = json['status'] as String? ?? 'ready',
-        error = json['error'] as String?;
+        error = json['error'] as String?,
+        serverSection = json['section'] as String?;
 
   /// The server's id for the dictionary.
   final String id;
@@ -115,6 +119,13 @@ class CatalogDictionary {
   /// Why indexing failed.
   final String? error;
 
+  /// The section the server puts it in, such as `grammar`, beyond the ones
+  /// worked out here from its languages and kinds.
+  final String? serverSection;
+
+  /// Whether its definitions are in another language than its words.
+  bool get isBilingual => sourceLanguage != targetLanguage;
+
   /// Whether it can be searched and downloaded.
   bool get isReady => status == 'ready';
 
@@ -126,6 +137,9 @@ class CatalogDictionary {
 
   /// Where it belongs in the catalog.
   CatalogSection get section {
+    if (serverSection == 'grammar') {
+      return CatalogSection.grammar;
+    }
     if (kinds.contains('terms')) {
       String? source = sourceLanguage;
       return source != null && source == targetLanguage
@@ -379,7 +393,7 @@ class AppLanguage {
 /// is sent, so the rest stays as it is.
 class CatalogChanges {
   /// Describe the changes.
-  const CatalogChanges({this.title, this.languages, this.notes});
+  const CatalogChanges({this.title, this.languages, this.notes, this.section});
 
   /// A new name, which the dictionary's file takes too.
   final String? title;
@@ -392,9 +406,16 @@ class CatalogChanges {
   /// set to its language.
   final Map<String, String>? notes;
 
+  /// The section to put it in, such as `grammar`, or an empty one to take
+  /// it out of the one it is in.
+  final String? section;
+
   /// Whether anything changes.
   bool get isEmpty =>
-      title == null && languages == null && (notes?.isEmpty ?? true);
+      title == null &&
+      languages == null &&
+      (notes?.isEmpty ?? true) &&
+      section == null;
 
   /// The changes as the server reads them.
   Map<String, Object?> toJson() => {
@@ -404,6 +425,7 @@ class CatalogChanges {
           'targetLanguage': languages!.target,
         },
         if (notes?.isNotEmpty ?? false) 'notes': notes,
+        if (section != null) 'section': section,
       };
 }
 

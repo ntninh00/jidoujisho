@@ -9,10 +9,28 @@ import threading
 import time
 from pathlib import Path
 
-from . import tidy
+from . import grammar, tidy
 
 # waiting -> indexing -> ready, or failed with an error the uploader can read.
 STATUSES = ("waiting", "indexing", "ready", "failed")
+
+# Sections of the app's catalog an admin can put a dictionary in, beyond
+# the ones the app works out from its languages and kinds.
+SECTIONS = ("grammar",)
+# Words in a title that mark a dictionary of grammar. Descriptions are not
+# read: a word dictionary's may well mention the grammar of its entries.
+_GRAMMAR_WORDS = re.compile(r"文法|文型|grammar|ngữ pháp", re.IGNORECASE)
+
+
+def _section(row: sqlite3.Row) -> str | None:
+    """The admin's section for a dictionary, or one guessed: grammar for one
+    laid out as grammar points or whose title says it is one."""
+    if row["section"] is not None:
+        return row["section"] or None
+    layout = (row["tidy"] or "").split("@")[0]
+    if layout in grammar.LAYOUTS or _GRAMMAR_WORDS.search(row["title"]):
+        return "grammar"
+    return None
 
 
 def _encode_notes(notes: dict[str, str]) -> str:
@@ -47,12 +65,13 @@ class Catalog:
                     note TEXT,
                     replaces TEXT,
                     notes TEXT NOT NULL DEFAULT '{}',
-                    tidy TEXT
+                    tidy TEXT,
+                    section TEXT
                 )"""
             )
             # Catalogs from before these columns get them.
             columns = {row["name"] for row in db.execute("PRAGMA table_info(dictionaries)")}
-            for column in ("note", "replaces", "tidy"):
+            for column in ("note", "replaces", "tidy", "section"):
                 if column not in columns:
                     db.execute(f"ALTER TABLE dictionaries ADD COLUMN {column} TEXT")
             if "notes" not in columns:
@@ -96,6 +115,9 @@ class Catalog:
             # How its text definitions were laid out (see tidy.py): None
             # before it was looked at, "" when they were left as they are.
             "tidy": row["tidy"],
+            # A section of the app's catalog beyond the ones it works out
+            # itself, such as grammar; None for those.
+            "section": _section(row),
             # For apps from before descriptions had languages, which were
             # all in English.
             "note": notes.get("en"),
@@ -173,10 +195,11 @@ class Catalog:
             # never labelled at all.
             if new["languages_guessed"] and not old["languages_guessed"] and old["status"] == "ready":
                 source, target, guessed = old["source_language"], old["target_language"], 0
+            section = new["section"] if new["section"] is not None else old["section"]
             db.execute(
                 """UPDATE dictionaries SET notes = ?, source_language = ?, target_language = ?,
-                   languages_guessed = ? WHERE id = ?""",
-                (_encode_notes(notes), source, target, guessed, dictionary_id),
+                   languages_guessed = ?, section = ? WHERE id = ?""",
+                (_encode_notes(notes), source, target, guessed, section, dictionary_id),
             )
             db.execute("DELETE FROM dictionaries WHERE id = ?", (old["id"],))
         db.execute("UPDATE dictionaries SET replaces = NULL WHERE id = ?", (dictionary_id,))
@@ -291,6 +314,14 @@ class Catalog:
                 else:
                     notes.pop(language, None)
             db.execute("UPDATE dictionaries SET notes = ? WHERE id = ?", (_encode_notes(notes), dictionary_id))
+        return self.get(dictionary_id)
+
+    def set_section(self, dictionary_id: str, section: str | None) -> dict | None:
+        """Puts a dictionary in a section: one of SECTIONS, "" for none, or
+        None to have it guessed again."""
+        assert section is None or section == "" or section in SECTIONS
+        with self._lock, self._connect() as db:
+            db.execute("UPDATE dictionaries SET section = ? WHERE id = ?", (section, dictionary_id))
         return self.get(dictionary_id)
 
     def delete(self, dictionary_id: str) -> bool:

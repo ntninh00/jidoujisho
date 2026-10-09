@@ -56,9 +56,22 @@ String _sampleWord(String? language) => switch (language) {
       _ => '',
     };
 
+/// A word worth looking up first when previewing a grammar dictionary.
+String _sampleGrammar(String? language) => switch (language) {
+      'ja' => 'について',
+      _ => '',
+    };
+
+/// Whether a dictionary is shown with both its languages, as `Japanese →
+/// English`.
+bool _showsPair(CatalogDictionary dictionary) =>
+    dictionary.section == CatalogSection.bilingual ||
+    (dictionary.section == CatalogSection.grammar && dictionary.isBilingual);
+
 String _sectionName(CatalogSection section) => switch (section) {
       CatalogSection.bilingual => t.catalog_section_bilingual,
       CatalogSection.monolingual => t.catalog_section_monolingual,
+      CatalogSection.grammar => t.catalog_section_grammar,
       CatalogSection.kanji => t.catalog_section_kanji,
       CatalogSection.frequency => t.catalog_section_frequency,
       CatalogSection.pronunciation => t.catalog_section_pronunciation,
@@ -927,6 +940,18 @@ class _Badge extends StatelessWidget {
         ),
       CatalogSection.monolingual =>
         Text(_code(dictionary.sourceLanguage), style: big),
+      CatalogSection.grammar => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('文法', style: big),
+            Text(
+              dictionary.isBilingual
+                  ? '→ ${_code(dictionary.targetLanguage)}'
+                  : _code(dictionary.sourceLanguage),
+              style: small,
+            ),
+          ],
+        ),
       CatalogSection.kanji => Text('字', style: big),
       CatalogSection.frequency => Text('#', style: big),
       CatalogSection.pronunciation => Text('/ə/', style: big),
@@ -1189,7 +1214,9 @@ class _CatalogPreviewSheet extends StatefulWidget {
 
 class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
   late final TextEditingController _query = TextEditingController(
-    text: _sampleWord(widget.dictionary.sourceLanguage),
+    text: widget.dictionary.section == CatalogSection.grammar
+        ? _sampleGrammar(widget.dictionary.sourceLanguage)
+        : _sampleWord(widget.dictionary.sourceLanguage),
   );
   late final Dictionary _asDictionary = Dictionary(
     id: -1,
@@ -1289,7 +1316,7 @@ class _CatalogPreviewSheetState extends State<_CatalogPreviewSheet> {
       if (dictionary.attribution != null) dictionary.attribution!,
       if (dictionary.url != null) dictionary.url!,
     ].join('\n\n');
-    String languages = dictionary.section == CatalogSection.bilingual
+    String languages = _showsPair(dictionary)
         ? '${catalogLanguageName(dictionary.sourceLanguage)} → '
             '${catalogLanguageName(dictionary.targetLanguage)}'
         : catalogLanguageName(dictionary.sourceLanguage);
@@ -1621,6 +1648,7 @@ class _CatalogManageSheet extends StatefulWidget {
 class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   late String? _source = widget.dictionary.sourceLanguage;
   late String? _target = widget.dictionary.targetLanguage;
+  late bool _grammar = widget.dictionary.section == CatalogSection.grammar;
 
   /// The app's languages. Each has its own description, which shows only
   /// in the app set to that language.
@@ -1663,10 +1691,12 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
           note.key: note.value.text.trim(),
     };
     String title = _title.text.trim();
+    bool grammar = _grammar != (dictionary.section == CatalogSection.grammar);
     return CatalogChanges(
       title: title.isNotEmpty && title != dictionary.title ? title : null,
       languages: languages ? (source: _source, target: _target) : null,
       notes: notes,
+      section: grammar ? (_grammar ? 'grammar' : '') : null,
     );
   }
 
@@ -1769,7 +1799,7 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
     CatalogDictionary dictionary = widget.dictionary;
     CatalogChanges changes = _changes;
     bool admin = widget.admin;
-    String languages = dictionary.section == CatalogSection.bilingual
+    String languages = _showsPair(dictionary)
         ? '${catalogLanguageName(dictionary.sourceLanguage)} → '
             '${catalogLanguageName(dictionary.targetLanguage)}'
         : catalogLanguageName(dictionary.sourceLanguage);
@@ -1910,7 +1940,13 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
                   JidoujishoInfoButton(message: t.catalog_languages_hint),
                 ],
               ),
-              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.catalog_grammar),
+                value: _grammar,
+                onChanged: (value) => setState(() => _grammar = value),
+              ),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   TextButton.icon(
