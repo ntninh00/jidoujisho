@@ -16,8 +16,9 @@ into Yomitan's structured content, with a small stylesheet, so the app, the
 preview here and Yomitan itself lay them out. The rules come from Cluebook's
 `lib/vocab/parse.ts`, which studied these exports first.
 
-Only dictionaries with Vietnamese definitions are touched: English
-dictionaries use some of the same characters for other things.
+Text is laid out in dictionaries with Vietnamese definitions, and in the
+English dictionaries english.py knows: English dictionaries use some of the
+same characters for other things.
 
 Definitions written as HTML in plain text, such as `<b>rosa f</b><ol><li>
 rose</li></ol>`, are rewritten in any language: Yomitan shows text as text,
@@ -45,10 +46,13 @@ from .checks import BANK
 # (`none`), so a new layout looks again only at dictionaries that had none.
 VERSIONS = {
     "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
-    "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2, "none": 7,
+    "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2,
+    "wordset": 1, "cambridge": 1, "noad": 1, "macmillan": 1, "mwald": 1, "none": 8,
 }
 # Layouts of dictionaries whose definitions are in Vietnamese.
 _VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
+# Layouts of English dictionaries' own text, in english.py.
+ENGLISH_LAYOUTS = {"wordset", "cambridge", "noad", "macmillan", "mwald"}
 _SUFFIX = re.compile(r"\+jdj\d+$")
 
 
@@ -148,6 +152,34 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
 [data-sc-jdj="form-labels"] {
   color: color-mix(in srgb, var(--text-color) 62%, var(--background-color));
 }
+[data-sc-jdj="grammar"] {
+  font-size: 0.85em;
+  font-weight: bold;
+  color: color-mix(in srgb, var(--text-color) 60%, var(--background-color));
+}
+[data-sc-jdj="examples-plain"] {
+  font-style: italic;
+  color: color-mix(in srgb, var(--text-color) 78%, var(--background-color));
+  margin-top: 0.1em;
+  margin-bottom: 0.35em;
+  padding-left: 1.2em;
+}
+[data-sc-jdj="pattern"] {
+  font-weight: bold;
+  font-style: normal;
+}
+[data-sc-jdj="subsenses"] {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+  padding-left: 1.1em;
+}
+[data-sc-jdj="synonyms"] {
+  font-size: 0.9em;
+  margin-top: 0.1em;
+}
+[data-sc-jdj="syllables"] {
+  font-weight: bold;
+}
 """
 
 
@@ -155,6 +187,9 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
 class Example:
     text: str
     translation: str = ""
+    # The pattern an English example shows, as `call for` before `A hiker
+    # heard his calls for help.`
+    pattern: str = ""
 
 
 @dataclass
@@ -165,6 +200,11 @@ class Sense:
     notes: list[str] = field(default_factory=list)
     # Words to look up for this meaning, such as 態度 after "thái độ".
     refs: list[str] = field(default_factory=list)
+    # Grammar or usage before the meaning, such as `[C] informal`.
+    label: str = ""
+    # Narrower meanings, as `1 a` and `1 b` under `1`.
+    subsenses: list["Sense"] = field(default_factory=list)
+    synonyms: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -183,6 +223,13 @@ class Body:
     han_viet: str = ""
     # Facts about a character, such as its strokes and radical.
     facts: str = ""
+    # The headword split into syllables, as `beau·ti·ful`.
+    syllables: str = ""
+    # What the headword is a form of, and which form: ("buttress", "past
+    # simple").
+    forms: list[tuple[str, str]] = field(default_factory=list)
+    # Examples with no translation, as in a dictionary of one language.
+    monolingual: bool = False
 
 
 class _Builder:
@@ -200,30 +247,36 @@ class _Builder:
             self.section("", "general")
         return self.body.sections[-1]
 
-    def sense(self, gloss: str) -> None:
-        self._current().senses.append(Sense(gloss))
+    def sense(self, gloss: str, label: str = "") -> None:
+        self._current().senses.append(Sense(gloss, label=label))
 
-    def example(self, example: Example) -> None:
-        """Joins the sense above, opening a bare one when the source puts an
-        example before any meaning."""
+    def subsense(self, gloss: str, label: str = "") -> None:
+        """A narrower meaning of the sense above."""
         section = self._current()
         if not section.senses:
             section.senses.append(Sense(""))
-        section.senses[-1].examples.append(example)
+        section.senses[-1].subsenses.append(Sense(gloss, label=label))
+
+    def target(self) -> Sense:
+        """The meaning examples and notes join: the last one, or its last
+        narrower meaning. A bare one opens when the source puts an example
+        before any meaning."""
+        section = self._current()
+        if not section.senses:
+            section.senses.append(Sense(""))
+        sense = section.senses[-1]
+        return sense.subsenses[-1] if sense.subsenses else sense
+
+    def example(self, example: Example) -> None:
+        self.target().examples.append(example)
 
     def note(self, text: str) -> None:
         """An explanation of the meaning above."""
-        section = self._current()
-        if not section.senses:
-            section.senses.append(Sense(""))
-        section.senses[-1].notes.append(text)
+        self.target().notes.append(text)
 
     def ref(self, word: str) -> None:
         """A word to look up for the meaning above."""
-        section = self._current()
-        if not section.senses:
-            section.senses.append(Sense(""))
-        section.senses[-1].refs.append(word)
+        self.target().refs.append(word)
 
     def last_example(self) -> Example | None:
         if self.body.sections and self.body.sections[-1].senses:
@@ -242,14 +295,22 @@ class _Builder:
 
     def finish(self) -> Body:
         for section in self.body.sections:
-            section.senses = [
-                sense for sense in section.senses
-                if sense.gloss or sense.examples or sense.notes or sense.refs
-            ]
+            section.senses = [sense for sense in section.senses if _says_something(sense)]
+            for sense in section.senses:
+                sense.subsenses = [sub for sub in sense.subsenses if _says_something(sub)]
+        # Idioms and headings may stand alone, before what belongs to them.
         self.body.sections = [
-            section for section in self.body.sections if section.senses or section.kind == "idiom"
+            section for section in self.body.sections
+            if section.senses or section.kind in ("idiom", "heading")
         ]
         return self.body
+
+
+def _says_something(sense: Sense) -> bool:
+    return bool(
+        sense.gloss or sense.examples or sense.notes or sense.refs or sense.label
+        or sense.subsenses or sense.synonyms
+    )
 
 
 def _split_example(body: str) -> Example:
@@ -895,54 +956,99 @@ def _node(tag: str, kind: str, content: object) -> dict:
     return {"tag": tag, "data": {"jdj": kind}, "content": content}
 
 
+def _links(words: list[str]) -> list:
+    links: list = []
+    for number, word in enumerate(words):
+        links += [", "] if number else []
+        links.append(_ref(word))
+    return links
+
+
+def _item(sense: Sense, section: Section, body: Body) -> list:
+    """A meaning: its grammar, gloss, notes, words to look up, examples and
+    narrower meanings."""
+    item: list = []
+    if sense.label:
+        label = {"tag": "span", "data": {"jdj": "grammar"}, "content": sense.label}
+        item.append(_node("div", "gloss", [label, " ", _gloss(sense.gloss)] if sense.gloss else label))
+    elif sense.gloss:
+        item.append(_node("div", "gloss", _gloss(sense.gloss)))
+    for note in sense.notes:
+        item.append(_node("div", "note", note))
+    if sense.refs:
+        links = _links(sense.refs)
+        item.append(_node("div", "refs", links if section.kind == "compounds" else ["→ ", *links]))
+    if sense.synonyms:
+        label = {"tag": "span", "data": {"jdj": "grammar"}, "content": "SYN"}
+        item.append(_node("div", "synonyms", [label, " ", *_links(sense.synonyms)]))
+    if sense.examples:
+        lines = []
+        for example in sense.examples:
+            text: object = example.text
+            if example.pattern:
+                pattern = {"tag": "span", "data": {"jdj": "pattern"}, "content": example.pattern}
+                text = [pattern, " ", example.text] if example.text else pattern
+            lines.append({"tag": "li", "content": [
+                _node("div", "example", text),
+                *([_node("div", "translation", example.translation)] if example.translation else []),
+            ]})
+        item.append(_node("ul", "examples-plain" if body.monolingual else "examples", lines))
+    if sense.subsenses:
+        item.append(_node("ul", "subsenses", [
+            {"tag": "li", "content": _item(sub, section, body)} for sub in sense.subsenses
+        ]))
+    return item
+
+
 def to_structured(body: Body) -> dict | None:
     """The entry as Yomitan structured content, or None when nothing was
     understood."""
-    if not body.sections:
+    if not body.sections and not body.forms:
         return None
     content: list = []
     if body.han_viet:
         content.append(_node("div", "han-viet", body.han_viet))
     if body.facts:
         content.append(_node("div", "facts", body.facts))
-    if body.pronunciation:
+    if body.syllables:
+        line: list = [{"tag": "span", "data": {"jdj": "syllables"}, "content": body.syllables}]
+        if body.pronunciation:
+            line.append(f"  /{body.pronunciation}/")
+        content.append(_node("div", "ipa", line))
+    elif body.pronunciation:
         content.append(_node("div", "ipa", f"/{body.pronunciation}/"))
+    for word, kind in body.forms:
+        line = ["→ ", _ref(word)]
+        if kind:
+            line += [" ", {"tag": "span", "data": {"jdj": "form-labels"}, "content": kind}]
+        content.append(_node("div", "form-of", line))
     for section in body.sections:
         parts: list = []
         if section.label:
             parts.append(_node("div", "idiom" if section.kind == "idiom" else "label", section.label))
-        items = []
-        for sense in section.senses:
-            item: list = []
-            if sense.gloss:
-                item.append(_node("div", "gloss", _gloss(sense.gloss)))
-            for note in sense.notes:
-                item.append(_node("div", "note", note))
-            if sense.refs:
-                links: list = [] if section.kind == "compounds" else ["→ "]
-                for number, word in enumerate(sense.refs):
-                    links += [", "] if number else []
-                    links.append(_ref(word))
-                item.append(_node("div", "refs", links))
-            if sense.examples:
-                item.append(_node("ul", "examples", [
-                    {"tag": "li", "content": [
-                        _node("div", "example", example.text),
-                        *([_node("div", "translation", example.translation)] if example.translation else []),
-                    ]}
-                    for example in sense.examples
-                ]))
-            items.append(item)
-        if len(items) == 1:
-            parts.extend(items[0])
+        items = [_item(sense, section, body) for sense in section.senses]
+        if len(items) == 1 or section.kind == "heading":
+            # Notes under a heading, as a dictionary's synonyms, are not
+            # numbered.
+            for item in items:
+                parts.extend(item)
         elif items:
             parts.append(_node("ol", "senses", [{"tag": "li", "content": item} for item in items]))
         content.append(_node("div", "section", parts))
     return {"type": "structured-content", "content": content}
 
 
+def _is_text(item: object) -> bool:
+    """A definition in plain text: a string, or Yomitan's text object."""
+    return isinstance(item, str) or (
+        isinstance(item, dict) and item.get("type") == "text" and isinstance(item.get("text"), str)
+    )
+
+
 def _texts(row: list) -> list[str]:
-    return [item for item in row[5] if isinstance(item, str)] if len(row) > 5 and isinstance(row[5], list) else []
+    if len(row) <= 5 or not isinstance(row[5], list):
+        return []
+    return [item if isinstance(item, str) else item["text"] for item in row[5] if _is_text(item)]
 
 
 def _is_form(definition: object) -> bool:
@@ -1060,7 +1166,11 @@ def _text_layout(rows: list) -> str | None:
         return "html"
     vietnamese = sum(any(ch in _VIETNAMESE_ONLY for ch in text) for text in texts)
     if vietnamese / len(texts) < 0.05:
-        return None
+        # english.py lays out text of its own; imported here, as it builds
+        # on what this module defines.
+        from . import english
+
+        return english.detect(texts)
     if sum(bool(_CODE.search(text)) for text in texts) / len(texts) > 0.5:
         return "prodict"
     if sum(bool(re.match(r"^\s*\[[^\]]+\]", text)) for text in texts) / len(texts) > 0.5:
@@ -1108,7 +1218,13 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
             for item in row[5]
         ]
         return [*row[:5], laid_out, *row[6:]]
-    if layout == "prodict":
+    if layout in ENGLISH_LAYOUTS:
+        from . import english
+
+        if english.says_nothing(layout, texts) and len(texts) == len(row[5]):
+            return None
+        body = english.parse(layout, texts, term)
+    elif layout == "prodict":
         body = parse_prodict(texts, term, vocabulary)
     elif layout == "babylon":
         body = parse_babylon(texts)
@@ -1123,7 +1239,7 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
     structured = to_structured(body)
     if structured is None:
         return row
-    others = [item for item in row[5] if not isinstance(item, str)]
+    others = [item for item in row[5] if not _is_text(item)]
     return [*row[:5], [structured, *others], *row[6:]]
 
 
