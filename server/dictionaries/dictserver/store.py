@@ -14,9 +14,11 @@ from . import grammar, tidy
 # waiting -> indexing -> ready, or failed with an error the uploader can read.
 STATUSES = ("waiting", "indexing", "ready", "failed")
 
-# Sections of the app's catalog an admin can put a dictionary in, beyond
-# the ones the app works out from its languages and kinds.
-SECTIONS = ("grammar",)
+# Sections of the app's catalog an admin can put a dictionary in. Without
+# one, the app works its section out from its languages and kinds: a
+# dictionary of characters written as terms, for their layout, still
+# belongs with kanji. Apps from before dev.13 only read grammar.
+SECTIONS = ("bilingual", "monolingual", "grammar", "kanji", "frequency", "pronunciation", "other")
 # Words in a title that mark a dictionary of grammar. Descriptions are not
 # read: a word dictionary's may well mention the grammar of its entries.
 _GRAMMAR_WORDS = re.compile(r"文法|文型|grammar|ngữ pháp", re.IGNORECASE)

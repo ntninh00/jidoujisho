@@ -119,8 +119,9 @@ class CatalogDictionary {
   /// Why indexing failed.
   final String? error;
 
-  /// The section the server puts it in, such as `grammar`, beyond the ones
-  /// worked out here from its languages and kinds.
+  /// The section the server puts it in, such as `grammar`, or `kanji` for
+  /// characters written as terms; otherwise it is worked out here from its
+  /// languages and kinds.
   final String? serverSection;
 
   /// Whether its definitions are in another language than its words.
@@ -137,8 +138,10 @@ class CatalogDictionary {
 
   /// Where it belongs in the catalog.
   CatalogSection get section {
-    if (serverSection == 'grammar') {
-      return CatalogSection.grammar;
+    for (CatalogSection section in CatalogSection.values) {
+      if (section.name == serverSection) {
+        return section;
+      }
     }
     if (kinds.contains('terms')) {
       String? source = sourceLanguage;
@@ -406,8 +409,8 @@ class CatalogChanges {
   /// set to its language.
   final Map<String, String>? notes;
 
-  /// The section to put it in, such as `grammar`, or an empty one to take
-  /// it out of the one it is in.
+  /// The section to put it in, such as `kanji`, or an empty one to let the
+  /// server choose again.
   final String? section;
 
   /// Whether anything changes.
@@ -425,7 +428,7 @@ class CatalogChanges {
           'targetLanguage': languages!.target,
         },
         if (notes?.isNotEmpty ?? false) 'notes': notes,
-        if (section != null) 'section': section,
+        if (section != null) 'section': section!.isEmpty ? null : section,
       };
 }
 

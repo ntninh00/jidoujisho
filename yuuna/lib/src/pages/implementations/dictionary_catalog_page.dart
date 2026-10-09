@@ -1648,7 +1648,7 @@ class _CatalogManageSheet extends StatefulWidget {
 class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   late String? _source = widget.dictionary.sourceLanguage;
   late String? _target = widget.dictionary.targetLanguage;
-  late bool _grammar = widget.dictionary.section == CatalogSection.grammar;
+  late String? _section = widget.dictionary.serverSection;
 
   /// The app's languages. Each has its own description, which shows only
   /// in the app set to that language.
@@ -1691,12 +1691,11 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
           note.key: note.value.text.trim(),
     };
     String title = _title.text.trim();
-    bool grammar = _grammar != (dictionary.section == CatalogSection.grammar);
     return CatalogChanges(
       title: title.isNotEmpty && title != dictionary.title ? title : null,
       languages: languages ? (source: _source, target: _target) : null,
       notes: notes,
-      section: grammar ? (_grammar ? 'grammar' : '') : null,
+      section: _section != dictionary.serverSection ? _section ?? '' : null,
     );
   }
 
@@ -1940,13 +1939,44 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
                   JidoujishoInfoButton(message: t.catalog_languages_hint),
                 ],
               ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(t.catalog_grammar),
-                value: _grammar,
-                onChanged: (value) => setState(() => _grammar = value),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t.catalog_section,
+                          style: theme.textTheme.labelMedium!
+                              .copyWith(color: theme.unselectedWidgetColor),
+                        ),
+                        DropdownButton<String?>(
+                          value: _section,
+                          isExpanded: true,
+                          icon: const Icon(Ui.angleDown, size: 18),
+                          borderRadius: BorderRadius.circular(14),
+                          items: [
+                            DropdownMenuItem(
+                              child: Text(t.catalog_section_auto),
+                            ),
+                            for (CatalogSection section
+                                in CatalogSection.values)
+                              DropdownMenuItem(
+                                value: section.name,
+                                child: Text(_sectionName(section)),
+                              ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _section = value),
+                        ),
+                      ],
+                    ),
+                  ),
+                  JidoujishoInfoButton(message: t.catalog_section_hint),
+                ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   TextButton.icon(

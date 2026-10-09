@@ -15,7 +15,7 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
     PATCH  /api/dictionaries/{id}                -> any of {"title", "sourceLanguage", "targetLanguage",
                                                     "notes": {"en": "...", "vi": null},
-                                                    "section": "grammar" | "" | null}
+                                                    "section": "kanji", "grammar", ... | "" | null}
     DELETE /api/dictionaries/{id}
 
 The app's own wording, which both kinds of token can change (see strings.py):

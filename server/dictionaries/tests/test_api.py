@@ -240,7 +240,8 @@ def test_grammar_dictionaries_have_a_section(client):
     assert guessed["section"] == "grammar"
     url = f"/api/dictionaries/{plain['id']}"
     assert client.patch(url, json={"section": "grammar"}, headers=auth(ADMIN)).json()["section"] == "grammar"
-    assert client.patch(url, json={"section": "kanji"}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"section": "kanji"}, headers=auth(ADMIN)).json()["section"] == "kanji"
+    assert client.patch(url, json={"section": "words"}, headers=auth(ADMIN)).status_code == 400
     assert client.patch(url, json={"section": "grammar"}, headers=auth(READER)).status_code == 403
     # "" takes a guessed one out of the section; null guesses again.
     url = f"/api/dictionaries/{guessed['id']}"
