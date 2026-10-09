@@ -2584,10 +2584,29 @@ class AppModel with ChangeNotifier {
   int dictionariesRevision = 0;
 
   /// Whether [result] has anything to show: its words may all be in
-  /// dictionaries that are hidden.
+  /// dictionaries that are hidden. Worked out once for each result and
+  /// [dictionariesRevision], as every rebuild while typing asks.
   bool showsAnything(DictionarySearchResult result) {
-    return headingsOf(result).any((heading) => heading.entries.any(
+    (int, bool)? known = _showsAnything[result];
+    if (known != null && known.$1 == dictionariesRevision) {
+      return known.$2;
+    }
+    bool shows = headingsOf(result).any((heading) => heading.entries.any(
         (entry) => !(entry.dictionary.value?.isHidden(targetLanguage) ?? true)));
+    _showsAnything[result] = (dictionariesRevision, shows);
+    return shows;
+  }
+
+  final Expando<(int, bool)> _showsAnything = Expando();
+
+  /// Takes the stored result [id] out of the Dictionary tab's history.
+  Future<void> removeFromDictionaryHistory(int id) async {
+    await _dictionaryHistory.deleteAll(_dictionaryHistory
+        .toMap()
+        .entries
+        .where((entry) => entry.value == id)
+        .map((entry) => entry.key)
+        .toList());
   }
 
   /// One port for the search parameters, instead of one per search.
@@ -2732,6 +2751,7 @@ class AppModel with ChangeNotifier {
     bool useCache = true,
     String? channel,
     bool byMeaning = false,
+    bool persist = true,
   }) async {
     searchTerm = searchTerm.replaceAll('\n', ' ');
 
@@ -2783,6 +2803,7 @@ class AppModel with ChangeNotifier {
       function: function,
       params: params,
       channel: channel,
+      persist: persist,
     );
 
     /// A newer search on the same channel replaced this one.
@@ -4621,7 +4642,8 @@ class AppModel with ChangeNotifier {
   }
 
   /// Adds a [DictionarySearchResult] to dictionary history.
-  void addToDictionaryHistory({required DictionarySearchResult result}) async {
+  Future<void> addToDictionaryHistory(
+      {required DictionarySearchResult result}) async {
     MediaType mediaType = mediaTypes.values.toList()[currentHomeTabIndex];
     if (mediaType != DictionaryMediaType.instance) {
       shouldRefreshTabs = true;
@@ -4636,11 +4658,18 @@ class AppModel with ChangeNotifier {
       return;
     }
 
-    /// A fresh result is still being stored; wait for its id.
+    /// A fresh result is still being stored; wait for its id. One searched
+    /// while typing was not stored, so it is stored now.
     int? id = result.id ?? await result.pendingId;
-    if (id == null) {
-      return;
-    }
+    id ??= result.id = persistSearchOutcome(
+      database: _database,
+      outcome: DictionarySearchOutcome(
+        searchTerm: result.searchTerm,
+        bestLength: result.bestLength,
+        headingIds: result.headingIds,
+      ),
+      maximumStoredResults: maximumDictionarySearchResults,
+    );
 
     _dictionaryHistory.deleteAll(_dictionaryHistory
         .toMap()

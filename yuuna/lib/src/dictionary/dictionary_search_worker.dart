@@ -54,12 +54,14 @@ class _Job {
     required this.function,
     required this.params,
     required this.channel,
+    required this.persist,
   });
 
   final int id;
   final DictionarySearchFunction function;
   final DictionarySearchParams params;
   final String? channel;
+  final bool persist;
   final Completer<DictionarySearchReply?> reply = Completer();
   final Completer<int?> persisted = Completer();
 }
@@ -86,16 +88,21 @@ class DictionarySearchWorker {
 
   /// Search with [function] on the worker isolate. Resolves to null when a
   /// newer job on the same [channel] replaced this one before it started.
+  /// Without [persist], the result is not stored, and its reply's
+  /// [DictionarySearchReply.persisted] is null: storing takes longer than
+  /// most searches, and typing would wait on it for every key.
   Future<DictionarySearchReply?> search({
     required DictionarySearchFunction function,
     required DictionarySearchParams params,
     String? channel,
+    bool persist = true,
   }) {
     _Job job = _Job(
       id: _nextId++,
       function: function,
       params: params,
       channel: channel,
+      persist: persist,
     );
 
     if (channel != null) {
@@ -147,7 +154,7 @@ class DictionarySearchWorker {
     _running = job;
     try {
       SendPort port = await _ensureStarted();
-      port.send(<Object?>[job.id, job.function, job.params]);
+      port.send(<Object?>[job.id, job.function, job.params, job.persist]);
     } catch (error) {
       _running = null;
       job.reply.completeError(error);
@@ -218,13 +225,14 @@ Future<void> _workerMain(SendPort mainPort) async {
   mainPort.send(port.sendPort);
 
   await for (Object? message in port) {
-    if (message is! List || message.length != 3) {
+    if (message is! List || message.length != 4) {
       continue;
     }
 
     int id = message[0] as int;
     DictionarySearchFunction function = message[1] as DictionarySearchFunction;
     DictionarySearchParams params = message[2] as DictionarySearchParams;
+    bool persist = message[3] as bool;
 
     DictionarySearchOutcome? outcome;
     try {
@@ -248,7 +256,7 @@ Future<void> _workerMain(SendPort mainPort) async {
     mainPort.send(<Object?>[id, 'result', outcome]);
 
     int? resultId;
-    if (outcome != null) {
+    if (outcome != null && persist) {
       try {
         Isar database = Isar.getInstance() ??
             await Isar.open(

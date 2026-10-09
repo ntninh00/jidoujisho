@@ -26,29 +26,43 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   bool _isSearching = false;
   bool _lastOpenedState = false;
 
+  /// Whether a search has run long enough to show the bar's progress line.
+  /// Most take a few milliseconds, and a line flashing on every key is
+  /// noise.
+  bool _slowSearch = false;
+
+  /// What was last put in the history, and when, so the start of a word
+  /// recorded during a pause gives way to the whole word.
+  ({String term, DateTime at, int? resultId})? _recorded;
+
   @override
   void initState() {
     super.initState();
     appModelNoUpdate.dictionarySearchAgainNotifier.addListener(searchAgain);
     appModelNoUpdate.myWordsVersion.addListener(_onMyWordsChanged);
-    appModelNoUpdate.dictionaryEntriesNotifier.addListener(() {
-      if (mediaType.floatingSearchBarController.isClosed) {
-        if (!appModel.isMediaOpen &&
-            DictionaryMediaType.instance ==
-                appModel.mediaTypes.values
-                    .toList()[appModel.currentHomeTabIndex]) {
-          if (mounted) {
-            setState(() {});
-          }
-        }
-      }
-    });
+    appModelNoUpdate.dictionaryEntriesNotifier.addListener(_onEntriesChanged);
   }
 
+  /// Every listener goes with the tab, which is built again on some
+  /// changes: one left behind would search for a tab that is gone.
   @override
   void dispose() {
+    appModelNoUpdate.dictionarySearchAgainNotifier.removeListener(searchAgain);
     appModelNoUpdate.myWordsVersion.removeListener(_onMyWordsChanged);
+    appModelNoUpdate.dictionaryEntriesNotifier
+        .removeListener(_onEntriesChanged);
     super.dispose();
+  }
+
+  void _onEntriesChanged() {
+    if (!mounted || !mediaType.floatingSearchBarController.isClosed) {
+      return;
+    }
+    if (!appModel.isMediaOpen &&
+        DictionaryMediaType.instance ==
+            appModel.mediaTypes.values.toList()[appModel.currentHomeTabIndex]) {
+      setState(() {});
+    }
   }
 
   /// Shows a word just added to My words in the open results.
@@ -130,7 +144,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       width: double.maxFinite,
       transition: SlideFadeFloatingSearchBarTransition(),
       automaticallyImplyBackButton: false,
-      progress: _isSearching,
+      progress: _slowSearch,
       onFocusChanged: (focused) => onFocusChanged(focused: focused),
       onQueryChanged: onQueryChanged,
       onSubmitted: search,
@@ -207,15 +221,23 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         _isSearching = true;
       });
     }
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted && serial == _searchSerial && _isSearching) {
+        setState(() => _slowSearch = true);
+      }
+    });
 
     DictionarySearchResult? result;
     try {
+      /// Searches while typing are not stored; the one that makes it into
+      /// the history is, when it does.
       result = await appModel.searchDictionary(
         searchTerm: query,
         searchWithWildcards: true,
         overrideMaximumTerms: maximumTerms,
         channel: 'dictionary_tab',
         byMeaning: appModel.searchByMeaning,
+        persist: false,
       );
     } catch (error) {
       debugPrint('Dictionary search failed: $error');
@@ -228,6 +250,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
     setState(() {
       _isSearching = false;
+      _slowSearch = false;
       if (result != null) {
         _result = result;
         _showMore = result.headingIds.length < maximumTerms;
@@ -241,15 +264,38 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     Future.delayed(historyDelay, () async {
       if (serial == _searchSerial &&
           query == mediaType.floatingSearchBarController.query) {
-        appModel.addToSearchHistory(
-          historyKey: mediaType.uniqueKey,
-          searchTerm: mediaType.floatingSearchBarController.query,
-        );
-        if (found.headingIds.isNotEmpty) {
-          appModel.addToDictionaryHistory(result: found);
-        }
+        await _record(query, found);
       }
     });
+  }
+
+  /// Puts [query] in the history. The start of a word recorded during a
+  /// pause in typing gives way to the word, and a step back while
+  /// deleting is not recorded at all.
+  Future<void> _record(String query, DictionarySearchResult found) async {
+    var last = _recorded;
+    bool recent = last != null &&
+        DateTime.now().difference(last.at) < const Duration(seconds: 30);
+    if (recent && last.term.startsWith(query)) {
+      return;
+    }
+    if (recent && query.startsWith(last.term)) {
+      appModel.removeFromSearchHistory(
+        historyKey: mediaType.uniqueKey,
+        searchTerm: last.term,
+      );
+      if (last.resultId != null) {
+        await appModel.removeFromDictionaryHistory(last.resultId!);
+      }
+    }
+    appModel.addToSearchHistory(
+      historyKey: mediaType.uniqueKey,
+      searchTerm: query,
+    );
+    if (found.headingIds.isNotEmpty) {
+      await appModel.addToDictionaryHistory(result: found);
+    }
+    _recorded = (term: query, at: DateTime.now(), resultId: found.id);
   }
 
   Widget buildDictionaryButton() {
@@ -395,12 +441,10 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         );
       }
     }
-    if (_isSearching) {
-      if (_result != null && _result!.headingIds.isNotEmpty) {
-        return buildSearchResult();
-      } else {
-        return const SizedBox.shrink();
-      }
+    /// While a search runs, what the last one found stays: results, or that
+    /// there were none, instead of blinking blank on every key.
+    if (_isSearching && _result == null) {
+      return const SizedBox.shrink();
     }
 
     if (_result == null ||
