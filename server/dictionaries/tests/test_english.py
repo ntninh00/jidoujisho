@@ -119,3 +119,25 @@ def test_english_dictionaries_are_told_apart():
     laid = tidy.rewrite_row(row({"type": "text", "text": MWALD}), "mwald")
     assert len(laid[5]) == 1 and laid[5][0]["type"] == "structured-content"
     assert tidy.rewrite_row(row({"type": "text", "text": "↑<>\n"}), "mwald") is None
+
+
+def test_banks_that_grow_too_large_are_split(tmp_path, monkeypatch):
+    import zipfile
+
+    from conftest import make_zip
+
+    monkeypatch.setattr(tidy, "BANK_BYTES", 2000)
+    rows = [["word%d" % n, "", "", "", 0, [WORDSET], 0, ""] for n in range(30)]
+    path = tmp_path / "dictionary.zip"
+    path.write_bytes(make_zip({
+        "index.json": {"title": "Wordset", "revision": "1", "format": 3},
+        "term_bank_1.json": rows,
+        "term_bank_2.json": rows[:1],
+    }))
+    assert tidy.apply(path) == ("wordset", True)
+    with zipfile.ZipFile(path) as archive:
+        banks = sorted(name for name in archive.namelist() if name.startswith("term_bank_"))
+        assert len(banks) > 3 and "term_bank_3.json" in banks
+        found = [row[0] for name in banks for row in json.loads(archive.read(name))]
+    # Every row is still there once; the second bank only repeated one.
+    assert sorted(found) == sorted(row[0] for row in rows)

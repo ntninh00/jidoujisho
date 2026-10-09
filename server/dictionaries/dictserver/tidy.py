@@ -1278,6 +1278,27 @@ def _vocabulary(archive: zipfile.ZipFile) -> set[str]:
     return words
 
 
+# The most a rewritten bank holds, well under the server's own limit:
+# laying out makes text larger.
+BANK_BYTES = 32 << 20
+
+
+def _banks(rows: list) -> list[bytes]:
+    """[rows] as one bank, or as several when one would be too large."""
+    banks: list[bytes] = []
+    chunk: list = []
+    size = 0
+    for row in rows:
+        encoded = len(json.dumps(row, ensure_ascii=False, separators=(",", ":")).encode())
+        if chunk and size + encoded > BANK_BYTES:
+            banks.append(json.dumps(chunk, ensure_ascii=False, separators=(",", ":")).encode())
+            chunk, size = [], 0
+        chunk.append(row)
+        size += encoded + 1
+    banks.append(json.dumps(chunk, ensure_ascii=False, separators=(",", ":")).encode())
+    return banks
+
+
 def _repeated(row: object, layout: str, seen: set[bytes]) -> bool:
     """Whether a row only repeats one before it, as many exports do. Babylon
     ones give each reading of a character the whole entry again, every
@@ -1321,6 +1342,9 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
     with zipfile.ZipFile(_original(zip_path)) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
         names = set(source.namelist())
         vocabulary = _vocabulary(source) if layout == "prodict" else None
+        # Banks that grew too large go on in banks numbered after the last.
+        numbers = [int(match.group(2)) for name in names if (match := BANK.match(name)) and match.group(1) == "term"]
+        next_bank = max(numbers, default=0) + 1
         for info in source.infolist():
             data = source.read(info)
             match = BANK.match(info.filename)
@@ -1328,7 +1352,11 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
                 rows = json.loads(data.decode("utf-8-sig"))
                 rows = [rewrite_row(row, layout, vocabulary) if isinstance(row, list) else row for row in rows]
                 rows = [row for row in rows if row is not None and not _repeated(row, layout, seen)]
-                data = json.dumps(rows, ensure_ascii=False, separators=(",", ":")).encode()
+                first, *rest = _banks(rows)
+                data = first
+                for more in rest:
+                    target.writestr(f"term_bank_{next_bank}.json", more)
+                    next_bank += 1
             elif info.filename == "index.json":
                 index = json.loads(data.decode("utf-8-sig"))
                 index["revision"] = f"{base_revision(str(index.get('revision', '')))}{revision_suffix(layout)}"
