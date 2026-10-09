@@ -5,7 +5,8 @@ made with tools/grammar_vi_batches.py and checked with grammar_vi_check.py.
 Each point is laid out as dictserver/grammar.py lays out the others: its
 pattern and level, meaning, formation, explanation, and its examples in
 Japanese with their Vietnamese. It is looked up by the forms the model
-gave; points looked up the same way share an entry. Points not translated
+gave; points looked up the same way share an entry. The corrections in
+grammar_jlpt_vi_fixes.py are applied first. Points not translated
 yet are left out, and so are the few found only by a kana that begins
 too many other words.
 
@@ -26,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dictserver import grammar  # noqa: E402
 from grammar_vi_batches import points  # noqa: E402
 from grammar_vi_build import reading_of, rules_of  # noqa: E402
+from grammar_jlpt_vi_fixes import apply as corrected  # noqa: E402
 from grammar_vi_check import translated  # noqa: E402
 
 TITLE = "Ngữ pháp tiếng Nhật N5–N1"
@@ -78,7 +80,10 @@ def build(sources: list[dict], answers: dict[str, dict], out: Path, revision: st
     built = 0
     for source in sources:
         answer = answers.get(source["id"])
-        if answer is None or not keys_of(answer):
+        if answer is None:
+            continue
+        source, answer = corrected(source, answer)
+        if not keys_of(answer):
             continue
         structured = grammar.to_structured(point_of(source, answer))
         built += 1

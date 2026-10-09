@@ -28,6 +28,16 @@ def test_a_short_reply_is_read_whole():
     assert problem(SOURCE, {**ANSWER, "ex": []}) == "0 examples for 1"
 
 
+def test_corrections_apply():
+    from grammar_jlpt_vi_fixes import apply
+
+    source = {"id": "N3-118", "t": "～らしい", "ex": [["a", ""], ["b", ""], ["c", ""], ["彼女は医者だらしい。", ""]]}
+    fixed, answer = apply(source, {**ANSWER, "ex": ["1", "2", "3", "4"]})
+    assert fixed["ex"][3][0] == "彼女は医者らしい。" and source["ex"][3][0] == "彼女は医者だらしい。"
+    whole, answer = apply({**SOURCE, "id": "N1-004"}, ANSWER)
+    assert len(whole["ex"]) == len(answer["ex"]) == 3 and "遅かれ早かれ" in answer["k"]
+
+
 def test_the_dictionary_is_built(tmp_path):
     common = {**SOURCE, "id": "N3-021", "t": "～さ"}
     out = tmp_path / "grammar.zip"
