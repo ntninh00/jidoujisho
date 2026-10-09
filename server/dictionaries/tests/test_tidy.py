@@ -225,11 +225,61 @@ def test_html_dictionaries_are_laid_out_in_any_language():
     assert laid[5][1] == "plain"
 
 
+JAVIDIC_YOUSU = (
+    "「ようす」\nbộ dáng\n〘n〙\nthái độ\n態度\ntrạng thái\n"
+    "* Cụm từ hay dùng: 〜を見る: lặng lẽ trông\nvẻ bề ngoài; dáng vẻ\n"
+    "近ごろ彼の〜がおかしい:\ngần đây anh ta trông thật lạ lùng.\n外見 ."
+)
+
+
+def test_javidic_lays_out_word_classes_examples_and_words_to_look_up():
+    body = tidy.parse_javidic([JAVIDIC_YOUSU])
+    plain, noun = body.sections
+    assert [sense.gloss for sense in plain.senses] == ["bộ dáng"]
+    assert noun.label == "danh từ"
+    attitude, state, looks = noun.senses
+    assert (attitude.gloss, attitude.refs) == ("thái độ", ["態度"])
+    assert state.notes == ["Cụm từ hay dùng: 〜を見る: lặng lẽ trông"]
+    assert looks.examples[0].text == "近ごろ彼の〜がおかしい"
+    assert looks.examples[0].translation == "gần đây anh ta trông thật lạ lùng."
+    # The stray full stop at the end is gone.
+    assert looks.refs == ["外見"]
+    laid_out = tidy.to_structured(body)
+    assert ("label", "danh từ") in texts(laid_out)
+    assert '"href": "?query=%E6%85%8B%E5%BA%A6&wildcards=off"' in json.dumps(laid_out)
+
+
+def test_mazii_keeps_its_sino_vietnamese_reading():
+    body = tidy.parse_mazii(["DẠNG TỬ\n1. bộ dáng\n2. thái độ\n3. 態度\n4. vẻ bề ngoài .\n"])
+    assert body.han_viet == "DẠNG TỬ"
+    senses = body.sections[0].senses
+    assert [(sense.gloss, sense.refs) for sense in senses] == [
+        ("bộ dáng", []), ("thái độ", ["態度"]), ("vẻ bề ngoài", []),
+    ]
+    assert texts(tidy.to_structured(body))[0] == ("han-viet", "DẠNG TỬ")
+
+
+def test_japanese_dictionaries_get_their_own_layouts():
+    def row(term, text):
+        return [term, "", "", "", 0, [text], 0, ""]
+
+    assert tidy.detect([row("様子", JAVIDIC_YOUSU)] * 20) == "javidic"
+    assert tidy.detect([row("様子", "DẠNG TỬ\n1. bộ dáng\n2. dáng")] * 20) == "mazii"
+    jdict = "- dí dỏm\n* adj\n- thú vị; hay\n- 面白み"
+    assert tidy.detect([row("面白い", jdict)] * 20) == "jmarkup"
+    assert tidy.detect([row("house", OVDP_HOUSE)] * 20) == "markup"
+    body = tidy.japanese_touches(tidy.parse_markup([jdict]))
+    assert body.sections[1].label == "tính từ"
+    assert [(sense.gloss, sense.refs) for sense in body.sections[1].senses] == [("thú vị; hay", ["面白み"])]
+    assert tidy.word_classes("v5r, vt") == "động từ nhóm 1, tha động từ"
+    assert tidy.word_classes("danh từ") is None
+
+
 def test_each_layout_has_its_own_rules_number():
     assert tidy.stamp("markup") == "markup@3" and tidy.is_current("markup@3")
     assert tidy.stamp("html") == "html@1"
-    # Looked at before HTML was understood: looked at again.
-    assert not tidy.is_current("none@3") and tidy.is_current(tidy.stamp(None))
+    # Looked at before newer layouts were understood: looked at again.
+    assert not tidy.is_current("none@4") and tidy.is_current(tidy.stamp(None))
     assert not tidy.is_current("") and not tidy.is_current(None) and not tidy.is_current("odd@3")
     assert tidy.revision_suffix("html") == "+jdj1" and tidy.REVISION_SUFFIX == "+jdj3"
 

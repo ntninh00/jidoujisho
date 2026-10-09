@@ -32,6 +32,7 @@ import zipfile
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import quote
 
 from .checks import BANK
 
@@ -39,7 +40,10 @@ from .checks import BANK
 # again from its original when the server starts.
 # Each layout's rules have their own number, and so does finding a layout
 # (`none`), so a new layout looks again only at dictionaries that had none.
-VERSIONS = {"markup": 3, "babylon": 3, "prodict": 3, "html": 1, "none": 4}
+VERSIONS = {
+    "markup": 3, "babylon": 3, "prodict": 3, "html": 1,
+    "jmarkup": 1, "javidic": 1, "mazii": 1, "none": 5,
+}
 _SUFFIX = re.compile(r"\+jdj\d+$")
 
 
@@ -117,6 +121,15 @@ STYLES = """/* Laid out by jidoujisho's dictionary server from the dictionary's 
   margin-top: 0.1em;
   margin-bottom: 0.2em;
 }
+[data-sc-jdj="han-viet"] {
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25em;
+}
+[data-sc-jdj="refs"] {
+  font-size: 0.9em;
+  margin-top: 0.1em;
+}
 [data-sc-jdj="html-example"] {
   margin-top: 0.1em;
   margin-bottom: 0.3em;
@@ -137,6 +150,8 @@ class Sense:
     examples: list[Example] = field(default_factory=list)
     # Explanations of the meaning, set apart from it.
     notes: list[str] = field(default_factory=list)
+    # Words to look up for this meaning, such as 態度 after "thái độ".
+    refs: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -151,6 +166,8 @@ class Section:
 class Body:
     pronunciation: str = ""
     sections: list[Section] = field(default_factory=list)
+    # The Sino-Vietnamese reading of a Japanese word, as MIÊU for 猫.
+    han_viet: str = ""
 
 
 class _Builder:
@@ -186,6 +203,13 @@ class _Builder:
             section.senses.append(Sense(""))
         section.senses[-1].notes.append(text)
 
+    def ref(self, word: str) -> None:
+        """A word to look up for the meaning above."""
+        section = self._current()
+        if not section.senses:
+            section.senses.append(Sense(""))
+        section.senses[-1].refs.append(word)
+
     def last_example(self) -> Example | None:
         if self.body.sections and self.body.sections[-1].senses:
             examples = self.body.sections[-1].senses[-1].examples
@@ -204,7 +228,8 @@ class _Builder:
     def finish(self) -> Body:
         for section in self.body.sections:
             section.senses = [
-                sense for sense in section.senses if sense.gloss or sense.examples or sense.notes
+                sense for sense in section.senses
+                if sense.gloss or sense.examples or sense.notes or sense.refs
             ]
         self.body.sections = [
             section for section in self.body.sections if section.senses or section.kind == "idiom"
@@ -621,6 +646,129 @@ def parse_html(text: str) -> dict | None:
     return {"type": "structured-content", "content": content}
 
 
+# JMdict's word classes, as Japanese-Vietnamese dictionaries tag their
+# meanings, named in Vietnamese.
+_WORD_CLASSES = {
+    "n": "danh từ", "pn": "đại từ", "num": "số từ", "ctr": "từ đếm",
+    "v": "động từ", "v1": "động từ nhóm 2", "vk": "động từ bất quy tắc",
+    "vs": "động từ する", "vs-i": "động từ する", "vs-s": "động từ する", "vz": "động từ",
+    "vt": "tha động từ", "vi": "tự động từ",
+    "adj": "tính từ", "adj-i": "tính từ đuôi い", "adj-ix": "tính từ đuôi い",
+    "adj-na": "tính từ đuôi な", "adj-no": "tính từ の", "adj-pn": "liên thể từ",
+    "adj-t": "tính từ đuôi たる", "adj-f": "tính từ", "adv": "phó từ", "adv-to": "phó từ と",
+    "aux": "trợ từ", "aux-v": "trợ động từ", "aux-adj": "trợ tính từ",
+    "conj": "liên từ", "cop": "hệ từ", "exp": "cụm từ", "int": "thán từ", "prt": "trợ từ",
+    "pref": "tiền tố", "suf": "hậu tố", "n-adv": "danh từ phó từ", "n-suf": "hậu tố",
+    "n-pref": "tiền tố", "n-t": "danh từ chỉ thời gian", "unc": "chưa phân loại",
+}
+_CJK_WORD = re.compile(r"^[\u3005\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff〜～・]+$")
+_JAPANESE = re.compile(r"[\u3040-\u30ff\u3400-\u9fff]")
+
+
+def _word_class(code: str) -> str | None:
+    code = code.strip().lower()
+    if re.fullmatch(r"v5[a-z\-]*|v4[a-z]*|v2[a-z\-]*", code):
+        return "động từ nhóm 1" if code.startswith("v5") else "động từ"
+    return _WORD_CLASSES.get(code)
+
+
+def word_classes(label: str) -> str | None:
+    """A label of JMdict word classes, such as `v1, vt`, in Vietnamese; None
+    when it is something else."""
+    codes = [code for code in re.split(r"[,\s]+", label.strip()) if code]
+    names = [_word_class(code) for code in codes]
+    if not codes or None in names:
+        return None
+    return ", ".join(dict.fromkeys(names))
+
+
+def _clean(text: str) -> str:
+    """Without the stray full stop some exports end an entry with."""
+    return re.sub(r"\s+\.$", "", text.strip())
+
+
+def japanese_touches(body: Body) -> Body:
+    """For dictionaries of Japanese words: word classes named in Vietnamese,
+    meanings that are only a Japanese word made words to look up, and
+    stray full stops gone."""
+    for section in body.sections:
+        if section.kind == "pos":
+            section.label = word_classes(section.label) or section.label
+        senses: list[Sense] = []
+        for sense in section.senses:
+            sense.gloss = _clean(sense.gloss)
+            for example in sense.examples:
+                example.text, example.translation = _clean(example.text), _clean(example.translation)
+            if _CJK_WORD.match(sense.gloss) and senses:
+                senses[-1].refs.append(sense.gloss)
+                senses[-1].refs.extend(sense.refs)
+                continue
+            if _CJK_WORD.match(sense.gloss):
+                sense.refs.insert(0, sense.gloss)
+                sense.gloss = ""
+            senses.append(sense)
+        section.senses = senses
+    return body
+
+
+def parse_javidic(definitions: list[str]) -> Body:
+    """Javidic's text: the reading in 「」, word classes as 〘n〙 or `v1, vt`,
+    meanings one a line, examples as a Japanese line ending in a colon
+    with the translation below, Japanese words to look up on lines of
+    their own, and idioms and notes."""
+    builder = _Builder()
+    for definition in definitions:
+        lines = [line.strip() for line in definition.splitlines() if line.strip()]
+        at = 0
+        while at < len(lines):
+            line = _clean(lines[at])
+            at += 1
+            if line.startswith("「") and line.endswith("」"):
+                continue
+            bracketed = re.fullmatch(r"〘(.+)〙", line)
+            if bracketed or word_classes(line):
+                builder.section(bracketed.group(1) if bracketed else line, "pos")
+            elif line.endswith(":") and _JAPANESE.search(line) and at < len(lines):
+                builder.example(Example(line[:-1].strip(), _clean(lines[at])))
+                at += 1
+            elif re.match(r"^\*?\s*(Thành ngữ|Cụm từ hay dùng|Lưu ý)\s*:", line):
+                builder.note(line.lstrip("* ").strip())
+            elif _CJK_WORD.match(line):
+                builder.ref(line)
+            else:
+                builder.sense(line)
+    return japanese_touches(builder.finish())
+
+
+def parse_mazii(definitions: list[str]) -> Body:
+    """Mazii's text: the Sino-Vietnamese reading in capitals, then numbered
+    meanings."""
+    builder = _Builder()
+    han_viet = ""
+    for definition in definitions:
+        for number, line in enumerate(line.strip() for line in definition.splitlines()):
+            if not line:
+                continue
+            if number == 0 and _HAN_VIET_LINE.match(line):
+                han_viet = line
+                continue
+            line = _clean(re.sub(r"^\d+\.\s*", "", line))
+            if _CJK_WORD.match(line):
+                builder.ref(line)
+            elif line:
+                builder.sense(line)
+    body = japanese_touches(builder.finish())
+    body.han_viet = han_viet
+    return body
+
+
+_HAN_VIET_LINE = re.compile(r"^[A-ZÀ-ỸĐ][A-ZÀ-ỸĐ\s,]*$")
+
+
+def _ref(word: str) -> dict:
+    return {"tag": "a", "href": f"?query={quote(word)}&wildcards=off", "content": word}
+
+
 def _gloss(text: str) -> object:
     """A meaning, with a leading `{English}` that some exports go through
     set apart."""
@@ -642,6 +790,8 @@ def to_structured(body: Body) -> dict | None:
     if not body.sections:
         return None
     content: list = []
+    if body.han_viet:
+        content.append(_node("div", "han-viet", body.han_viet))
     if body.pronunciation:
         content.append(_node("div", "ipa", f"/{body.pronunciation}/"))
     for section in body.sections:
@@ -655,6 +805,12 @@ def to_structured(body: Body) -> dict | None:
                 item.append(_node("div", "gloss", _gloss(sense.gloss)))
             for note in sense.notes:
                 item.append(_node("div", "note", note))
+            if sense.refs:
+                links: list = ["→ "]
+                for number, word in enumerate(sense.refs):
+                    links += [", "] if number else []
+                    links.append(_ref(word))
+                item.append(_node("div", "refs", links))
             if sense.examples:
                 item.append(_node("ul", "examples", [
                     {"tag": "li", "content": [
@@ -691,9 +847,15 @@ def detect(rows: list) -> str | None:
         return "prodict"
     if sum(bool(re.match(r"^\s*\[[^\]]+\]", text)) for text in texts) / len(texts) > 0.5:
         return "babylon"
+    if sum(bool(re.match(r"^[A-ZÀ-ỸĐ][A-ZÀ-ỸĐ ,]*\n1\. ", text)) for text in texts) / len(texts) > 0.5:
+        return "mazii"
+    if sum(bool(re.match(r"^「[^」\n]+」\n", text)) for text in texts) / len(texts) > 0.5:
+        return "javidic"
     marked = sum(bool(_MARKER.search(text)) or bool(re.search(r"^ {2,}\S", text, re.M)) for text in texts)
     if marked / len(texts) >= 0.1:
-        return "markup"
+        words = [row[0] for row in rows if isinstance(row, list) and row and isinstance(row[0], str)]
+        japanese = sum(bool(_JAPANESE.search(word)) for word in words)
+        return "jmarkup" if words and japanese / len(words) > 0.5 else "markup"
     return None
 
 
@@ -717,6 +879,12 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
         body = parse_prodict(texts, term, vocabulary)
     elif layout == "babylon":
         body = parse_babylon(texts)
+    elif layout == "javidic":
+        body = parse_javidic(texts)
+    elif layout == "mazii":
+        body = parse_mazii(texts)
+    elif layout == "jmarkup":
+        body = japanese_touches(parse_markup(texts))
     else:
         body = parse_markup(texts)
     structured = to_structured(body)
