@@ -92,6 +92,14 @@ class JapaneseLanguage extends Language {
       terms.add(term);
     }
 
+    /// MeCab that found no words at all, as when its dictionary did not
+    /// load, would leave the text with nothing to pick or look up: a word
+    /// per character instead.
+    if (terms.isEmpty && text.isNotEmpty) {
+      debugPrint('MeCab found no words in "$text"; splitting by character');
+      return text.characters.toList();
+    }
+
     return terms;
   }
 

@@ -202,6 +202,19 @@ class _TextSegmentationDialogPage
     );
   }
 
+  /// With nothing picked, Stash and Search take the whole text rather than
+  /// doing nothing.
+  JidoujishoTextSelection get _selectionOrAll {
+    JidoujishoTextSelection picked = selection;
+    if (picked.range != TextRange.empty) {
+      return picked;
+    }
+    return JidoujishoTextSelection(
+      text: widget.sourceText,
+      range: TextRange(start: 0, end: widget.sourceText.length),
+    );
+  }
+
   void executeStash() {
     List<String> terms = [];
     widget.segmentedText.forEachIndexed((index, segment) {
@@ -209,16 +222,15 @@ class _TextSegmentationDialogPage
         terms.add(segment);
       }
     });
+    if (terms.isEmpty) {
+      terms.add(widget.sourceText.trim());
+    }
 
     appModel.addToStash(terms: terms);
   }
 
   void executeSearch() {
-    if (selection.range == TextRange.empty) {
-      return;
-    }
-
-    widget.onSearch?.call(selection);
+    widget.onSearch?.call(_selectionOrAll);
   }
 
   void executeSelect() {
