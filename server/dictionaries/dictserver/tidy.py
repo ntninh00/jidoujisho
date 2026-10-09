@@ -38,6 +38,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import quote
 
+from . import grammar
 from .checks import BANK
 
 # The rules below, numbered: a dictionary laid out by older ones is laid out
@@ -47,7 +48,8 @@ from .checks import BANK
 VERSIONS = {
     "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
     "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2,
-    "wordset": 1, "cambridge": 2, "noad": 1, "macmillan": 1, "mwald": 1, "none": 8,
+    "wordset": 1, "cambridge": 2, "noad": 1, "macmillan": 1, "mwald": 1,
+    "dojg": 2, "bunkei": 2, "edewakaru": 2, "none": 9,
 }
 # Layouts of dictionaries whose definitions are in Vietnamese.
 _VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
@@ -1152,7 +1154,7 @@ def detect(rows: list) -> str | None:
     sample. Text is laid out only in Vietnamese dictionaries, and HTML
     written as text in any; a dictionary with none of that but with
     inflected forms has those rewritten alone."""
-    layout = _text_layout(rows)
+    layout = grammar.detect(rows) or _text_layout(rows)
     if layout is None and _forms_share(rows) >= 0.02:
         return "forms"
     return layout
@@ -1200,6 +1202,8 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
     them was understood, and inflected forms' pointers made links. Other
     definitions, such as structured content, stay as they are. None for a
     row that says nothing."""
+    if layout in grammar.LAYOUTS:
+        return grammar.rewrite_row(row, layout)
     if _only_forms(row):
         row = [*row[:5], [_forms(row[5], layout in _VIETNAMESE_LAYOUTS)], *row[6:]]
     if layout == "forms":
@@ -1343,6 +1347,7 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
             return None, True
         return None, False
     temp = zip_path.with_name("tidy.zip")
+    styles = grammar.STYLES if layout in grammar.LAYOUTS else STYLES
     seen: set[bytes] = set()
     with zipfile.ZipFile(_original(zip_path)) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
         names = set(source.namelist())
@@ -1367,10 +1372,10 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
                 index["revision"] = f"{base_revision(str(index.get('revision', '')))}{revision_suffix(layout)}"
                 data = json.dumps(index, ensure_ascii=False, indent=2).encode()
             elif info.filename == "styles.css":
-                data = data + b"\n" + STYLES.encode()
+                data = data + b"\n" + styles.encode()
             target.writestr(info.filename, data)
         if "styles.css" not in names:
-            target.writestr("styles.css", STYLES)
+            target.writestr("styles.css", styles)
     if not original.exists():
         shutil.move(zip_path, original)
     shutil.move(temp, zip_path)
