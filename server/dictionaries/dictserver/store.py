@@ -267,10 +267,13 @@ class Catalog:
             )
 
     def untidied(self) -> list[str]:
-        """Ready dictionaries whose text was not looked at by the current
-        layout rules."""
+        """Dictionaries whose text was not looked at by the current layout
+        rules: ready ones, and ones that failed, which newer rules may lay
+        out so they no longer do."""
         with self._connect() as db:
-            rows = db.execute("SELECT id, tidy FROM dictionaries WHERE status = 'ready'").fetchall()
+            rows = db.execute(
+                "SELECT id, tidy FROM dictionaries WHERE status IN ('ready', 'failed')"
+            ).fetchall()
         return [row["id"] for row in rows if not tidy.is_current(row["tidy"])]
 
     def set_notes(self, dictionary_id: str, changes: dict[str, str | None]) -> dict | None:

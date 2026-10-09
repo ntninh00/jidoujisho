@@ -47,7 +47,7 @@ from .checks import BANK
 VERSIONS = {
     "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
     "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2,
-    "wordset": 1, "cambridge": 1, "noad": 1, "macmillan": 1, "mwald": 1, "none": 8,
+    "wordset": 1, "cambridge": 2, "noad": 1, "macmillan": 1, "mwald": 1, "none": 8,
 }
 # Layouts of dictionaries whose definitions are in Vietnamese.
 _VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
