@@ -332,6 +332,33 @@ public class MainActivity extends AudioServiceActivity {
                             result.success(status);
                             break;
                         }
+                        case "installApk": {
+                            // Hands a downloaded update to Android's installer, which asks
+                            // the user to confirm. The first time, Android has the user
+                            // allow installs from this app instead.
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O
+                                    && !getPackageManager().canRequestPackageInstalls()) {
+                                startActivity(new Intent(
+                                    android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:" + getPackageName())));
+                                result.success("permission");
+                                break;
+                            }
+                            try {
+                                File apk = new File((String) call.argument("path"));
+                                Uri uri = FileProvider.getUriForFile(
+                                    this, getPackageName() + ".provider", apk);
+                                Intent install = new Intent(Intent.ACTION_VIEW);
+                                install.setDataAndType(uri, "application/vnd.android.package-archive");
+                                install.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                    | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(install);
+                                result.success("started");
+                            } catch (Exception e) {
+                                result.error("install_failed", e.getMessage(), null);
+                            }
+                            break;
+                        }
                         case "releaseUri": {
                             Uri uri = Uri.parse((String) call.argument("uri"));
                             try {

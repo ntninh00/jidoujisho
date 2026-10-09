@@ -28,6 +28,7 @@ dependencies:
   crop_image: ^1.0.4
   dart_mappable: ^4.0.0-dev.1
   device_info_plus: ^8.1.0
+  crypto: ^3.0.3
   dio: ^5.1.1
   document_file_save_plus: ^2.0.0
   expandable: ^5.0.1

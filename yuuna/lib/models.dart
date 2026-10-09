@@ -3,3 +3,4 @@ export 'src/models/creator_model.dart';
 export 'src/models/app_backup.dart';
 export 'src/models/auto_backup.dart';
 export 'src/models/app_theme.dart';
+export 'src/models/app_updates.dart';

@@ -156,6 +156,10 @@ class AppModel with ChangeNotifier {
   PackageInfo get packageInfo => _packageInfo;
   late final PackageInfo _packageInfo;
 
+  /// Newer builds of the dev app, and getting one installed. See
+  /// [initialise].
+  late final AppUpdates updates;
+
   /// Used to get information on the Android version of the device.
   AndroidDeviceInfo get androidDeviceInfo => _androidDeviceInfo;
   late final AndroidDeviceInfo _androidDeviceInfo;
@@ -1328,6 +1332,11 @@ class AppModel with ChangeNotifier {
     await Hive.initFlutter();
     _preferences = await Hive.openBox('appModel');
     _dictionaryHistory = await Hive.openBox('dictionaryHistory');
+    updates = AppUpdates(
+      preferences: _preferences,
+      installedVersion: _packageInfo.version,
+      enabled: _packageInfo.packageName.endsWith('.dev'),
+    )..loadKept();
 
     /// Nothing is asked for at startup. File and AnkiDroid access are asked
     /// for when a feature first needs them, see [requestFileAccess] and

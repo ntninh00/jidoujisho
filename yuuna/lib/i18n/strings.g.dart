@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1710 (855 per locale)
+/// Strings: 1742 (871 per locale)
 ///
-/// Built on 2026-10-09 at 11:41 UTC
+/// Built on 2026-10-09 at 12:15 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -741,6 +741,22 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get catalog_section_bilingual => TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Bilingual';
 	String get catalog_section_monolingual => TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Monolingual';
 	String get catalog_section_grammar => TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Grammar';
+	String get update_menu => TranslationOverrides.string(_root.$meta, 'update_menu', {}) ?? 'Update';
+	String update_ready({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_ready', {'version': version}) ?? '${version} is ready';
+	String get update_latest => TranslationOverrides.string(_root.$meta, 'update_latest', {}) ?? 'You\'re on the latest version';
+	String update_installed({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_installed', {'version': version}) ?? 'You have ${version}';
+	String update_install({required Object size}) => TranslationOverrides.string(_root.$meta, 'update_install', {'size': size}) ?? 'Download and install · ${size}';
+	String get update_install_downloaded => TranslationOverrides.string(_root.$meta, 'update_install_downloaded', {}) ?? 'Install';
+	String update_downloading({required Object percent}) => TranslationOverrides.string(_root.$meta, 'update_downloading', {'percent': percent}) ?? 'Downloading · ${percent}%';
+	String get update_checking_file => TranslationOverrides.string(_root.$meta, 'update_checking_file', {}) ?? 'Checking the download…';
+	String get update_keeps_data => TranslationOverrides.string(_root.$meta, 'update_keeps_data', {}) ?? 'Installs over this version and keeps your books, memos and terms.';
+	String get update_allow => TranslationOverrides.string(_root.$meta, 'update_allow', {}) ?? 'Allow installs from jidoujisho (dev) on the screen that opened, then tap Install.';
+	String get update_download_failed => TranslationOverrides.string(_root.$meta, 'update_download_failed', {}) ?? 'The download stopped. Try again.';
+	String get update_damaged => TranslationOverrides.string(_root.$meta, 'update_damaged', {}) ?? 'The download came out damaged. Try again.';
+	String get update_check_again => TranslationOverrides.string(_root.$meta, 'update_check_again', {}) ?? 'Check again';
+	String get update_check_failed => TranslationOverrides.string(_root.$meta, 'update_check_failed', {}) ?? 'Couldn\'t reach GitHub. Check your connection and try again.';
+	String update_checked({required Object time}) => TranslationOverrides.string(_root.$meta, 'update_checked', {'time': time}) ?? 'Checked ${time}';
+	String get update_whats_new => TranslationOverrides.string(_root.$meta, 'update_whats_new', {}) ?? 'What\'s new';
 	String get catalog_section => TranslationOverrides.string(_root.$meta, 'catalog_section', {}) ?? 'Section';
 	String get catalog_section_auto => TranslationOverrides.string(_root.$meta, 'catalog_section_auto', {}) ?? 'Automatic';
 	String get catalog_section_hint => TranslationOverrides.string(_root.$meta, 'catalog_section_hint', {}) ?? 'Where the dictionary is listed. Automatic goes by its languages and what it holds.';
@@ -2269,6 +2285,22 @@ class _StringsVi extends _StringsEn {
 	@override String get catalog_section_bilingual => TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Song ngữ';
 	@override String get catalog_section_monolingual => TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Đơn ngữ';
 	@override String get catalog_section_grammar => TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Ngữ pháp';
+	@override String get update_menu => TranslationOverrides.string(_root.$meta, 'update_menu', {}) ?? 'Cập nhật';
+	@override String update_ready({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_ready', {'version': version}) ?? 'Đã có bản ${version}';
+	@override String get update_latest => TranslationOverrides.string(_root.$meta, 'update_latest', {}) ?? 'Bạn đang dùng bản mới nhất';
+	@override String update_installed({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_installed', {'version': version}) ?? 'Bạn đang dùng bản ${version}';
+	@override String update_install({required Object size}) => TranslationOverrides.string(_root.$meta, 'update_install', {'size': size}) ?? 'Tải và cài đặt · ${size}';
+	@override String get update_install_downloaded => TranslationOverrides.string(_root.$meta, 'update_install_downloaded', {}) ?? 'Cài đặt';
+	@override String update_downloading({required Object percent}) => TranslationOverrides.string(_root.$meta, 'update_downloading', {'percent': percent}) ?? 'Đang tải · ${percent}%';
+	@override String get update_checking_file => TranslationOverrides.string(_root.$meta, 'update_checking_file', {}) ?? 'Đang kiểm tra tệp tải về…';
+	@override String get update_keeps_data => TranslationOverrides.string(_root.$meta, 'update_keeps_data', {}) ?? 'Cài đè lên bản này và giữ nguyên sách, ghi chú và mục từ của bạn.';
+	@override String get update_allow => TranslationOverrides.string(_root.$meta, 'update_allow', {}) ?? 'Hãy cho phép cài đặt từ jidoujisho (dev) ở màn hình vừa mở, rồi bấm Cài đặt.';
+	@override String get update_download_failed => TranslationOverrides.string(_root.$meta, 'update_download_failed', {}) ?? 'Tải xuống bị ngắt. Hãy thử lại.';
+	@override String get update_damaged => TranslationOverrides.string(_root.$meta, 'update_damaged', {}) ?? 'Tệp tải về bị hỏng. Hãy thử lại.';
+	@override String get update_check_again => TranslationOverrides.string(_root.$meta, 'update_check_again', {}) ?? 'Kiểm tra lại';
+	@override String get update_check_failed => TranslationOverrides.string(_root.$meta, 'update_check_failed', {}) ?? 'Không kết nối được GitHub. Hãy kiểm tra kết nối rồi thử lại.';
+	@override String update_checked({required Object time}) => TranslationOverrides.string(_root.$meta, 'update_checked', {'time': time}) ?? 'Đã kiểm tra ${time}';
+	@override String get update_whats_new => TranslationOverrides.string(_root.$meta, 'update_whats_new', {}) ?? 'Có gì mới';
 	@override String get catalog_section => TranslationOverrides.string(_root.$meta, 'catalog_section', {}) ?? 'Mục';
 	@override String get catalog_section_auto => TranslationOverrides.string(_root.$meta, 'catalog_section_auto', {}) ?? 'Tự động';
 	@override String get catalog_section_hint => TranslationOverrides.string(_root.$meta, 'catalog_section_hint', {}) ?? 'Nơi từ điển được liệt kê. Tự động dựa vào ngôn ngữ và nội dung của từ điển.';
@@ -3782,6 +3814,22 @@ extension on _StringsEn {
 			case 'catalog_section_bilingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Bilingual';
 			case 'catalog_section_monolingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Monolingual';
 			case 'catalog_section_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Grammar';
+			case 'update_menu': return TranslationOverrides.string(_root.$meta, 'update_menu', {}) ?? 'Update';
+			case 'update_ready': return ({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_ready', {'version': version}) ?? '${version} is ready';
+			case 'update_latest': return TranslationOverrides.string(_root.$meta, 'update_latest', {}) ?? 'You\'re on the latest version';
+			case 'update_installed': return ({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_installed', {'version': version}) ?? 'You have ${version}';
+			case 'update_install': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'update_install', {'size': size}) ?? 'Download and install · ${size}';
+			case 'update_install_downloaded': return TranslationOverrides.string(_root.$meta, 'update_install_downloaded', {}) ?? 'Install';
+			case 'update_downloading': return ({required Object percent}) => TranslationOverrides.string(_root.$meta, 'update_downloading', {'percent': percent}) ?? 'Downloading · ${percent}%';
+			case 'update_checking_file': return TranslationOverrides.string(_root.$meta, 'update_checking_file', {}) ?? 'Checking the download…';
+			case 'update_keeps_data': return TranslationOverrides.string(_root.$meta, 'update_keeps_data', {}) ?? 'Installs over this version and keeps your books, memos and terms.';
+			case 'update_allow': return TranslationOverrides.string(_root.$meta, 'update_allow', {}) ?? 'Allow installs from jidoujisho (dev) on the screen that opened, then tap Install.';
+			case 'update_download_failed': return TranslationOverrides.string(_root.$meta, 'update_download_failed', {}) ?? 'The download stopped. Try again.';
+			case 'update_damaged': return TranslationOverrides.string(_root.$meta, 'update_damaged', {}) ?? 'The download came out damaged. Try again.';
+			case 'update_check_again': return TranslationOverrides.string(_root.$meta, 'update_check_again', {}) ?? 'Check again';
+			case 'update_check_failed': return TranslationOverrides.string(_root.$meta, 'update_check_failed', {}) ?? 'Couldn\'t reach GitHub. Check your connection and try again.';
+			case 'update_checked': return ({required Object time}) => TranslationOverrides.string(_root.$meta, 'update_checked', {'time': time}) ?? 'Checked ${time}';
+			case 'update_whats_new': return TranslationOverrides.string(_root.$meta, 'update_whats_new', {}) ?? 'What\'s new';
 			case 'catalog_section': return TranslationOverrides.string(_root.$meta, 'catalog_section', {}) ?? 'Section';
 			case 'catalog_section_auto': return TranslationOverrides.string(_root.$meta, 'catalog_section_auto', {}) ?? 'Automatic';
 			case 'catalog_section_hint': return TranslationOverrides.string(_root.$meta, 'catalog_section_hint', {}) ?? 'Where the dictionary is listed. Automatic goes by its languages and what it holds.';
@@ -4649,6 +4697,22 @@ extension on _StringsVi {
 			case 'catalog_section_bilingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_bilingual', {}) ?? 'Song ngữ';
 			case 'catalog_section_monolingual': return TranslationOverrides.string(_root.$meta, 'catalog_section_monolingual', {}) ?? 'Đơn ngữ';
 			case 'catalog_section_grammar': return TranslationOverrides.string(_root.$meta, 'catalog_section_grammar', {}) ?? 'Ngữ pháp';
+			case 'update_menu': return TranslationOverrides.string(_root.$meta, 'update_menu', {}) ?? 'Cập nhật';
+			case 'update_ready': return ({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_ready', {'version': version}) ?? 'Đã có bản ${version}';
+			case 'update_latest': return TranslationOverrides.string(_root.$meta, 'update_latest', {}) ?? 'Bạn đang dùng bản mới nhất';
+			case 'update_installed': return ({required Object version}) => TranslationOverrides.string(_root.$meta, 'update_installed', {'version': version}) ?? 'Bạn đang dùng bản ${version}';
+			case 'update_install': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'update_install', {'size': size}) ?? 'Tải và cài đặt · ${size}';
+			case 'update_install_downloaded': return TranslationOverrides.string(_root.$meta, 'update_install_downloaded', {}) ?? 'Cài đặt';
+			case 'update_downloading': return ({required Object percent}) => TranslationOverrides.string(_root.$meta, 'update_downloading', {'percent': percent}) ?? 'Đang tải · ${percent}%';
+			case 'update_checking_file': return TranslationOverrides.string(_root.$meta, 'update_checking_file', {}) ?? 'Đang kiểm tra tệp tải về…';
+			case 'update_keeps_data': return TranslationOverrides.string(_root.$meta, 'update_keeps_data', {}) ?? 'Cài đè lên bản này và giữ nguyên sách, ghi chú và mục từ của bạn.';
+			case 'update_allow': return TranslationOverrides.string(_root.$meta, 'update_allow', {}) ?? 'Hãy cho phép cài đặt từ jidoujisho (dev) ở màn hình vừa mở, rồi bấm Cài đặt.';
+			case 'update_download_failed': return TranslationOverrides.string(_root.$meta, 'update_download_failed', {}) ?? 'Tải xuống bị ngắt. Hãy thử lại.';
+			case 'update_damaged': return TranslationOverrides.string(_root.$meta, 'update_damaged', {}) ?? 'Tệp tải về bị hỏng. Hãy thử lại.';
+			case 'update_check_again': return TranslationOverrides.string(_root.$meta, 'update_check_again', {}) ?? 'Kiểm tra lại';
+			case 'update_check_failed': return TranslationOverrides.string(_root.$meta, 'update_check_failed', {}) ?? 'Không kết nối được GitHub. Hãy kiểm tra kết nối rồi thử lại.';
+			case 'update_checked': return ({required Object time}) => TranslationOverrides.string(_root.$meta, 'update_checked', {'time': time}) ?? 'Đã kiểm tra ${time}';
+			case 'update_whats_new': return TranslationOverrides.string(_root.$meta, 'update_whats_new', {}) ?? 'Có gì mới';
 			case 'catalog_section': return TranslationOverrides.string(_root.$meta, 'catalog_section', {}) ?? 'Mục';
 			case 'catalog_section_auto': return TranslationOverrides.string(_root.$meta, 'catalog_section_auto', {}) ?? 'Tự động';
 			case 'catalog_section_hint': return TranslationOverrides.string(_root.$meta, 'catalog_section_hint', {}) ?? 'Nơi từ điển được liệt kê. Tự động dựa vào ngôn ngữ và nội dung của từ điển.';

@@ -63,6 +63,7 @@ class _HomePageState extends BasePageState<HomePage>
       }
       AutoBackup.scheduleIfDue(appModelNoUpdate, ref);
       appModelNoUpdate.refreshAppStrings();
+      appModelNoUpdate.updates.check();
     });
   }
 
@@ -258,14 +259,36 @@ class _HomePageState extends BasePageState<HomePage>
       splashRadius: 20,
       padding: EdgeInsets.zero,
       tooltip: t.show_menu,
-      icon: Icon(
-        Ui.more_vert,
-        color: theme.iconTheme.color,
-        size: 24,
+      icon: ValueListenableBuilder<List<AppRelease>>(
+        valueListenable: appModel.updates.newer,
+        builder: (context, newer, _) => Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Ui.more_vert,
+              color: theme.iconTheme.color,
+              size: 24,
+            ),
+            if (newer.isNotEmpty)
+              Positioned(top: 0, right: 1, child: buildUpdateDot()),
+          ],
+        ),
       ),
       color: Theme.of(context).popupMenuTheme.color,
       onSelected: (value) => value(),
       itemBuilder: (context) => getMenuItems(),
+    );
+  }
+
+  /// Marks the menu and its Update item while a newer build is out.
+  Widget buildUpdateDot() {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.error,
+        shape: BoxShape.circle,
+      ),
     );
   }
 
@@ -274,6 +297,7 @@ class _HomePageState extends BasePageState<HomePage>
     required Function() action,
     IconData? icon,
     Color? color,
+    bool dot = false,
   }) {
     return PopupMenuItem<VoidCallback>(
       value: action,
@@ -290,7 +314,25 @@ class _HomePageState extends BasePageState<HomePage>
             label,
             style: TextStyle(color: color),
           ),
+          if (dot) ...[
+            const SizedBox(width: 8),
+            buildUpdateDot(),
+          ],
         ],
+      ),
+    );
+  }
+
+  /// The Update item, with a dot while a newer build is out. It leads the
+  /// menu then, and sits above Attribution otherwise.
+  PopupMenuItem<VoidCallback> buildUpdateItem() {
+    return buildPopupItem(
+      label: t.update_menu,
+      icon: Ui.update,
+      dot: appModel.updates.newer.value.isNotEmpty,
+      action: () => showTtuSheet<void>(
+        context: context,
+        builder: (_) => const AppUpdateSheet(),
       ),
     );
   }
@@ -343,7 +385,10 @@ class _HomePageState extends BasePageState<HomePage>
   /// The menu, most used first. User enhancements live in the card creator,
   /// and the original project's repository is no link of this app's.
   List<PopupMenuItem<VoidCallback>> getMenuItems() {
+    bool updates = appModel.updates.enabled;
+    bool updateOut = appModel.updates.newer.value.isNotEmpty;
     return [
+      if (updates && updateOut) buildUpdateItem(),
       buildPopupItem(
         label: t.options_dictionaries,
         icon: Ui.auto_stories_rounded,
@@ -375,6 +420,7 @@ class _HomePageState extends BasePageState<HomePage>
         icon: Ui.switch_account,
         action: appModel.showProfilesMenu,
       ),
+      if (updates && !updateOut) buildUpdateItem(),
       buildPopupItem(
         label: t.options_attribution,
         icon: Ui.info,
