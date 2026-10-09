@@ -49,7 +49,7 @@ VERSIONS = {
     "markup": 4, "babylon": 4, "prodict": 3, "html": 1,
     "jmarkup": 1, "javidic": 1, "mazii": 1, "forms": 2,
     "wordset": 1, "cambridge": 2, "noad": 1, "macmillan": 1, "mwald": 1,
-    "dojg": 2, "bunkei": 2, "edewakaru": 2, "none": 9,
+    "dojg": 2, "bunkei": 2, "edewakaru": 2, "babylonve": 1, "none": 10,
 }
 # Layouts of dictionaries whose definitions are in Vietnamese.
 _VIETNAMESE_LAYOUTS = {"markup", "babylon", "prodict", "jmarkup", "javidic", "mazii"}
@@ -528,6 +528,121 @@ def parse_babylon(definitions: list[str]) -> Body:
     body = builder.finish()
     body.facts = " · ".join(facts[field] for field in ("Số nét", "Bộ", "Từ phồn thể") if field in facts)
     return body
+
+
+# Letters with the marks Vietnamese writes, which English seldom borrows.
+_VIETNAMESE_MARKED = _VIETNAMESE_ONLY | set("àáâãèéêìíòóôõùúýÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝ")
+_VI_CLASS = (
+    r"(?:(?:ngoại|nội|tự|trợ)\s+)?(?:danh|động|tính|trạng|phó|giới|liên|đại|thán|mạo|số)\s+từ"
+    r"|thành ng[ữử]"
+)
+_VI_CLASS_START = re.compile(rf"^({_VI_CLASS})(?!\w)\.?\s*")
+# A word class run onto the word before it, as `shrewdthành ngử`.
+_VI_CLASS_GLUED = re.compile(rf"(?<=[^\s(\"'“‘/-])(?=(?:{_VI_CLASS})(?!\w))")
+_VI_REGISTER = re.compile(
+    r"^(?:\(([^()]*[%s][^()]*)\)|(khẩu ngữ|thông tục|văn chương|ít dùng|địa phương))(?:\s+|$)"
+    % "".join(sorted(_VIETNAMESE_MARKED))
+)
+
+
+def _vietnamese_line(line: str) -> bool:
+    """Written in Vietnamese, judged outside brackets: `Rash, rashly (nói
+    khái quát)` is English with a note."""
+    bare = re.sub(r"\([^()]*\)", " ", line)
+    if not any(ch.isalpha() for ch in bare):
+        bare = line
+    return any(ch in _VIETNAMESE_MARKED for ch in bare)
+
+
+def _babylon_ve_gloss(builder: _Builder, text: str, headwords: set[str] | None) -> None:
+    """A meaning, with a field such as `(thực vật)` before it as its label,
+    and `xem viện bảo tàng` as a word to look up."""
+    label = ""
+    register = _VI_REGISTER.match(text)
+    if register:
+        label = register.group(1) or register.group(2)
+        text = text[register.end():]
+    see = re.match(r"^(?i:xem|như)\s+(.+?)\.?$", text)
+    if see and headwords and see.group(1) in headwords:
+        builder.sense("", label)
+        builder.ref(see.group(1))
+        return
+    builder.sense(text, label)
+
+
+def parse_babylon_ve(definitions: list[str], headwords: set[str] | None = None) -> Body:
+    """mtBab's Vietnamese-English Babylon export: `[ăn] to eat; to take`, a
+    word class or field before the meaning, then lines that are an example
+    and its translation in turn. Lines also break before every capitalised
+    word, where the source linked names, so `Bảo tàng` / `Hồ Chí Minh cũng
+    được…` is one example: lines in the same language are joined, and each
+    Vietnamese run is an example of the English one after it. A meaning may
+    end in the next word class, run on as `shrewdthành ngử`."""
+    builder = _Builder()
+    for definition in definitions:
+        text = re.sub(r"^\s*\[[^\]]*\]", "", definition)
+        first, *more = [line.strip() for line in text.split("\n")]
+        for part in _VI_CLASS_GLUED.split(first):
+            part = part.strip()
+            word_class = _VI_CLASS_START.match(part)
+            if word_class:
+                builder.section(word_class.group(1), "pos")
+                part = part[word_class.end():].strip()
+            if part and not _PLACEHOLDER.match(part):
+                _babylon_ve_gloss(builder, part, headwords)
+
+        runs: list[list] = []
+        for line in more:
+            if not line or _PLACEHOLDER.match(line):
+                continue
+            word_class = _VI_CLASS_START.match(line)
+            if word_class:
+                runs.append(["class", word_class.group(1)])
+                line = line[word_class.end():].strip()
+                if not line:
+                    continue
+            vietnamese = _vietnamese_line(line)
+            if runs and runs[-1][0] == vietnamese:
+                runs[-1][1] += f" {line}"
+            else:
+                runs.append([vietnamese, line])
+
+        example: Example | None = None
+        for kind, run in runs:
+            if kind == "class":
+                builder.section(run, "pos")
+                example = None
+            elif kind:
+                sense = builder.body.sections[-1].senses[-1] if builder.body.sections and builder.body.sections[-1].senses else None
+                if sense is None:
+                    _babylon_ve_gloss(builder, run, headwords)
+                elif not (sense.gloss or sense.refs or sense.examples):
+                    # Only a label so far, as `khẩu ngữ`.
+                    sense.gloss = run
+                else:
+                    example = Example(run)
+                    builder.example(example)
+            elif example is not None and not example.translation:
+                # The next meaning may follow the translation on its line:
+                # `Never set foot in this house again! family`.
+                after = re.match(r"^(.*[.!?])\s+([a-z][^.!?]*)$", run)
+                if after and len(after.group(2).split()) <= 6:
+                    example.translation = after.group(1)
+                    builder.sense(after.group(2))
+                else:
+                    example.translation = run
+                example = None
+            else:
+                builder.carry_on(run)
+    # A Vietnamese run nothing translates is most often a line that mixes
+    # both languages, `glaucidium cuculoides mắt cú vọ peevish eyes`: it
+    # stays with the meaning, as the source wrote it.
+    for section in builder.body.sections:
+        for sense in section.senses:
+            for example in [example for example in sense.examples if not example.translation]:
+                sense.gloss = f"{sense.gloss} {example.text}".strip()
+                sense.examples.remove(example)
+    return builder.finish()
 
 
 _WORD = re.compile(r"[A-Za-z]+")
@@ -1176,7 +1291,11 @@ def _text_layout(rows: list) -> str | None:
     if sum(bool(_CODE.search(text)) for text in texts) / len(texts) > 0.5:
         return "prodict"
     if sum(bool(re.match(r"^\s*\[[^\]]+\]", text)) for text in texts) / len(texts) > 0.5:
-        return "babylon"
+        # Chinese-Vietnamese Babylon, or Vietnamese-English with Vietnamese
+        # headwords.
+        words = [row[0] for row in rows if isinstance(row, list) and row and isinstance(row[0], str)]
+        vietnamese_words = sum(any(ch in _VIETNAMESE_MARKED for ch in word) for word in words)
+        return "babylonve" if words and vietnamese_words / len(words) >= 0.5 else "babylon"
     if sum(bool(re.match(r"^[A-ZÀ-ỸĐ][A-ZÀ-ỸĐ ,]*\n1\. ", text)) for text in texts) / len(texts) > 0.5:
         return "mazii"
     if sum(bool(re.match(r"^「[^」\n]+」\n", text)) for text in texts) / len(texts) > 0.5:
@@ -1232,6 +1351,11 @@ def rewrite_row(row: list, layout: str, vocabulary: set[str] | None = None) -> l
         body = parse_prodict(texts, term, vocabulary)
     elif layout == "babylon":
         body = parse_babylon(texts)
+    elif layout == "babylonve":
+        # Pages of related words Babylon kept as entries, `zzvels gàn`.
+        if term.startswith("zzvel"):
+            return None
+        body = parse_babylon_ve(texts, vocabulary)
     elif layout == "javidic":
         body = parse_javidic(texts)
     elif layout == "mazii":
@@ -1279,6 +1403,19 @@ def _vocabulary(archive: zipfile.ZipFile) -> set[str]:
             for row in json.loads(archive.read(name).decode("utf-8-sig")):
                 if isinstance(row, list) and row and isinstance(row[0], str):
                     words.update(word.lower() for word in _WORD.findall(row[0]))
+    return words
+
+
+def _headwords(archive: zipfile.ZipFile) -> set[str]:
+    """Every headword in a dictionary: the words its cross-references may
+    link to."""
+    words: set[str] = set()
+    for name in archive.namelist():
+        match = BANK.match(name)
+        if match and match.group(1) == "term":
+            for row in json.loads(archive.read(name).decode("utf-8-sig")):
+                if isinstance(row, list) and row and isinstance(row[0], str):
+                    words.add(row[0])
     return words
 
 
@@ -1351,7 +1488,11 @@ def apply(zip_path: Path) -> tuple[str | None, bool]:
     seen: set[bytes] = set()
     with zipfile.ZipFile(_original(zip_path)) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
         names = set(source.namelist())
-        vocabulary = _vocabulary(source) if layout == "prodict" else None
+        vocabulary = (
+            _vocabulary(source) if layout == "prodict"
+            else _headwords(source) if layout == "babylonve"
+            else None
+        )
         # Banks that grew too large go on in banks numbered after the last.
         numbers = [int(match.group(2)) for name in names if (match := BANK.match(name)) and match.group(1) == "term"]
         next_bank = max(numbers, default=0) + 1

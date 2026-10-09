@@ -148,6 +148,44 @@ def test_babylon_word_classes_on_their_own_line():
     )
 
 
+def test_babylon_vietnamese_english_joins_lines_and_pairs_examples():
+    body = tidy.parse_babylon_ve([
+        "[nhà] house; home \n Săn sóc tại nhà \n Domiciliary care \n Đừng bao giờ đặt chân đến nhà này nữa! \n"
+        " Never set foot in this house again! family \n Bảo tàng \n Hồ Chí Minh ở đây \n The Ho Chi Minh \n"
+        " Museum is here"
+    ])
+    house, family = body.sections[0].senses
+    assert house.gloss == "house; home"
+    assert [(e.text, e.translation) for e in house.examples] == [
+        ("Săn sóc tại nhà", "Domiciliary care"),
+        ("Đừng bao giờ đặt chân đến nhà này nữa!", "Never set foot in this house again!"),
+    ]
+    # Lines broken before capitals are one sentence again.
+    assert family.gloss == "family"
+    assert [(e.text, e.translation) for e in family.examples] == [
+        ("Bảo tàng Hồ Chí Minh ở đây", "The Ho Chi Minh Museum is here"),
+    ]
+
+
+def test_babylon_vietnamese_english_word_classes_labels_and_references():
+    run_on = tidy.parse_babylon_ve(["[tinh] danh từ flag, banner (tinh tre)tính từ fine, pure shrewdđộng từ. sign"])
+    assert [(s.label, s.senses[0].gloss) for s in run_on.sections] == [
+        ("danh từ", "flag, banner (tinh tre)"), ("tính từ", "fine, pure shrewd"), ("động từ", "sign"),
+    ]
+    spoken = tidy.parse_babylon_ve(["[càn quấy]khẩu ngữ \n Unruly, wayward (nói khái quát)"]).sections[0].senses[0]
+    assert (spoken.label, spoken.gloss) == ("khẩu ngữ", "Unruly, wayward (nói khái quát)")
+    field = tidy.parse_babylon_ve(["[nồm] (thực vật) a plant"]).sections[0].senses[0]
+    assert (field.label, field.gloss) == ("thực vật", "a plant")
+    see = tidy.parse_babylon_ve(["[bảo tàng] xem viện bảo tàng"], {"viện bảo tàng"}).sections[0].senses[0]
+    assert (see.gloss, see.refs) == ("", ["viện bảo tàng"])
+    # A line that mixes both languages stays with the meaning.
+    mixed = tidy.parse_babylon_ve(["[cú vọ]danh từ \n Barn-owl; \n Asian owlet mắt cú vọ peevish eyes"])
+    sense = mixed.sections[0].senses[0]
+    assert (sense.gloss, sense.examples) == ("Barn-owl; Asian owlet mắt cú vọ peevish eyes", [])
+    # Babylon's pages of related words are dropped.
+    assert tidy.rewrite_row(["zzvels gàn", "", "", "", 0, ["gàn gàn bát sách"], 0, ""], "babylonve") is None
+
+
 def test_prodict_phrases_are_pulled_apart():
     body = tidy.parse_prodict([PRODICT_HOUSE], "house", PRODICT_WORDS)
     senses = body.sections[0].senses
@@ -210,6 +248,8 @@ def test_only_vietnamese_dictionaries_with_markup_are_laid_out():
     assert tidy.detect([row(OVDP_HOUSE)] * 20) == "markup"
     assert tidy.detect([row(PRODICT_HOUSE)] * 20) == "prodict"
     assert tidy.detect([row("[bùshīwéi]\nvẫn có thể xem là")] * 20) == "babylon"
+    vietnamese_headword = ["nhà", "", "", "", 0, ["[nhà] house; home \n Săn sóc tại nhà \n Domiciliary care"], 0, ""]
+    assert tidy.detect([vietnamese_headword] * 20) == "babylonve"
     # English with bullets, and Vietnamese without markup, stay as they are.
     assert tidy.detect([row("▫ a building for people to live in\n• housing")] * 20) is None
     assert tidy.detect([row("nhà ở, căn nhà")] * 20) is None
