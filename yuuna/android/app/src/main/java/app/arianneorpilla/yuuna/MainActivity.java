@@ -39,12 +39,16 @@ import com.ichi2.anki.api.NoteInfo;
 import com.ryanheise.audioservice.AudioServiceActivity;
 import android.content.res.Configuration;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
 
 public class MainActivity extends AudioServiceActivity {
     private static final String ANKIDROID_CHANNEL = "app.arianneorpilla.yuuna/anki";
     private static final int AD_PERM_REQUEST = 4210;
     private static final String FILES_CHANNEL = "app.arianneorpilla.yuuna/files";
     private static final int CREATE_DOCUMENT_REQUEST = 4211;
+    private static final String SPEECH_CHANNEL = "app.arianneorpilla.yuuna/speech";
 
     /// Waits for the answer to the AnkiDroid permission request.
     private MethodChannel.Result pendingAnkiPermission;
@@ -376,6 +380,148 @@ public class MainActivity extends AudioServiceActivity {
                     }
                 }
             );
+
+        new MethodChannel(flutterEngine.getDartExecutor().getBinaryMessenger(), SPEECH_CHANNEL)
+            .setMethodCallHandler(
+                (call, result) -> {
+                    switch (call.method) {
+                        case "speak":
+                            speak(call.argument("text"), call.argument("language"),
+                                call.argument("display"), result);
+                            break;
+                        case "open":
+                            result.success(openSpeechSettings(call.argument("what")));
+                            break;
+                        default:
+                            result.notImplemented();
+                    }
+                }
+            );
+    }
+
+    /* ---------- reading words aloud ---------- */
+
+    /// Reads words that have no recording aloud. Started on first use and
+    /// kept; dropped after a failure, so the next try sees an engine or
+    /// voice installed in the meantime.
+    private TextToSpeech speech;
+    private boolean speechReady;
+    private boolean speechStarting;
+    private final List<Runnable> speechWaiting = new ArrayList<>();
+
+    private static final String GOOGLE_SPEECH = "com.google.android.tts";
+
+    private void dropSpeech() {
+        if (speech != null) {
+            speech.shutdown();
+        }
+        speech = null;
+        speechReady = false;
+    }
+
+    /// Reads [text] in [language], a BCP 47 tag. Answers "ok", "no_engine"
+    /// when the phone has no text-to-speech, "disabled" when Google's is
+    /// installed but turned off, or "no_voice" with the language's name in
+    /// [display]'s language when the engine has no voice for it.
+    private void speak(String text, String language, String display, MethodChannel.Result result) {
+        Runnable go = () -> {
+            Map<String, Object> answer = new HashMap<>();
+            if (!speechReady) {
+                dropSpeech();
+                answer.put("status", googleSpeechDisabled() ? "disabled" : "no_engine");
+                result.success(answer);
+                return;
+            }
+            Locale locale = Locale.forLanguageTag(language);
+            int available = speech.isLanguageAvailable(locale);
+            if (available == TextToSpeech.LANG_MISSING_DATA
+                    || available == TextToSpeech.LANG_NOT_SUPPORTED) {
+                dropSpeech();
+                answer.put("status", "no_voice");
+                answer.put("name", locale.getDisplayLanguage(Locale.forLanguageTag(display)));
+                result.success(answer);
+                return;
+            }
+            speech.setLanguage(locale);
+            speech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "word");
+            answer.put("status", "ok");
+            result.success(answer);
+        };
+
+        if (speech != null && speechReady) {
+            go.run();
+            return;
+        }
+        speechWaiting.add(go);
+        if (speechStarting) {
+            return;
+        }
+        speechStarting = true;
+        // Without an engine Android answers before the constructor returns,
+        // so the answer is handled after it, once [speech] is set.
+        speech = new TextToSpeech(getApplicationContext(),
+            status -> new Handler(Looper.getMainLooper()).post(() -> speechStarted(status)));
+    }
+
+    private void speechStarted(int status) {
+        speechStarting = false;
+        speechReady = status == TextToSpeech.SUCCESS && speech != null
+            && !speech.getEngines().isEmpty();
+        if (speechReady) {
+            speech.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build());
+        }
+        List<Runnable> waiting = new ArrayList<>(speechWaiting);
+        speechWaiting.clear();
+        for (Runnable runnable : waiting) {
+            runnable.run();
+        }
+    }
+
+    /// Google's text-to-speech is on the phone but turned off.
+    private boolean googleSpeechDisabled() {
+        try {
+            return !getPackageManager().getApplicationInfo(GOOGLE_SPEECH, 0).enabled;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /// Opens where the user fixes reading aloud: the store page of Google's
+    /// text-to-speech ("install"), its app settings to turn it back on
+    /// ("enable"), or the engine's voice downloads ("voice"), with the
+    /// system's text-to-speech settings when that has no page of its own.
+    private boolean openSpeechSettings(String what) {
+        List<Intent> tries = new ArrayList<>();
+        if ("install".equals(what)) {
+            tries.add(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + GOOGLE_SPEECH)));
+            tries.add(new Intent(Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=" + GOOGLE_SPEECH)));
+        } else if ("enable".equals(what)) {
+            tries.add(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + GOOGLE_SPEECH)));
+        } else {
+            tries.add(new Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA));
+        }
+        tries.add(new Intent("com.android.settings.TTS_SETTINGS"));
+        for (Intent intent : tries) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                return true;
+            } catch (Exception e) {
+                // Nothing handles it here; try the next.
+            }
+        }
+        return false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        dropSpeech();
+        super.onDestroy();
     }
 
     /// The name a document shows under, where its provider tells.

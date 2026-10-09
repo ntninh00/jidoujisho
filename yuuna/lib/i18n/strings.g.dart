@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1742 (871 per locale)
+/// Strings: 1758 (879 per locale)
 ///
-/// Built on 2026-10-09 at 12:15 UTC
+/// Built on 2026-10-09 at 23:36 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -360,6 +360,14 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get searching_in_progress => TranslationOverrides.string(_root.$meta, 'searching_in_progress', {}) ?? 'Searching for ';
 	String get audio_unavailable => TranslationOverrides.string(_root.$meta, 'audio_unavailable', {}) ?? 'No audio could be found.';
 	String get no_audio_enhancements => TranslationOverrides.string(_root.$meta, 'no_audio_enhancements', {}) ?? 'No audio enhancements are assigned.';
+	String get speech_no_engine_title => TranslationOverrides.string(_root.$meta, 'speech_no_engine_title', {}) ?? 'Nothing to read words aloud';
+	String get speech_no_engine => TranslationOverrides.string(_root.$meta, 'speech_no_engine', {}) ?? 'Words without a recording are read aloud by the phone\'s text-to-speech, and this phone has none. Install Speech Services by Google to hear them.';
+	String get speech_disabled => TranslationOverrides.string(_root.$meta, 'speech_disabled', {}) ?? 'Words without a recording are read aloud by Speech Services by Google, which is turned off on this phone. Turn it on to hear them.';
+	String speech_no_voice_title({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice_title', {'language': language}) ?? 'No ${language} voice';
+	String speech_no_voice({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice', {'language': language}) ?? 'Words without a recording are read aloud by the phone\'s text-to-speech, which has no ${language} voice yet. Download one to hear them.';
+	String get speech_install => TranslationOverrides.string(_root.$meta, 'speech_install', {}) ?? 'INSTALL';
+	String get speech_enable => TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'TURN ON';
+	String get speech_download => TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'DOWNLOAD VOICE';
 	String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 	String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
 	String get info_incognito_off => TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Incognito mode off. Dictionary, media and search history will be tracked.';
@@ -1904,6 +1912,14 @@ class _StringsVi extends _StringsEn {
 	@override String get searching_in_progress => TranslationOverrides.string(_root.$meta, 'searching_in_progress', {}) ?? 'Đang tìm kiếm ';
 	@override String get audio_unavailable => TranslationOverrides.string(_root.$meta, 'audio_unavailable', {}) ?? 'Không tìm thấy âm thanh.';
 	@override String get no_audio_enhancements => TranslationOverrides.string(_root.$meta, 'no_audio_enhancements', {}) ?? 'Chưa gán tiện ích bổ trợ âm thanh nào.';
+	@override String get speech_no_engine_title => TranslationOverrides.string(_root.$meta, 'speech_no_engine_title', {}) ?? 'Chưa có công cụ đọc từ';
+	@override String get speech_no_engine => TranslationOverrides.string(_root.$meta, 'speech_no_engine', {}) ?? 'Từ không có bản ghi âm sẽ được đọc bằng tính năng chuyển văn bản thành giọng nói của điện thoại, nhưng máy này chưa có. Hãy cài Dịch vụ lời nói của Google để nghe.';
+	@override String get speech_disabled => TranslationOverrides.string(_root.$meta, 'speech_disabled', {}) ?? 'Từ không có bản ghi âm được đọc bằng Dịch vụ lời nói của Google, nhưng ứng dụng này đang bị tắt trên máy. Hãy bật lại để nghe.';
+	@override String speech_no_voice_title({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice_title', {'language': language}) ?? 'Chưa có giọng ${language}';
+	@override String speech_no_voice({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice', {'language': language}) ?? 'Từ không có bản ghi âm được đọc bằng tính năng chuyển văn bản thành giọng nói của điện thoại, nhưng máy chưa có giọng ${language}. Hãy tải về để nghe.';
+	@override String get speech_install => TranslationOverrides.string(_root.$meta, 'speech_install', {}) ?? 'CÀI ĐẶT';
+	@override String get speech_enable => TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'BẬT';
+	@override String get speech_download => TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'TẢI GIỌNG ĐỌC';
 	@override String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 	@override String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
 	@override String get info_incognito_off => TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';
@@ -3427,6 +3443,14 @@ extension on _StringsEn {
 			case 'searching_in_progress': return TranslationOverrides.string(_root.$meta, 'searching_in_progress', {}) ?? 'Searching for ';
 			case 'audio_unavailable': return TranslationOverrides.string(_root.$meta, 'audio_unavailable', {}) ?? 'No audio could be found.';
 			case 'no_audio_enhancements': return TranslationOverrides.string(_root.$meta, 'no_audio_enhancements', {}) ?? 'No audio enhancements are assigned.';
+			case 'speech_no_engine_title': return TranslationOverrides.string(_root.$meta, 'speech_no_engine_title', {}) ?? 'Nothing to read words aloud';
+			case 'speech_no_engine': return TranslationOverrides.string(_root.$meta, 'speech_no_engine', {}) ?? 'Words without a recording are read aloud by the phone\'s text-to-speech, and this phone has none. Install Speech Services by Google to hear them.';
+			case 'speech_disabled': return TranslationOverrides.string(_root.$meta, 'speech_disabled', {}) ?? 'Words without a recording are read aloud by Speech Services by Google, which is turned off on this phone. Turn it on to hear them.';
+			case 'speech_no_voice_title': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice_title', {'language': language}) ?? 'No ${language} voice';
+			case 'speech_no_voice': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice', {'language': language}) ?? 'Words without a recording are read aloud by the phone\'s text-to-speech, which has no ${language} voice yet. Download one to hear them.';
+			case 'speech_install': return TranslationOverrides.string(_root.$meta, 'speech_install', {}) ?? 'INSTALL';
+			case 'speech_enable': return TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'TURN ON';
+			case 'speech_download': return TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'DOWNLOAD VOICE';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
 			case 'info_incognito_off': return TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Incognito mode off. Dictionary, media and search history will be tracked.';
@@ -4310,6 +4334,14 @@ extension on _StringsVi {
 			case 'searching_in_progress': return TranslationOverrides.string(_root.$meta, 'searching_in_progress', {}) ?? 'Đang tìm kiếm ';
 			case 'audio_unavailable': return TranslationOverrides.string(_root.$meta, 'audio_unavailable', {}) ?? 'Không tìm thấy âm thanh.';
 			case 'no_audio_enhancements': return TranslationOverrides.string(_root.$meta, 'no_audio_enhancements', {}) ?? 'Chưa gán tiện ích bổ trợ âm thanh nào.';
+			case 'speech_no_engine_title': return TranslationOverrides.string(_root.$meta, 'speech_no_engine_title', {}) ?? 'Chưa có công cụ đọc từ';
+			case 'speech_no_engine': return TranslationOverrides.string(_root.$meta, 'speech_no_engine', {}) ?? 'Từ không có bản ghi âm sẽ được đọc bằng tính năng chuyển văn bản thành giọng nói của điện thoại, nhưng máy này chưa có. Hãy cài Dịch vụ lời nói của Google để nghe.';
+			case 'speech_disabled': return TranslationOverrides.string(_root.$meta, 'speech_disabled', {}) ?? 'Từ không có bản ghi âm được đọc bằng Dịch vụ lời nói của Google, nhưng ứng dụng này đang bị tắt trên máy. Hãy bật lại để nghe.';
+			case 'speech_no_voice_title': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice_title', {'language': language}) ?? 'Chưa có giọng ${language}';
+			case 'speech_no_voice': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'speech_no_voice', {'language': language}) ?? 'Từ không có bản ghi âm được đọc bằng tính năng chuyển văn bản thành giọng nói của điện thoại, nhưng máy chưa có giọng ${language}. Hãy tải về để nghe.';
+			case 'speech_install': return TranslationOverrides.string(_root.$meta, 'speech_install', {}) ?? 'CÀI ĐẶT';
+			case 'speech_enable': return TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'BẬT';
+			case 'speech_download': return TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'TẢI GIỌNG ĐỌC';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
 			case 'info_incognito_off': return TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';

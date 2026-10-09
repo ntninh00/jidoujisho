@@ -1864,8 +1864,9 @@ class AppModel with ChangeNotifier {
     return language == 'en' ? (source?['note'] as String?) : null;
   }
 
-  /// Keeps the descriptions of dictionaries installed from the server at
-  /// [url] as its [catalog] has them now.
+  /// Keeps the descriptions and languages of dictionaries installed from
+  /// the server at [url] as its [catalog] has them now. The language is
+  /// what a word with no recording is read aloud in.
   Future<void> refreshDictionaryNotes(
       String url, List<CatalogDictionary> catalog) async {
     Map<String, Map<String, dynamic>> sources = dictionarySources;
@@ -1881,6 +1882,10 @@ class AppModel with ChangeNotifier {
           jsonEncode(source['notes']) != jsonEncode(remote.notes)) {
         source['notes'] = remote.notes;
         source.remove('note');
+        changed = true;
+      }
+      if (remote != null && source['language'] != remote.sourceLanguage) {
+        source['language'] = remote.sourceLanguage;
         changed = true;
       }
     });

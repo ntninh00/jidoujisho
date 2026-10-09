@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/models.dart';
@@ -19,7 +18,8 @@ class PlayAudioAction extends QuickAction {
           label: 'Play Audio',
           description:
               'Attempts to play audio based on the Audio enhancements. The auto'
-              ' is the top priority.',
+              ' is the top priority. Words without a recording, and words in'
+              ' other languages, are read aloud by the phone instead.',
           icon: Ui.volume_up,
         );
 
@@ -40,6 +40,39 @@ class PlayAudioAction extends QuickAction {
   }) async {
     _audioPlayer.stop();
 
+    /// Recordings come from sources for the language being learnt; a word
+    /// in another language goes straight to the phone's voice.
+    String language = WordSpeech.languageOf(appModel, heading);
+    if (language == appModel.targetLanguage.languageCode &&
+        await _playRecording(
+          context: context,
+          appModel: appModel,
+          heading: heading,
+        )) {
+      return;
+    }
+    if (!context.mounted) {
+      return;
+    }
+
+    /// Kana is read as written, where the phone might misread kanji.
+    await WordSpeech.speak(
+      context: context,
+      appModel: appModel,
+      text: language == 'ja' && heading.reading.isNotEmpty
+          ? heading.reading
+          : heading.term,
+      language: language,
+    );
+  }
+
+  /// Plays the first recording of [heading] the profile's audio sources
+  /// find. Returns whether one played.
+  Future<bool> _playRecording({
+    required BuildContext context,
+    required AppModel appModel,
+    required DictionaryHeading heading,
+  }) async {
     List<Enhancement> audioEnhancements = [];
 
     Enhancement? autoEnhancement =
@@ -56,14 +89,6 @@ class PlayAudioAction extends QuickAction {
         field: AudioField.instance,
       ),
     );
-
-    if (audioEnhancements.isEmpty) {
-      Fluttertoast.showToast(
-        msg: t.no_audio_enhancements,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-      );
-    }
 
     for (Enhancement? enhancement in audioEnhancements) {
       if (enhancement == null) {
@@ -110,15 +135,10 @@ class PlayAudioAction extends QuickAction {
           session.setActive(true);
           await _audioPlayer.play();
           session.setActive(false);
-          return;
+          return true;
         }
       }
     }
-
-    Fluttertoast.showToast(
-      msg: t.audio_unavailable,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-    );
+    return false;
   }
 }

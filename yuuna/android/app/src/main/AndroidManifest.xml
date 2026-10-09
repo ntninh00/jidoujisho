@@ -153,5 +153,10 @@
     <!-- Used for AnkiDroid API -->
     <queries>
         <package android:name="com.ichi2.anki" />
+        <!-- Text-to-speech engines and Google's, for reading words aloud. -->
+        <package android:name="com.google.android.tts" />
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
     </queries>
 </manifest>
