@@ -147,6 +147,30 @@ class YomichanFormat extends DictionaryFormat {
         case 'image':
           return jsonEncode(definition['content']);
       }
+    } else if (definition is List &&
+        definition.length == 2 &&
+        definition[0] is String &&
+        definition[1] is List) {
+      /// An inflected form's pointer to its word, which Yomitan follows: a
+      /// link to the word here, with what kind of form it is.
+      final String word = definition[0];
+      final String kinds =
+          (definition[1] as List).whereType<String>().join('; ');
+      return jsonEncode([
+        {
+          'tag': 'div',
+          'data': {'jdj': 'form-of'},
+          'content': [
+            '→ ',
+            {
+              'tag': 'a',
+              'href': '?query=${Uri.encodeQueryComponent(word)}&wildcards=off',
+              'content': word,
+            },
+            if (kinds.isNotEmpty) ' ($kinds)',
+          ],
+        }
+      ]);
     }
 
     return null;

@@ -106,8 +106,69 @@ String definitionHtml(
     root.append(node);
   }
   applyDictionaryCss(root, css, theme);
+  _boxLooseText(root);
   _mark(root, marks);
   return root.outerHtml;
+}
+
+/// Elements that are blocks unless styled otherwise.
+const Set<String> _blockTags = {
+  'div', 'ul', 'ol', 'li', 'table', 'details', 'summary', 'p', //
+};
+
+bool _isBlock(dom.Node node) {
+  if (node is! dom.Element) {
+    return false;
+  }
+  String style = node.attributes['style'] ?? '';
+  // Glossaries are laid out in one line, after their tags.
+  if (style.contains('display:inline') ||
+      node.attributes['data-sc-content'] == 'glossary') {
+    return false;
+  }
+  return _blockTags.contains(node.localName) ||
+      style.contains('display:block') ||
+      style.contains('display:list-item');
+}
+
+/// Words, rather than a list marker or space.
+final RegExp _wordy = RegExp(r'[\p{L}\p{N}]', unicode: true);
+
+/// Puts text that sits beside a block into a block of its own, as CSS
+/// does: the renderer otherwise sets the block in the line after it, as
+/// with OALD's examples after a short meaning. Runs of only tags and list
+/// markers stay beside the block, as Jitendex's forms do. Runs after the
+/// dictionary's styles are applied, so its selectors still match.
+void _boxLooseText(dom.Element element) {
+  for (dom.Element child in element.children.toList()) {
+    _boxLooseText(child);
+  }
+  List<dom.Node> nodes = element.nodes.toList();
+  if (!nodes.any(_isBlock) || nodes.every(_isBlock)) {
+    return;
+  }
+  List<dom.Node> run = [];
+  void close() {
+    bool wordy =
+        run.any((node) => node is dom.Text && _wordy.hasMatch(node.data));
+    if (wordy) {
+      dom.Element box = dom.Element.tag('div');
+      element.insertBefore(box, run.first);
+      for (dom.Node node in run) {
+        box.append(node);
+      }
+    }
+    run = [];
+  }
+
+  for (dom.Node node in nodes) {
+    if (_isBlock(node)) {
+      close();
+    } else {
+      run.add(node);
+    }
+  }
+  close();
 }
 
 /// Wraps each of [marks]' words in the text under [root] in a marked span:
@@ -174,7 +235,14 @@ List<dom.Node> _nodes(Object? content) {
     return const [];
   }
   if (content is String) {
-    return [dom.Text(content)];
+    /// Yomitan keeps the line breaks in text, as Meikyo's entries need.
+    List<String> lines = content.split('\n');
+    return [
+      for (int i = 0; i < lines.length; i++) ...[
+        if (i > 0) dom.Element.tag('br'),
+        if (lines[i].isNotEmpty) dom.Text(lines[i]),
+      ],
+    ];
   }
   if (content is num || content is bool) {
     return [dom.Text('$content')];
