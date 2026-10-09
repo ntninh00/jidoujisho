@@ -22,16 +22,17 @@ _JAPANESE = re.compile(r"[぀-ヿ㐀-鿿]")
 
 
 def json_in(text: str) -> dict | None:
-    """The largest JSON object in [text]."""
-    best = None
+    """The longest JSON object in [text]: the reply's own, not one of the
+    points inside it, which may have more keys than a short reply has."""
+    best, longest = None, 0
     decoder = json.JSONDecoder()
     for start in [match.start() for match in re.finditer(r"\{", text)]:
         try:
             value, end = decoder.raw_decode(text, start)
         except ValueError:
             continue
-        if isinstance(value, dict) and (best is None or len(value) > len(best)):
-            best = value
+        if isinstance(value, dict) and end - start > longest:
+            best, longest = value, end - start
     return best
 
 
