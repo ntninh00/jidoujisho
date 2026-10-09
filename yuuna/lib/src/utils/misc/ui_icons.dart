@@ -351,6 +351,8 @@ class Ui {
       IconData(0xe7be, fontFamily: _regular); // eye-crossed
   static const IconData visibility_off_outlined =
       IconData(0xe7be, fontFamily: _regular); // eye-crossed
+  static const IconData volume_up =
+      IconData(0xf59d, fontFamily: _regular); // volume
   static const IconData webhook =
       IconData(0xf5e7, fontFamily: _regular); // webhook
   static const IconData whatshot =

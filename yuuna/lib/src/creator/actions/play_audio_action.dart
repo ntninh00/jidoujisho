@@ -20,7 +20,7 @@ class PlayAudioAction extends QuickAction {
           description:
               'Attempts to play audio based on the Audio enhancements. The auto'
               ' is the top priority.',
-          icon: Ui.play_circle,
+          icon: Ui.volume_up,
         );
 
   final AudioPlayer _audioPlayer = AudioPlayer();

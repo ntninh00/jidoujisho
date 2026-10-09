@@ -1147,6 +1147,41 @@ class AppModel with ChangeNotifier {
     _preferences.put('my_words_button', true);
   }
 
+  /// A word's card shows only listening and making a card. Profiles made
+  /// before still have Share, Copy, My terms and Instant Export, so take
+  /// them off once; they can be put back in the profile's quick actions.
+  void trimQuickActions() {
+    if (_preferences.get('quick_actions_trimmed', defaultValue: false)) {
+      return;
+    }
+    const Set<String> dropped = {
+      ShareAction.key,
+      CopyToClipboardAction.key,
+      MyWordsAction.key,
+      InstantExportAction.key,
+    };
+    List<AnkiMapping> updated = [];
+    for (AnkiMapping mapping in _database.ankiMappings.where().findAllSync()) {
+      Map<int, String>? actions = mapping.actions;
+      if (actions == null || !actions.values.any(dropped.contains)) {
+        continue;
+      }
+      List<int> slots = actions.keys.toList()..sort();
+      List<String> kept = [
+        for (int slot in slots)
+          if (!dropped.contains(actions[slot])) actions[slot]!,
+      ];
+      mapping.actions = kept.asMap();
+      updated.add(mapping);
+    }
+    if (updated.isNotEmpty) {
+      _database.writeTxnSync(() {
+        _database.ankiMappings.putAllSync(updated);
+      });
+    }
+    _preferences.put('quick_actions_trimmed', true);
+  }
+
   /// Populate default mapping if it does not exist in the database.
   void populateDefaultMapping(Language language) async {
     if (_database.ankiMappings.where().findAllSync().isEmpty) {

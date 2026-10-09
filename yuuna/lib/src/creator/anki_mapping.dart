@@ -207,19 +207,11 @@ class AnkiMapping {
   static const Map<String, Map<int, String>> defaultActionsByLanguage = {
     'ja-JP': {
       0: CardCreatorAction.key,
-      1: InstantExportAction.key,
-      2: MyWordsAction.key,
-      3: CopyToClipboardAction.key,
-      4: ShareAction.key,
-      5: PlayAudioAction.key,
+      1: PlayAudioAction.key,
     },
     'en-US': {
       0: CardCreatorAction.key,
-      1: InstantExportAction.key,
-      2: MyWordsAction.key,
-      3: CopyToClipboardAction.key,
-      4: ShareAction.key,
-      5: PlayAudioAction.key,
+      1: PlayAudioAction.key,
     }
   };
 
