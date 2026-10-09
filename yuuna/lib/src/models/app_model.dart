@@ -1866,6 +1866,20 @@ class AppModel with ChangeNotifier {
     await _preferences.put('dictionary_sources', jsonEncode(sources));
   }
 
+  /// The dictionary installed from the dictionary with [id] on the server
+  /// at [url], whatever it was called then.
+  Dictionary? installedFromServer(String url, String id) {
+    for (MapEntry<String, Map<String, dynamic>> source
+        in dictionarySources.entries) {
+      if (source.value['kind'] == 'server' &&
+          source.value['url'] == url &&
+          source.value['id'] == id) {
+        return dictionaryNamed(source.key);
+      }
+    }
+    return null;
+  }
+
   /// Forgets where the dictionary called [name] came from.
   Future<void> forgetDictionarySource(String name) async {
     Map<String, Map<String, dynamic>> sources = dictionarySources;
@@ -2230,11 +2244,13 @@ class AppModel with ChangeNotifier {
           .findFirstSync();
 
       /// A new revision of [replacing] is imported under a name of its own,
-      /// and takes the old one's name and place once it is in.
-      bool updating = replacing != null && replacing.name == name;
+      /// and takes the old one's place once it is in, with its own name,
+      /// which may be new.
+      bool updating = replacing != null;
       Dictionary? sameNameDictionary =
           _database.dictionarys.where().nameEqualTo(name).findFirstSync();
-      if (sameNameDictionary != null && !updating) {
+      if (sameNameDictionary != null &&
+          sameNameDictionary.id != replacing?.id) {
         throw Exception(t.import_duplicate(name: name));
       }
 

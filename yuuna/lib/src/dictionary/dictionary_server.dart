@@ -379,7 +379,10 @@ class AppLanguage {
 /// is sent, so the rest stays as it is.
 class CatalogChanges {
   /// Describe the changes.
-  const CatalogChanges({this.languages, this.notes});
+  const CatalogChanges({this.title, this.languages, this.notes});
+
+  /// A new name, which the dictionary's file takes too.
+  final String? title;
 
   /// The language of the words looked up and of the definitions.
   final ({String? source, String? target})? languages;
@@ -390,10 +393,12 @@ class CatalogChanges {
   final Map<String, String>? notes;
 
   /// Whether anything changes.
-  bool get isEmpty => languages == null && (notes?.isEmpty ?? true);
+  bool get isEmpty =>
+      title == null && languages == null && (notes?.isEmpty ?? true);
 
   /// The changes as the server reads them.
   Map<String, Object?> toJson() => {
+        if (title != null) 'title': title,
         if (languages != null) ...{
           'sourceLanguage': languages!.source,
           'targetLanguage': languages!.target,

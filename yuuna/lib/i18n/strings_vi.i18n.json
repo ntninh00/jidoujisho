@@ -690,6 +690,7 @@
     "ttu_book_fonts_info": "Khi tắt, phông chữ của bạn được dùng cho toàn bộ sách. Mã vẫn dùng phông chữ đơn cách.",
     "ttu_repaired_partly": "Một phần của $title bị thiếu trong tệp. Phần còn lại đã được thêm.",
     "catalog_description": "Mô tả",
+    "catalog_name": "Tên",
     "catalog_description_hint": "Dùng để làm gì hoặc dành cho ai",
     "catalog_description_shown_in": "Chỉ hiển thị khi ứng dụng dùng $language",
     "import_replacing": "Đang thay thế $name cũ…",

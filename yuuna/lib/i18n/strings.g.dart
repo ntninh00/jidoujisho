@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1700 (850 per locale)
+/// Strings: 1702 (851 per locale)
 ///
-/// Built on 2026-10-08 at 20:28 UTC
+/// Built on 2026-10-09 at 03:47 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -853,6 +853,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_book_fonts_info => TranslationOverrides.string(_root.$meta, 'ttu_book_fonts_info', {}) ?? 'Off, your font is used all through the book. Code keeps its fixed-width font.';
 	String ttu_repaired_partly({required Object title}) => TranslationOverrides.string(_root.$meta, 'ttu_repaired_partly', {'title': title}) ?? 'Parts of ${title} were missing from the file. The rest was added.';
 	String get catalog_description => TranslationOverrides.string(_root.$meta, 'catalog_description', {}) ?? 'Description';
+	String get catalog_name => TranslationOverrides.string(_root.$meta, 'catalog_name', {}) ?? 'Name';
 	String get catalog_description_hint => TranslationOverrides.string(_root.$meta, 'catalog_description_hint', {}) ?? 'What it\'s good for, or who it\'s for';
 	String catalog_description_shown_in({required Object language}) => TranslationOverrides.string(_root.$meta, 'catalog_description_shown_in', {'language': language}) ?? 'Shows only when the app is in ${language}';
 	String import_replacing({required Object name}) => TranslationOverrides.string(_root.$meta, 'import_replacing', {'name': name}) ?? 'Replacing the older ${name}…';
@@ -2376,6 +2377,7 @@ class _StringsVi extends _StringsEn {
 	@override String get ttu_book_fonts_info => TranslationOverrides.string(_root.$meta, 'ttu_book_fonts_info', {}) ?? 'Khi tắt, phông chữ của bạn được dùng cho toàn bộ sách. Mã vẫn dùng phông chữ đơn cách.';
 	@override String ttu_repaired_partly({required Object title}) => TranslationOverrides.string(_root.$meta, 'ttu_repaired_partly', {'title': title}) ?? 'Một phần của ${title} bị thiếu trong tệp. Phần còn lại đã được thêm.';
 	@override String get catalog_description => TranslationOverrides.string(_root.$meta, 'catalog_description', {}) ?? 'Mô tả';
+	@override String get catalog_name => TranslationOverrides.string(_root.$meta, 'catalog_name', {}) ?? 'Tên';
 	@override String get catalog_description_hint => TranslationOverrides.string(_root.$meta, 'catalog_description_hint', {}) ?? 'Dùng để làm gì hoặc dành cho ai';
 	@override String catalog_description_shown_in({required Object language}) => TranslationOverrides.string(_root.$meta, 'catalog_description_shown_in', {'language': language}) ?? 'Chỉ hiển thị khi ứng dụng dùng ${language}';
 	@override String import_replacing({required Object name}) => TranslationOverrides.string(_root.$meta, 'import_replacing', {'name': name}) ?? 'Đang thay thế ${name} cũ…';
@@ -3884,6 +3886,7 @@ extension on _StringsEn {
 			case 'ttu_book_fonts_info': return TranslationOverrides.string(_root.$meta, 'ttu_book_fonts_info', {}) ?? 'Off, your font is used all through the book. Code keeps its fixed-width font.';
 			case 'ttu_repaired_partly': return ({required Object title}) => TranslationOverrides.string(_root.$meta, 'ttu_repaired_partly', {'title': title}) ?? 'Parts of ${title} were missing from the file. The rest was added.';
 			case 'catalog_description': return TranslationOverrides.string(_root.$meta, 'catalog_description', {}) ?? 'Description';
+			case 'catalog_name': return TranslationOverrides.string(_root.$meta, 'catalog_name', {}) ?? 'Name';
 			case 'catalog_description_hint': return TranslationOverrides.string(_root.$meta, 'catalog_description_hint', {}) ?? 'What it\'s good for, or who it\'s for';
 			case 'catalog_description_shown_in': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'catalog_description_shown_in', {'language': language}) ?? 'Shows only when the app is in ${language}';
 			case 'import_replacing': return ({required Object name}) => TranslationOverrides.string(_root.$meta, 'import_replacing', {'name': name}) ?? 'Replacing the older ${name}…';
@@ -4746,6 +4749,7 @@ extension on _StringsVi {
 			case 'ttu_book_fonts_info': return TranslationOverrides.string(_root.$meta, 'ttu_book_fonts_info', {}) ?? 'Khi tắt, phông chữ của bạn được dùng cho toàn bộ sách. Mã vẫn dùng phông chữ đơn cách.';
 			case 'ttu_repaired_partly': return ({required Object title}) => TranslationOverrides.string(_root.$meta, 'ttu_repaired_partly', {'title': title}) ?? 'Một phần của ${title} bị thiếu trong tệp. Phần còn lại đã được thêm.';
 			case 'catalog_description': return TranslationOverrides.string(_root.$meta, 'catalog_description', {}) ?? 'Mô tả';
+			case 'catalog_name': return TranslationOverrides.string(_root.$meta, 'catalog_name', {}) ?? 'Tên';
 			case 'catalog_description_hint': return TranslationOverrides.string(_root.$meta, 'catalog_description_hint', {}) ?? 'Dùng để làm gì hoặc dành cho ai';
 			case 'catalog_description_shown_in': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'catalog_description_shown_in', {'language': language}) ?? 'Chỉ hiển thị khi ứng dụng dùng ${language}';
 			case 'import_replacing': return ({required Object name}) => TranslationOverrides.string(_root.$meta, 'import_replacing', {'name': name}) ?? 'Đang thay thế ${name} cũ…';

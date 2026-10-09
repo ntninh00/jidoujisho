@@ -200,12 +200,25 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     });
   }
 
-  /// Whether [dictionary] is a different revision of one installed, which
-  /// can be updated in place.
+  /// The installed copy of [dictionary]: the one of its name, or the one
+  /// installed from it under a name it had before.
+  Dictionary? _installed(CatalogDictionary dictionary) {
+    DictionaryServer? server = _server;
+    return appModel.dictionaryNamed(dictionary.title) ??
+        (server == null
+            ? null
+            : appModel.installedFromServer(server.url, dictionary.id));
+  }
+
+  /// Whether [dictionary] is a different revision of one installed, or was
+  /// renamed since, which can be updated in place.
   bool _isUpdate(CatalogDictionary dictionary) {
-    Dictionary? installed = appModel.dictionaryNamed(dictionary.title);
+    Dictionary? installed = _installed(dictionary);
     if (installed == null || !dictionary.isReady) {
       return false;
+    }
+    if (installed.name != dictionary.title) {
+      return true;
     }
     String? revision = appModel.installedRevisionOf(installed);
     return revision != null && revision != dictionary.revision;
@@ -302,6 +315,9 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     Navigator.pop(context);
     DictionaryServer? server = _server;
     if (imported && server != null) {
+      if (replacing != null && replacing.name != dictionary.title) {
+        await appModel.forgetDictionarySource(replacing.name);
+      }
       // A backup can then download it again instead of carrying it.
       await appModel.setDictionarySource(dictionary.title, {
         'kind': 'server',
@@ -438,7 +454,7 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
     if (!dictionary.isReady) {
       return;
     }
-    bool installed = appModel.hasDictionaryNamed(dictionary.title);
+    bool installed = _installed(dictionary) != null;
     bool? download = await showTtuSheet<bool>(
       context: context,
       builder: (_) => _CatalogPreviewSheet(
@@ -600,11 +616,11 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
               for (CatalogDictionary dictionary in sections[section]!)
                 _CatalogTile(
                   dictionary: dictionary,
-                  installed: appModel.hasDictionaryNamed(dictionary.title),
+                  installed: _installed(dictionary) != null,
                   updatable: _isUpdate(dictionary),
                   onUpdate: () => _download(
                     dictionary,
-                    replacing: appModel.dictionaryNamed(dictionary.title),
+                    replacing: _installed(dictionary),
                   ),
                   downloading: _downloads.containsKey(dictionary.id),
                   progress: _downloads[dictionary.id],
@@ -1622,6 +1638,8 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
         text: widget.dictionary.notes[language] ?? '',
       ),
   };
+  late final TextEditingController _title =
+      TextEditingController(text: widget.dictionary.title);
   bool _confirming = false;
   bool _busy = false;
 
@@ -1630,6 +1648,7 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
     for (TextEditingController note in _notes.values) {
       note.dispose();
     }
+    _title.dispose();
     super.dispose();
   }
 
@@ -1643,7 +1662,9 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
         if (note.value.text.trim() != (dictionary.notes[note.key] ?? ''))
           note.key: note.value.text.trim(),
     };
+    String title = _title.text.trim();
     return CatalogChanges(
+      title: title.isNotEmpty && title != dictionary.title ? title : null,
       languages: languages ? (source: _source, target: _target) : null,
       notes: notes,
     );
@@ -1809,6 +1830,28 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
               ],
             ),
             const SizedBox(height: 14),
+            if (admin) ...[
+              TextField(
+                controller: _title,
+                maxLength: 200,
+                buildCounter: (_,
+                        {required currentLength,
+                        required isFocused,
+                        maxLength}) =>
+                    null,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  labelText: t.catalog_name,
+                  filled: true,
+                  fillColor: theme.dividerColor.withOpacity(0.08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             if (admin && _noteLanguages.length > 1) _noteLanguagePicker(),
             if (admin)
               TextField(

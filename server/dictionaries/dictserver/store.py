@@ -237,6 +237,24 @@ class Catalog:
             )
         return self.get(dictionary_id)
 
+    def title_taken(self, title: str, other_than: str) -> bool:
+        """Whether a dictionary besides [other_than] is called [title]: the
+        app tells installed dictionaries apart by name."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT 1 FROM dictionaries WHERE title = ? COLLATE NOCASE AND id != ?", (title, other_than)
+            ).fetchone()
+        return row is not None
+
+    def set_title(self, dictionary_id: str, title: str, size: int, sha256: str) -> dict | None:
+        """A new name, and the file that now carries it."""
+        with self._lock, self._connect() as db:
+            db.execute(
+                "UPDATE dictionaries SET title = ?, size = ?, sha256 = ? WHERE id = ?",
+                (title, size, sha256, dictionary_id),
+            )
+        return self.get(dictionary_id)
+
     def set_tidy(self, dictionary_id: str, layout: str, revision: str | None = None,
                  size: int | None = None, sha256: str | None = None) -> None:
         """Records how the dictionary's text was laid out, and the file that

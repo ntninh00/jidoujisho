@@ -65,6 +65,7 @@ ID = re.compile(r"^[0-9a-f]{12}$")
 MAX_MEDIA_BYTES = 16 * 1024 * 1024
 MAX_STYLES_BYTES = 1024 * 1024
 MAX_NOTE_LENGTH = 1000
+MAX_TITLE_LENGTH = 200
 MAX_NOTE_LANGUAGES = 20
 MAX_STRINGS_UPLOAD_BYTES = 2 * 1024 * 1024
 STATIC = Path(__file__).parent / "static"
@@ -119,6 +120,20 @@ class SecurityHeaders:
             await send(message)
 
         await self.app(scope, receive, send_with_headers)
+
+
+def retitle(zip_path: Path, title: str) -> None:
+    """Gives the dictionary at [zip_path] a new title in its index."""
+    temp = zip_path.with_name(zip_path.name + ".retitle")
+    with zipfile.ZipFile(zip_path) as source, zipfile.ZipFile(temp, "w", zipfile.ZIP_DEFLATED) as target:
+        for info in source.infolist():
+            data = source.read(info)
+            if info.filename == "index.json":
+                index = json.loads(data.decode("utf-8-sig"))
+                index["title"] = title
+                data = json.dumps(index, ensure_ascii=False, indent=2).encode()
+            target.writestr(info, data)
+    temp.replace(zip_path)
 
 
 def create_app(settings: config.Settings | None = None) -> Starlette:
@@ -394,9 +409,9 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             temp.unlink(missing_ok=True)
 
     async def update(request: Request) -> Response:
-        """Relabels a dictionary's languages, or sets the admin's own
-        descriptions of it, one per app language: each shows only in the app
-        set to that language. Only what is sent changes."""
+        """Renames a dictionary, relabels its languages, or sets the admin's
+        own descriptions of it, one per app language: each shows only in the
+        app set to that language. Only what is sent changes."""
         require_admin(request)
         entry = dictionary_of(request, ready=False)
         try:
@@ -423,6 +438,19 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             if note is not None and len(note) > MAX_NOTE_LENGTH:
                 raise Problem(400, f"A description can be up to {MAX_NOTE_LENGTH} characters.")
             notes[language] = note
+        title = None
+        if "title" in body:
+            if not isinstance(body["title"], str) or not body["title"].strip():
+                raise Problem(400, "Give the dictionary a name.")
+            title = " ".join(body["title"].split())
+            if len(title) > MAX_TITLE_LENGTH:
+                raise Problem(400, f"A name can be up to {MAX_TITLE_LENGTH} characters.")
+            if title == entry["title"]:
+                title = None
+            elif entry["status"] != "ready":
+                raise Problem(409, "The dictionary can be renamed once it is ready.")
+            elif catalog.title_taken(title, entry["id"]):
+                raise Problem(409, "Another dictionary already has that name.")
         languages = None
         if "sourceLanguage" in body or "targetLanguage" in body:
             languages = []
@@ -435,7 +463,22 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             catalog.set_languages(entry["id"], *languages)
         if notes:
             catalog.set_notes(entry["id"], notes)
+        if title is not None:
+            await run_in_threadpool(rename, entry["id"], title)
         return JSONResponse(catalog.get(entry["id"]))
+
+    def rename(dictionary_id: str, title: str) -> None:
+        """Renames a dictionary in its files too, the uploaded one included,
+        since the app names a dictionary after its index."""
+        zip_path = catalog.zip_path(dictionary_id)
+        for path in (zip_path, zip_path.with_name("original.zip")):
+            if path.exists():
+                retitle(path, title)
+        digest = hashlib.sha256()
+        with open(zip_path, "rb") as file:
+            for chunk in iter(lambda: file.read(1 << 20), b""):
+                digest.update(chunk)
+        catalog.set_title(dictionary_id, title, zip_path.stat().st_size, digest.hexdigest())
 
     def delete(request: Request) -> Response:
         require_admin(request)

@@ -716,6 +716,7 @@
     "ttu_book_fonts_info": "Off, your font is used all through the book. Code keeps its fixed-width font.",
     "ttu_repaired_partly": "Parts of $title were missing from the file. The rest was added.",
     "catalog_description": "Description",
+    "catalog_name": "Name",
     "catalog_description_hint": "What it's good for, or who it's for",
     "catalog_description_shown_in": "Shows only when the app is in $language",
     "import_replacing": "Replacing the older $name…",

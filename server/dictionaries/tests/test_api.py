@@ -213,6 +213,26 @@ def test_relabel_languages(client):
     assert bad.status_code == 400
 
 
+def test_admins_rename_dictionaries(client):
+    entry = added(client, ja_en())
+    other = added(client, ja_ja())
+    url = f"/api/dictionaries/{entry['id']}"
+    renamed = client.patch(url, json={"title": "  My   dictionary "}, headers=auth(ADMIN))
+    assert renamed.status_code == 200
+    body = renamed.json()
+    assert body["title"] == "My dictionary"
+    assert body["sha256"] != entry["sha256"]
+    # The file says so too, since the app names a dictionary after it.
+    download = client.get(f"{url}/download", headers=auth(READER))
+    with zipfile.ZipFile(io.BytesIO(download.content)) as archive:
+        assert '"title": "My dictionary"' in archive.read("index.json").decode()
+    assert hashlib.sha256(download.content).hexdigest() == body["sha256"]
+    assert client.patch(url, json={"title": other["title"].upper()}, headers=auth(ADMIN)).status_code == 409
+    assert client.patch(url, json={"title": "  "}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"title": "x" * 201}, headers=auth(ADMIN)).status_code == 400
+    assert client.patch(url, json={"title": "Mine"}, headers=auth(READER)).status_code == 403
+
+
 def test_admins_describe_dictionaries(client):
     entry = added(client, ja_en(description="From the index"))
     url = f"/api/dictionaries/{entry['id']}"
