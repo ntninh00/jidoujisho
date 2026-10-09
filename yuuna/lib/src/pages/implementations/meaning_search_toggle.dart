@@ -70,6 +70,9 @@ class MeaningSearchToggle extends StatelessWidget {
           maxWidth: Spacing.of(context).spaces.extraBig,
           maxHeight: Spacing.of(context).spaces.extraBig,
         ),
+        // The default ripple is wider than the search bar is tall, and the
+        // bar cuts it into a box.
+        splashRadius: 20,
         tooltip: t.search_by_meaning,
         icon: DecoratedBox(
           decoration: ShapeDecoration(
