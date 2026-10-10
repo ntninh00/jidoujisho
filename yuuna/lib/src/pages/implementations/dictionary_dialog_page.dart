@@ -29,14 +29,15 @@ class _DictionaryDialogPageState extends BasePageState {
   /// Dictionaries installed from the server before the app kept their
   /// languages get them from its catalog, quietly.
   Future<void> _learnLanguages() async {
-    DictionaryServer? server = appModel.dictionaryServer;
+    DictionaryServer? server = appModelNoUpdate.dictionaryServer;
     if (server == null ||
-        !appModel.dictionarySources.values.any((source) =>
+        !appModelNoUpdate.dictionarySources.values.any((source) =>
             source['kind'] == 'server' && source['section'] == null)) {
       return;
     }
     try {
-      await appModel.refreshDictionaryNotes(server.url, await server.list());
+      await appModelNoUpdate.refreshDictionaryNotes(
+          server.url, await server.list());
       if (mounted) {
         setState(() {});
       }
