@@ -47,3 +47,5 @@ app.*.map.json
 */test
 /.vscode/
 isar.dll
+.env
+.env.example
