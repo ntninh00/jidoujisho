@@ -63,6 +63,7 @@ class PlayAudioAction extends QuickAction {
           ? heading.reading
           : heading.term,
       language: language,
+      play: _playFile,
     );
   }
 
@@ -104,41 +105,41 @@ class PlayAudioAction extends QuickAction {
         );
 
         if (file != null) {
-          await _audioPlayer.setFilePath(file.path);
-
-          final AudioSession session = await AudioSession.instance;
-          await session.configure(
-            const AudioSessionConfiguration(
-              avAudioSessionCategory: AVAudioSessionCategory.playback,
-              avAudioSessionCategoryOptions:
-                  AVAudioSessionCategoryOptions.duckOthers,
-              avAudioSessionMode: AVAudioSessionMode.defaultMode,
-              avAudioSessionRouteSharingPolicy:
-                  AVAudioSessionRouteSharingPolicy.defaultPolicy,
-              avAudioSessionSetActiveOptions:
-                  AVAudioSessionSetActiveOptions.none,
-              androidAudioAttributes: AndroidAudioAttributes(
-                contentType: AndroidAudioContentType.music,
-                usage: AndroidAudioUsage.media,
-              ),
-              androidAudioFocusGainType:
-                  AndroidAudioFocusGainType.gainTransientMayDuck,
-              androidWillPauseWhenDucked: true,
-            ),
-          );
-
-          session.becomingNoisyEventStream.listen((event) async {
-            await _audioPlayer.stop();
-            session.setActive(false);
-          });
-
-          session.setActive(true);
-          await _audioPlayer.play();
-          session.setActive(false);
+          await _playFile(file);
           return true;
         }
       }
     }
     return false;
+  }
+
+  /// Plays [file] as a short sound, quieting other audio for it.
+  Future<void> _playFile(File file) async {
+    await _audioPlayer.setFilePath(file.path);
+    final AudioSession session = await AudioSession.instance;
+    await session.configure(
+      const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.duckOthers,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.music,
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType:
+            AndroidAudioFocusGainType.gainTransientMayDuck,
+        androidWillPauseWhenDucked: true,
+      ),
+    );
+    session.becomingNoisyEventStream.listen((event) async {
+      await _audioPlayer.stop();
+      session.setActive(false);
+    });
+    session.setActive(true);
+    await _audioPlayer.play();
+    session.setActive(false);
   }
 }

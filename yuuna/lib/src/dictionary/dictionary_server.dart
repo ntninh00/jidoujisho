@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:path/path.dart' as path;
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/i18n/strings.g.dart';
@@ -475,6 +476,15 @@ class DictionaryServer {
   /// Headers for loading the server's pictures.
   Map<String, String> get headers => {'Authorization': 'Bearer $token'};
 
+  /// An MP3 of [text] read aloud in [language] by the server's voice, kept
+  /// on the phone so a word is downloaded once.
+  Future<File> speech({required String text, required String language}) {
+    String address = Uri.parse('$url/api/speech').replace(
+      queryParameters: {'text': text, 'lang': language},
+    ).toString();
+    return DefaultCacheManager().getSingleFile(address, headers: headers);
+  }
+
   /// Where a picture in a dictionary can be loaded from.
   String mediaUrl(String dictionaryId, String mediaPath) =>
       '$url/api/dictionaries/$dictionaryId/media'
@@ -628,7 +638,8 @@ class DictionaryServer {
   Future<List<AppLanguage>> appLanguages() => _guard(() async {
         Response response = await _dio.get('strings');
         return ((response.data as Map)['languages'] as List)
-            .map((json) => AppLanguage.fromJson(Map<String, dynamic>.from(json)))
+            .map(
+                (json) => AppLanguage.fromJson(Map<String, dynamic>.from(json)))
             .toList();
       });
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -33,8 +35,7 @@ class WordSpeech {
         return language;
       }
     }
-    return languageOfText(heading.term) ??
-        appModel.targetLanguage.languageCode;
+    return languageOfText(heading.term) ?? appModel.targetLanguage.languageCode;
   }
 
   /// The language [text] is most likely in, told from its script.
@@ -60,13 +61,16 @@ class WordSpeech {
     return null;
   }
 
-  /// Reads [text] in [language]. When the phone cannot, says why and how
-  /// to fix it, in a dialog the first time and in a notice after that.
+  /// Reads [text] in [language] with the phone's voice, or, when the phone
+  /// has none for it, has the dictionary server's voice read it through
+  /// [play]. When neither can, says why and how to fix the phone, in a
+  /// dialog the first time and in a notice after that.
   static Future<void> speak({
     required BuildContext context,
     required AppModel appModel,
     required String text,
     required String language,
+    required Future<void> Function(File file) play,
   }) async {
     Map<String, dynamic>? answer;
     try {
@@ -84,6 +88,16 @@ class WordSpeech {
     String status = answer?['status'] as String? ?? 'error';
     if (status == 'ok') {
       return;
+    }
+
+    DictionaryServer? server = appModel.dictionaryServer;
+    if (server != null) {
+      try {
+        await play(await server.speech(text: text, language: language));
+        return;
+      } catch (error) {
+        debugPrint('The dictionary server could not read aloud: $error');
+      }
     }
 
     String problem = status == 'no_voice' ? '$status/$language' : status;
