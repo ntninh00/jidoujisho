@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -40,8 +41,8 @@ class AppRelease {
               json['publishedAt'] as String? ??
               '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      apkUrl: apk?['browser_download_url'] as String? ??
-          json['apkUrl'] as String?,
+      apkUrl:
+          apk?['browser_download_url'] as String? ?? json['apkUrl'] as String?,
       apkSize: (apk?['size'] as num? ?? json['apkSize'] as num? ?? 0).toInt(),
       apkSha256: digest?.replaceFirst('sha256:', ''),
     );
@@ -153,6 +154,110 @@ String _sha256Of(String filePath) {
   return digest.toString();
 }
 
+/// Downloads [url] into [file], carrying on from what [file] already holds,
+/// to [size] bytes when that is known. A connection that sends nothing for
+/// [stall], as one a phone leaves behind when it moves between Wi-Fi and
+/// mobile data, is dropped, and the download picks up where it stopped,
+/// giving up after [attempts] tries in a row that got nothing further.
+/// [onProgress] gets the share done, from 0 to 1. A cancelled download
+/// keeps what it has, for the next try to carry on from.
+Future<void> downloadResuming({
+  required String url,
+  required File file,
+  required int size,
+  required void Function(double) onProgress,
+  CancelToken? cancelToken,
+  Duration stall = const Duration(seconds: 20),
+  int attempts = 5,
+  Duration pause = const Duration(seconds: 2),
+}) async {
+  Dio dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 15)));
+  int failures = 0;
+  while (true) {
+    int have = file.existsSync() ? file.lengthSync() : 0;
+    if (size > 0 && have > size) {
+      file.deleteSync();
+      have = 0;
+    }
+    if (size > 0 && have == size) {
+      onProgress(1);
+      return;
+    }
+    int before = have;
+    try {
+      Response<ResponseBody> response = await dio.get<ResponseBody>(
+        url,
+        cancelToken: cancelToken,
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: have > 0 ? {HttpHeaders.rangeHeader: 'bytes=$have-'} : null,
+        ),
+      );
+      // A server that ignores the range sends the whole file again.
+      bool resumed =
+          have > 0 && response.statusCode == HttpStatus.partialContent;
+      if (!resumed) {
+        have = 0;
+      }
+      int total = size > 0
+          ? size
+          : have +
+              (int.tryParse(
+                      response.headers.value(Headers.contentLengthHeader) ??
+                          '') ??
+                  0);
+      IOSink sink =
+          file.openWrite(mode: resumed ? FileMode.append : FileMode.write);
+      Completer<void> done = Completer();
+      late StreamSubscription<Uint8List> subscription;
+      void fail(Object error, [StackTrace? stack]) {
+        subscription.cancel();
+        if (!done.isCompleted) {
+          done.completeError(error, stack);
+        }
+      }
+
+      subscription = response.data!.stream.timeout(stall).listen(
+            (chunk) {
+              sink.add(chunk);
+              have += chunk.length;
+              if (total > 0) {
+                onProgress(have / total);
+              }
+            },
+            onError: fail,
+            onDone: () {
+              if (!done.isCompleted) {
+                done.complete();
+              }
+            },
+            cancelOnError: true,
+          );
+      cancelToken?.whenCancel.then(fail);
+      try {
+        await done.future;
+      } finally {
+        await sink.close();
+      }
+      if (size > 0 && have < size) {
+        throw const SocketException('The download ended early.');
+      }
+      return;
+    } catch (error) {
+      if (cancelToken?.isCancelled ?? false) {
+        rethrow;
+      }
+      int now = file.existsSync() ? file.lengthSync() : 0;
+      failures = now > before ? 1 : failures + 1;
+      if (failures >= attempts) {
+        rethrow;
+      }
+      debugPrint('Download stopped at $now bytes, carrying on: $error');
+      await Future.delayed(pause);
+    }
+  }
+}
+
 /// Why an update could not be had.
 class AppUpdateException implements Exception {
   /// Describe what went wrong.
@@ -206,7 +311,8 @@ class AppUpdates {
 
   /// The release of the version running, when it is one.
   AppRelease? get installed => releases
-      .where((release) => compareAppVersions(release.version, installedVersion) == 0)
+      .where((release) =>
+          compareAppVersions(release.version, installedVersion) == 0)
       .firstOrNull;
 
   /// Shows what the last check found, and removes downloads that are
@@ -216,9 +322,11 @@ class AppUpdates {
       return;
     }
     try {
-      List kept = jsonDecode(_preferences.get('app_releases', defaultValue: '[]')
-          as String) as List;
-      _show(kept.cast<Map<String, dynamic>>().map(AppRelease.fromJson).toList());
+      List kept = jsonDecode(
+              _preferences.get('app_releases', defaultValue: '[]') as String)
+          as List;
+      _show(
+          kept.cast<Map<String, dynamic>>().map(AppRelease.fromJson).toList());
     } catch (error) {
       debugPrint('Kept releases unreadable: $error');
     }
@@ -232,7 +340,9 @@ class AppUpdates {
       return;
     }
     DateTime? last = lastChecked;
-    if (!force && last != null && DateTime.now().difference(last) < checkEvery) {
+    if (!force &&
+        last != null &&
+        DateTime.now().difference(last) < checkEvery) {
       return;
     }
     try {
@@ -305,26 +415,22 @@ class AppUpdates {
       onProgress(1);
       return file;
     }
+    // Kept when a download stops, so the next one carries on from it.
     File partial = File('${file.path}.part');
     try {
-      await Dio().download(
-        release.apkUrl!,
-        partial.path,
+      await downloadResuming(
+        url: release.apkUrl!,
+        file: partial,
+        size: release.apkSize,
+        onProgress: onProgress,
         cancelToken: cancelToken,
-        onReceiveProgress: (received, total) {
-          int size = total > 0 ? total : release.apkSize;
-          if (size > 0) {
-            onProgress(received / size);
-          }
-        },
       );
     } on DioError catch (error) {
-      if (partial.existsSync()) {
-        partial.deleteSync();
-      }
       if (CancelToken.isCancel(error)) {
         rethrow;
       }
+      throw const AppUpdateException('download');
+    } on Exception {
       throw const AppUpdateException('download');
     }
     if (!await _matches(partial, release)) {
