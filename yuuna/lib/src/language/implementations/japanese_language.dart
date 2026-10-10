@@ -744,6 +744,7 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
   }
 
   headings = _withoutRepeatedSpellings(headings);
+  headings = headings.where(params.showsHeading).toList();
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 
@@ -803,7 +804,8 @@ List<DictionaryHeading> _headingsStartingWith(
     heading.entries.loadSync();
   }
   headings.sort((a, b) {
-    int pointer = (a.reading.isEmpty ? 1 : 0).compareTo(b.reading.isEmpty ? 1 : 0);
+    int pointer =
+        (a.reading.isEmpty ? 1 : 0).compareTo(b.reading.isEmpty ? 1 : 0);
     if (pointer != 0) {
       return pointer;
     }

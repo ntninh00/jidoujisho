@@ -46,24 +46,32 @@ class _DictionaryDialogPageState extends BasePageState {
     }
   }
 
-  /// Turns on only [language]'s dictionaries, or all with null.
+  /// Picks or unpicks [language], whose dictionaries alone are on with
+  /// the others picked; null goes back to all.
   Future<void> _setMode(String? language) async {
-    await appModel.setDictionaryLanguageMode(language);
+    Set<String> picked = appModel.dictionaryModeLanguages;
+    if (language == null) {
+      picked.clear();
+    } else if (!picked.remove(language)) {
+      picked.add(language);
+    }
+    await appModel.setDictionaryModeLanguages(picked);
     if (mounted) {
       setState(() {});
     }
   }
 
   /// All, and a chip for each language the dictionaries look up: picking
-  /// one leaves only that language's dictionaries on.
+  /// some leaves only their dictionaries on.
   Widget _modes() {
     List<String> languages = appModel.dictionaryLanguages;
     if (languages.length < 2) {
       return const SizedBox.shrink();
     }
-    String? mode = appModel.dictionaryLanguageMode;
+    Set<String> picked = appModel.dictionaryModeLanguages;
     Widget chip(String label, String? language) {
-      bool selected = mode == language;
+      bool selected =
+          language == null ? picked.isEmpty : picked.contains(language);
       return Padding(
         padding: const EdgeInsets.only(right: 6),
         child: ChoiceChip(
@@ -454,7 +462,6 @@ class _DictionaryDialogPageState extends BasePageState {
     bool off = hidden || leftOut;
     bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
     String? note = appModel.dictionaryNoteOf(dictionary);
-    String? mode = appModel.dictionaryLanguageMode;
     return Padding(
       key: ValueKey(dictionary.id),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
@@ -512,9 +519,8 @@ class _DictionaryDialogPageState extends BasePageState {
                   ),
                 ),
                 IconButton(
-                  tooltip: leftOut && mode != null
-                      ? t.dictionary_off_in_mode(
-                          language: catalogLanguageName(mode))
+                  tooltip: leftOut
+                      ? t.dictionary_off_in_mode
                       : hidden
                           ? t.options_show
                           : t.options_hide,

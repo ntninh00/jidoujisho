@@ -330,6 +330,7 @@ Future<DictionarySearchOutcome?> prepareSearchResultsEnglishLanguage(
     return null;
   }
 
+  headings = headings.where(params.showsHeading).toList();
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 

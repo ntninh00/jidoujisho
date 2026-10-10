@@ -3,7 +3,7 @@
 /// Locales: 2
 /// Strings: 1768 (884 per locale)
 ///
-/// Built on 2026-10-10 at 13:11 UTC
+/// Built on 2026-10-10 at 13:34 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -369,8 +369,8 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get speech_enable => TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'TURN ON';
 	String get speech_download => TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'DOWNLOAD VOICE';
 	String get dictionary_mode_all => TranslationOverrides.string(_root.$meta, 'dictionary_mode_all', {}) ?? 'All';
-	String get dictionary_mode_info => TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Pick a language to turn on only its dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.';
-	String dictionary_off_in_mode({required Object language}) => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {'language': language}) ?? 'Off while ${language} is picked';
+	String get dictionary_mode_info => TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Pick languages to turn on only their dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.';
+	String get dictionary_off_in_mode => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {}) ?? 'Off: its language isn\'t picked';
 	String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
 	String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 	String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
@@ -1926,8 +1926,8 @@ class _StringsVi extends _StringsEn {
 	@override String get speech_enable => TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'BẬT';
 	@override String get speech_download => TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'TẢI GIỌNG ĐỌC';
 	@override String get dictionary_mode_all => TranslationOverrides.string(_root.$meta, 'dictionary_mode_all', {}) ?? 'Tất cả';
-	@override String get dictionary_mode_info => TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Chọn một ngôn ngữ để chỉ bật từ điển của ngôn ngữ đó, kèm danh sách kanji, ngữ pháp, cao độ và tần suất. Tất cả sẽ bật lại những từ điển bạn đã tự bật.';
-	@override String dictionary_off_in_mode({required Object language}) => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {'language': language}) ?? 'Tắt khi đang chọn ${language}';
+	@override String get dictionary_mode_info => TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Chọn ngôn ngữ để chỉ bật từ điển của các ngôn ngữ đó, kèm danh sách kanji, ngữ pháp, cao độ và tần suất. Tất cả sẽ bật lại những từ điển bạn đã tự bật.';
+	@override String get dictionary_off_in_mode => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {}) ?? 'Tắt: ngôn ngữ của từ điển này chưa được chọn';
 	@override String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
 	@override String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 	@override String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
@@ -3462,8 +3462,8 @@ extension on _StringsEn {
 			case 'speech_enable': return TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'TURN ON';
 			case 'speech_download': return TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'DOWNLOAD VOICE';
 			case 'dictionary_mode_all': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_all', {}) ?? 'All';
-			case 'dictionary_mode_info': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Pick a language to turn on only its dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.';
-			case 'dictionary_off_in_mode': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {'language': language}) ?? 'Off while ${language} is picked';
+			case 'dictionary_mode_info': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Pick languages to turn on only their dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.';
+			case 'dictionary_off_in_mode': return TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {}) ?? 'Off: its language isn\'t picked';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
@@ -4358,8 +4358,8 @@ extension on _StringsVi {
 			case 'speech_enable': return TranslationOverrides.string(_root.$meta, 'speech_enable', {}) ?? 'BẬT';
 			case 'speech_download': return TranslationOverrides.string(_root.$meta, 'speech_download', {}) ?? 'TẢI GIỌNG ĐỌC';
 			case 'dictionary_mode_all': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_all', {}) ?? 'Tất cả';
-			case 'dictionary_mode_info': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Chọn một ngôn ngữ để chỉ bật từ điển của ngôn ngữ đó, kèm danh sách kanji, ngữ pháp, cao độ và tần suất. Tất cả sẽ bật lại những từ điển bạn đã tự bật.';
-			case 'dictionary_off_in_mode': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {'language': language}) ?? 'Tắt khi đang chọn ${language}';
+			case 'dictionary_mode_info': return TranslationOverrides.string(_root.$meta, 'dictionary_mode_info', {}) ?? 'Chọn ngôn ngữ để chỉ bật từ điển của các ngôn ngữ đó, kèm danh sách kanji, ngữ pháp, cao độ và tần suất. Tất cả sẽ bật lại những từ điển bạn đã tự bật.';
+			case 'dictionary_off_in_mode': return TranslationOverrides.string(_root.$meta, 'dictionary_off_in_mode', {}) ?? 'Tắt: ngôn ngữ của từ điển này chưa được chọn';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';

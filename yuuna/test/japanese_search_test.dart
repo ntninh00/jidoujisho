@@ -33,7 +33,16 @@ void main() {
         .writeAsStringSync(jsonEncode({'title': 'Test', 'revision': '1'}));
     List<Object> word(String term, String reading, String meaning,
             {int score = 0, String rules = ''}) =>
-        [term, reading, '', rules, score, [meaning], 0, ''];
+        [
+          term,
+          reading,
+          '',
+          rules,
+          score,
+          [meaning],
+          0,
+          ''
+        ];
     File(path.join(resources.path, 'term_bank_1.json')).writeAsStringSync(
       jsonEncode([
         word('図々しい', 'ずうずうしい', 'impudent', score: 5, rules: 'adj-i'),
@@ -76,7 +85,8 @@ void main() {
   });
 
   /// The words found for [text], as `term【reading】`.
-  Future<List<String>> search(String text, {required bool typed}) async {
+  Future<List<String>> search(String text,
+      {required bool typed, List<int> hidden = const []}) async {
     DictionarySearchOutcome? outcome =
         await prepareSearchResultsJapaneseLanguage(DictionarySearchParams(
       searchTerm: text,
@@ -86,6 +96,7 @@ void main() {
       searchWithWildcards: typed,
       sendPort: ReceivePort().sendPort,
       directoryPath: directory.path,
+      hiddenDictionaryIds: hidden,
     ));
     return [
       for (int id in outcome?.headingIds ?? const <int>[])
@@ -122,11 +133,16 @@ void main() {
     expect((await search('食べたい気分', typed: true)).first, '食べる【たべる】');
   });
 
+  test("a hidden dictionary's words are left out", () async {
+    expect(await search('へいし', typed: true, hidden: [1]), isEmpty);
+    expect(await search('へいし', typed: true, hidden: [2]),
+        await search('へいし', typed: true));
+  });
+
   test('tapped in a book, the longest word comes first', () async {
     List<String> found = await search('へいしは', typed: false);
     expect(found.first, '兵士【へいし】');
     expect(found, contains('塀【へい】'));
-    expect((await search('ずうずうしいな', typed: false)).first,
-        '図々しい【ずうずうしい】');
+    expect((await search('ずうずうしいな', typed: false)).first, '図々しい【ずうずうしい】');
   });
 }

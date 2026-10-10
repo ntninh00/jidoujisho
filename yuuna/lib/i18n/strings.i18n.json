@@ -211,8 +211,8 @@
     "speech_enable": "TURN ON",
     "speech_download": "DOWNLOAD VOICE",
     "dictionary_mode_all": "All",
-    "dictionary_mode_info": "Pick a language to turn on only its dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.",
-    "dictionary_off_in_mode": "Off while $language is picked",
+    "dictionary_mode_info": "Pick languages to turn on only their dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.",
+    "dictionary_off_in_mode": "Off: its language isn't picked",
     "search_language_hint": "Search $language…",
     "card_exported": "Card exported to 『$deck』.",
     "info_incognito_on":

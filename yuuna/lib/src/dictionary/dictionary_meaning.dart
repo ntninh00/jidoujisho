@@ -296,14 +296,13 @@ Future<int> indexMeaningsHelper(IndexMeaningsParams params) async {
       0;
   int start = params.after;
   int done = params.after;
+
   /// Isar gives the upper bound again when asked for what lies between it
   /// and itself, so the range's end is checked here.
   while (through == null || done < through) {
     List<DictionaryEntry> entries = (through == null
             ? isar.dictionaryEntrys.where().idGreaterThan(done)
-            : isar.dictionaryEntrys
-                .where()
-                .idBetween(done + 1, through))
+            : isar.dictionaryEntrys.where().idBetween(done + 1, through))
         .limit(_batch)
         .findAllSync();
     if (entries.isEmpty || entries.last.id! <= done) {
@@ -416,6 +415,9 @@ Future<DictionarySearchOutcome?> prepareSearchResultsByMeaning(
   List<int> headingIds = [];
   Set<int> seen = {};
   for (var (entry, _) in ranked) {
+    if (!params.shows(entry)) {
+      continue;
+    }
     entry.heading.loadSync();
     int? id = entry.heading.value?.id;
     if (id != null && seen.add(id)) {

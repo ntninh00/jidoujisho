@@ -1372,7 +1372,10 @@ class AppModel with ChangeNotifier {
       installedVersion: _packageInfo.version,
       enabled: _packageInfo.packageName.endsWith('.dev'),
     )..loadKept();
-    _languageMode = _preferences.get('dictionary_language_mode') as String?;
+    _modeLanguages = {
+      ...List<String>.from(
+          _preferences.get('dictionary_mode_languages', defaultValue: []))
+    };
     Dictionary.hiddenByMode = _hiddenByMode;
 
     /// Nothing is asked for at startup. File and AnkiDroid access are asked
@@ -1899,7 +1902,7 @@ class AppModel with ChangeNotifier {
     if (changed) {
       await _preferences.put('dictionary_sources', jsonEncode(sources));
       _profiles.clear();
-      if (_languageMode != null) {
+      if (_modeLanguages.isNotEmpty) {
         dictionariesRevision++;
       }
     }
@@ -1993,19 +1996,23 @@ class AppModel with ChangeNotifier {
     );
   }
 
-  /// The language whose dictionaries alone are on, as `ja`, or null when
+  /// The languages whose dictionaries alone are on, as `ja`, or none when
   /// every dictionary the user has not hidden is.
-  String? get dictionaryLanguageMode => _languageMode;
-  String? _languageMode;
+  Set<String> get dictionaryModeLanguages => {..._modeLanguages};
+  Set<String> _modeLanguages = {};
 
-  /// Turns on only [language]'s dictionaries, or with null, all of them
-  /// again as the user left them. The user's own choices are not changed.
-  Future<void> setDictionaryLanguageMode(String? language) async {
-    _languageMode = language;
-    if (language == null) {
-      await _preferences.delete('dictionary_language_mode');
+  /// Turns on only the dictionaries of [languages], or with none, all of
+  /// them again as the user left them. The user's own choices are not
+  /// changed. Every language picked is the same as none.
+  Future<void> setDictionaryModeLanguages(Set<String> languages) async {
+    if (dictionaryLanguages.every(languages.contains)) {
+      languages = {};
+    }
+    _modeLanguages = {...languages};
+    if (languages.isEmpty) {
+      await _preferences.delete('dictionary_mode_languages');
     } else {
-      await _preferences.put('dictionary_language_mode', language);
+      await _preferences.put('dictionary_mode_languages', languages.toList());
     }
     dictionariesRevision++;
     notifyListeners();
@@ -2034,12 +2041,11 @@ class AppModel with ChangeNotifier {
   /// Whether the language mode leaves [dictionary] out. One whose language
   /// is unknown stays on.
   bool _hiddenByMode(Dictionary dictionary) {
-    String? mode = _languageMode;
-    if (mode == null) {
+    if (_modeLanguages.isEmpty) {
       return false;
     }
     String? language = profileOf(dictionary).source;
-    return language != null && language != mode;
+    return language != null && !_modeLanguages.contains(language);
   }
 
   /* ---------- backups ---------- */
@@ -2952,7 +2958,8 @@ class AppModel with ChangeNotifier {
     String cacheTerm =
         searchTerm.length > 40 ? searchTerm.substring(0, 40) : searchTerm;
     Language language = targetLanguage;
-    String cacheKey = '${language.languageCode}/$searchWithWildcards/'
+    String cacheKey = '$dictionariesRevision/'
+        '${language.languageCode}/$searchWithWildcards/'
         '${byMeaning ? 'meaning/' : ''}'
         '${overrideMaximumTerms ?? maximumTerms}/$cacheTerm';
 
@@ -3051,6 +3058,10 @@ class AppModel with ChangeNotifier {
       searchWithWildcards: searchWithWildcards,
       enabledDictionaryIds: [],
       sendPort: _searchLogPort.sendPort,
+      hiddenDictionaryIds: [
+        for (Dictionary dictionary in dictionaries)
+          if (dictionary.isHidden(language)) dictionary.id,
+      ],
     );
 
     if (params.searchTerm.trim().isEmpty) {

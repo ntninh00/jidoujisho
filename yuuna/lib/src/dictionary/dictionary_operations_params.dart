@@ -134,6 +134,7 @@ class DictionarySearchParams extends IsolateParams {
     required this.searchWithWildcards,
     required super.sendPort,
     required super.directoryPath,
+    this.hiddenDictionaryIds = const [],
   });
 
   /// Primary search term, likely taken from context.
@@ -151,6 +152,20 @@ class DictionarySearchParams extends IsolateParams {
   /// IDs of dictionaries that are not disabled.
   final List<int> enabledDictionaryIds;
 
+  /// IDs of dictionaries the results leave out, by the user or a language
+  /// mode: words only they have don't take a place among the results.
+  final List<int> hiddenDictionaryIds;
+
+  /// Whether the results would show [entry], being in a dictionary that
+  /// isn't hidden.
+  bool shows(DictionaryEntry entry) =>
+      hiddenDictionaryIds.isEmpty ||
+      !hiddenDictionaryIds.contains(entry.dictionary.value?.id ?? -1);
+
+  /// Whether the results would show [heading], having an entry they show.
+  bool showsHeading(DictionaryHeading heading) =>
+      hiddenDictionaryIds.isEmpty || heading.entries.any(shows);
+
   @override
   bool operator ==(Object other) =>
       other is DictionarySearchParams &&
@@ -158,7 +173,8 @@ class DictionarySearchParams extends IsolateParams {
       other.maximumDictionaryTermsInResult ==
           other.maximumDictionaryTermsInResult &&
       searchWithWildcards == other.searchWithWildcards &&
-      listEquals(enabledDictionaryIds, other.enabledDictionaryIds);
+      listEquals(enabledDictionaryIds, other.enabledDictionaryIds) &&
+      listEquals(hiddenDictionaryIds, other.hiddenDictionaryIds);
 
   @override
   int get hashCode => searchTerm.hashCode;

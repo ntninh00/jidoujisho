@@ -122,16 +122,24 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
   /// The search bar to show at the topmost of the tab body. When selected,
   /// [buildSearchBarBody] will take the place of the remainder tab body, or
   /// the elements below the search bar when unselected.
+  /// The languages picked in the dictionaries sheet, as `Japanese,
+  /// Vietnamese`, in its order.
+  String _modeNames() {
+    Set<String> picked = appModel.dictionaryModeLanguages;
+    return appModel.dictionaryLanguages
+        .where(picked.contains)
+        .map(catalogLanguageName)
+        .join(', ');
+  }
+
   @override
   Widget buildFloatingSearchBar() {
     return FloatingSearchBar(
       isScrollControlled: true,
       hint: appModel.searchByMeaning
           ? t.search_by_meaning_hint
-          : appModel.dictionaryLanguageMode != null
-              ? t.search_language_hint(
-                  language:
-                      catalogLanguageName(appModel.dictionaryLanguageMode))
+          : appModel.dictionaryModeLanguages.isNotEmpty
+              ? t.search_language_hint(language: _modeNames())
               : t.search_ellipsis,
       controller: mediaType.floatingSearchBarController,
       builder: buildFloatingSearchBody,

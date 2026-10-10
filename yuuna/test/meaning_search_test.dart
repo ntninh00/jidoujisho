@@ -48,8 +48,8 @@ void main() {
           'content': 'The dog chased the cat.',
         },
       ]);
-      expect(meaningWordsOf([jitendex]),
-          ['cat', 'esp', 'domestic', 'shamisen']);
+      expect(
+          meaningWordsOf([jitendex]), ['cat', 'esp', 'domestic', 'shamisen']);
       expect(meaningUnitsOf([jitendex]), ['cat', 'shamisen']);
       expect(meaningUnitsOf(['to eat; to drink, (formal) to dine']),
           ['eat', 'drink', 'dine']);
@@ -122,11 +122,15 @@ void main() {
         word('犬', 'いぬ', ['dog'], score: 9),
         word('食べる', 'たべる', ['to eat'], score: 9),
         word('薔薇', 'ばら', ['rose (plant of the genus Rosa or its flower)']),
+        word('博物館', 'はくぶつかん', ['museum']),
       ]);
       await install(2, 'Vietnamese', [
         word('猫', 'ねこ', ['con mèo']),
         word('鳴く', 'なく', ['kêu (mèo, chim)']),
         word('明るい', 'あかるい', ['sáng sủa']),
+      ]);
+      await install(3, 'Monolingual', [
+        word('gallery', '', ['museum'], score: 9),
       ]);
 
       /// As after the update: the entries are there, their words not yet.
@@ -158,16 +162,22 @@ void main() {
     });
 
     /// The words found for [text], as `term (dictionary)`, best first.
-    Future<List<String>> search(String text, {bool typed = false}) async {
+    Future<List<String>> search(
+      String text, {
+      bool typed = false,
+      int most = 10,
+      List<int> hidden = const [],
+    }) async {
       DictionarySearchOutcome? outcome = await prepareSearchResultsByMeaning(
         DictionarySearchParams(
           searchTerm: text,
           maximumDictionarySearchResults: 20,
-          maximumDictionaryTermsInResult: 10,
+          maximumDictionaryTermsInResult: most,
           enabledDictionaryIds: const [],
           searchWithWildcards: typed,
           sendPort: ReceivePort().sendPort,
           directoryPath: directory.path,
+          hiddenDictionaryIds: hidden,
         ),
       );
       return [
@@ -199,6 +209,12 @@ void main() {
       expect(await search('con mè', typed: true), ['猫']);
       expect(await search('con mè'), isEmpty);
       expect(await search('xyz'), isEmpty);
+    });
+
+    test("hidden dictionaries' words don't take the places", () async {
+      expect(await search('museum', most: 1), ['gallery']);
+      expect(await search('museum', most: 1, hidden: [3]), ['博物館']);
+      expect(await search('museum', hidden: [1, 3]), isEmpty);
     });
 
     test('ranges of entries are indexed apart, each to its end', () async {
