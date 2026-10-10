@@ -2603,18 +2603,20 @@ class AppModel with ChangeNotifier {
     });
   }
 
-  /// Recent search results, newest last. Cleared when a dictionary is added or
-  /// deleted. Searches that found nothing are kept too.
-  final LinkedHashMap<String, DictionarySearchResult> _dictionarySearchCache =
-      LinkedHashMap();
+  /// What a search begun unseen while typing found (see
+  /// [prefetchDictionarySearch]), for pressing search moments later to show
+  /// at once. Used once. Searches are otherwise not kept: a result kept
+  /// from before a dictionary finished importing, or before its meanings
+  /// were indexed, would go on showing what was there then.
+  ({String key, DictionarySearchResult result, DateTime at})? _prefetched;
 
-  /// How many results [_dictionarySearchCache] keeps.
-  static const int _dictionarySearchCacheSize = 256;
+  /// How long a [_prefetched] result stays fresh enough to show.
+  static const Duration _prefetchFresh = Duration(seconds: 30);
 
-  /// Used when a dictionary is added or removed as those results may now be
+  /// Used when dictionaries change, as results found before may now be
   /// wrong.
   void clearDictionaryResultsCache() {
-    _dictionarySearchCache.clear();
+    _prefetched = null;
     dictionariesRevision++;
   }
 
@@ -2804,10 +2806,13 @@ class AppModel with ChangeNotifier {
         '${byMeaning ? 'meaning/' : ''}'
         '${overrideMaximumTerms ?? maximumTerms}/$cacheTerm';
 
-    DictionarySearchResult? cached = _dictionarySearchCache.remove(cacheKey);
-    if (cached != null && useCache) {
-      _dictionarySearchCache[cacheKey] = cached;
-      return cached;
+    var prefetched = _prefetched;
+    if (useCache &&
+        prefetched != null &&
+        prefetched.key == cacheKey &&
+        DateTime.now().difference(prefetched.at) < _prefetchFresh) {
+      _prefetched = null;
+      return prefetched.result;
     }
 
     /// The same search already on its way, as one begun unseen while typing
@@ -2842,7 +2847,7 @@ class AppModel with ChangeNotifier {
     return result ?? DictionarySearchResult(searchTerm: searchTerm);
   }
 
-  /// Searches running now, by the key of [_dictionarySearchCache].
+  /// Searches running now, by what they search for.
   final Map<String, Future<DictionarySearchResult?>> _searchesRunning = {};
 
   /// Runs the search the search bars would for [query], unseen and
@@ -2938,9 +2943,8 @@ class AppModel with ChangeNotifier {
       });
     }
 
-    _dictionarySearchCache[cacheKey] = result;
-    while (_dictionarySearchCache.length > _dictionarySearchCacheSize) {
-      _dictionarySearchCache.remove(_dictionarySearchCache.keys.first);
+    if (channel == 'prefetch') {
+      _prefetched = (key: cacheKey, result: result, at: DateTime.now());
     }
 
     return result;

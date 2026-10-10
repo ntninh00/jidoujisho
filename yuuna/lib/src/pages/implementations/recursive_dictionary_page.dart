@@ -158,13 +158,13 @@ class _RecursiveDictionaryPageState
         buildSearchButton(),
       ],
       onQueryChanged: onQueryChanged,
-      onSubmitted: search,
+      onSubmitted: (query) => search(query, fresh: true),
     );
   }
 
   void searchAgain() {
     _result = null;
-    search(_controller.query);
+    search(_controller.query, fresh: true);
   }
 
   Duration get historyDelay => Duration.zero;
@@ -187,11 +187,16 @@ class _RecursiveDictionaryPageState
   /// The dictionaries' revision when [lastQuery] was searched.
   int _lastRevision = -1;
 
+  /// Searches for [query], unless it was just searched and the
+  /// dictionaries are as they were then. [fresh] searches anyway, as
+  /// pressing search does.
   void search(
     String query, {
     int? overrideMaximumTerms,
+    bool fresh = false,
   }) async {
-    if (lastQuery == query &&
+    if (!fresh &&
+        lastQuery == query &&
         _lastRevision == appModel.dictionariesRevision &&
         overrideMaximumTerms == null) {
       return;
