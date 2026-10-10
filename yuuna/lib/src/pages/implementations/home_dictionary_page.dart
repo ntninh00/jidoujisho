@@ -128,7 +128,11 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       isScrollControlled: true,
       hint: appModel.searchByMeaning
           ? t.search_by_meaning_hint
-          : t.search_ellipsis,
+          : appModel.dictionaryLanguageMode != null
+              ? t.search_language_hint(
+                  language:
+                      catalogLanguageName(appModel.dictionaryLanguageMode))
+              : t.search_ellipsis,
       controller: mediaType.floatingSearchBarController,
       builder: buildFloatingSearchBody,
       borderRadius: BorderRadius.circular(24),
@@ -451,6 +455,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         );
       }
     }
+
     /// While a search runs, what the last one found stays: results, or that
     /// there were none, instead of blinking blank on every key.
     if (_isSearching && _result == null) {

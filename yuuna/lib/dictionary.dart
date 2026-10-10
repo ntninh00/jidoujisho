@@ -15,6 +15,7 @@ export 'src/dictionary/structured_content.dart';
 export 'src/dictionary/structured_content_html.dart';
 export 'src/dictionary/dictionary_css.dart';
 export 'src/dictionary/dictionary_server.dart';
+export 'src/dictionary/dictionary_profile.dart';
 export 'src/dictionary/dictionary_rebuild.dart';
 
 export 'src/dictionary/formats/yomichan_dictionary_format.dart';

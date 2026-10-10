@@ -341,6 +341,9 @@ class _DictionaryCatalogPageState extends BasePageState<DictionaryCatalogPage> {
         if (dictionary.notes.isNotEmpty) 'notes': dictionary.notes,
         if (dictionary.sourceLanguage != null)
           'language': dictionary.sourceLanguage,
+        if (dictionary.targetLanguage != null)
+          'target': dictionary.targetLanguage,
+        'section': dictionary.section.name,
       });
     }
     if (!mounted) {

@@ -72,10 +72,20 @@ class Dictionary {
   @Index()
   List<String> collapsedLanguages;
 
-  /// Whether this dictionary is hidden for a given language.
+  /// Whether this dictionary is hidden for a given language: by the user,
+  /// or because a language mode leaves it out (see [hiddenByMode]).
   bool isHidden(Language language) {
+    return isHiddenByUser(language) || (hiddenByMode?.call(this) ?? false);
+  }
+
+  /// Whether the user hid this dictionary for a given language.
+  bool isHiddenByUser(Language language) {
     return hiddenLanguages.contains(language.languageCode);
   }
+
+  /// Whether the dictionaries' language mode, set in the app, leaves a
+  /// dictionary out: in a Japanese mode, only Japanese dictionaries are on.
+  static bool Function(Dictionary dictionary)? hiddenByMode;
 
   /// Whether this dictionary is collapsed for a given language.
   bool isCollapsed(Language language) {

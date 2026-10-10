@@ -20,6 +20,146 @@ class DictionaryDialogPage extends BasePage {
 }
 
 class _DictionaryDialogPageState extends BasePageState {
+  @override
+  void initState() {
+    super.initState();
+    _learnLanguages();
+  }
+
+  /// Dictionaries installed from the server before the app kept their
+  /// languages get them from its catalog, quietly.
+  Future<void> _learnLanguages() async {
+    DictionaryServer? server = appModel.dictionaryServer;
+    if (server == null ||
+        !appModel.dictionarySources.values.any((source) =>
+            source['kind'] == 'server' && source['section'] == null)) {
+      return;
+    }
+    try {
+      await appModel.refreshDictionaryNotes(server.url, await server.list());
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (error) {
+      debugPrint('Dictionary languages not learnt: $error');
+    }
+  }
+
+  /// Turns on only [language]'s dictionaries, or all with null.
+  Future<void> _setMode(String? language) async {
+    await appModel.setDictionaryLanguageMode(language);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// All, and a chip for each language the dictionaries look up: picking
+  /// one leaves only that language's dictionaries on.
+  Widget _modes() {
+    List<String> languages = appModel.dictionaryLanguages;
+    if (languages.length < 2) {
+      return const SizedBox.shrink();
+    }
+    String? mode = appModel.dictionaryLanguageMode;
+    Widget chip(String label, String? language) {
+      bool selected = mode == language;
+      return Padding(
+        padding: const EdgeInsets.only(right: 6),
+        child: ChoiceChip(
+          label: Text(
+            label,
+            style: TextStyle(
+              color: selected ? theme.colorScheme.primary : null,
+              fontWeight: selected ? FontWeight.w600 : null,
+            ),
+          ),
+          selected: selected,
+          showCheckmark: false,
+          shape: StadiumBorder(
+            side: BorderSide(
+              color: selected
+                  ? theme.colorScheme.primary
+                  : theme.dividerColor.withOpacity(0.25),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          selectedColor: theme.colorScheme.primary.withOpacity(0.12),
+          onSelected: (_) => _setMode(language),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 4, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  chip(t.dictionary_mode_all, null),
+                  for (String language in languages)
+                    chip(catalogLanguageName(language), language),
+                ],
+              ),
+            ),
+          ),
+          JidoujishoInfoButton(message: t.dictionary_mode_info),
+          const SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  /// Small labels for what [dictionary] is: its languages, as `JA → VI`,
+  /// and what it holds when that isn't words.
+  Widget _labels(Dictionary dictionary, {required bool off}) {
+    DictionaryProfile profile = appModel.profileOf(dictionary);
+    String? source = profile.source?.toUpperCase();
+    String? target = profile.target?.toUpperCase();
+    String? languages = source == null
+        ? null
+        : target == null ||
+                profile.kind == DictionaryProfile.frequency ||
+                profile.kind == DictionaryProfile.pronunciation
+            ? source
+            : '$source → $target';
+    String? kind = {
+      DictionaryProfile.grammar: t.catalog_section_grammar,
+      DictionaryProfile.kanji: t.catalog_section_kanji,
+      DictionaryProfile.frequency: t.catalog_section_frequency,
+      DictionaryProfile.pronunciation: t.catalog_section_pronunciation,
+    }[profile.kind];
+    if (languages == null && kind == null) {
+      return const SizedBox.shrink();
+    }
+    Color color = off ? theme.unselectedWidgetColor : theme.colorScheme.primary;
+    Widget pill(String text) => Container(
+          margin: const EdgeInsets.only(right: 4, top: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            text,
+            style: textTheme.labelSmall!.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+        );
+    return Wrap(
+      children: [
+        if (languages != null) pill(languages),
+        if (kind != null) pill(kind),
+      ],
+    );
+  }
+
   /// Opens the dictionaries on the user's server, and shows any imported
   /// from there on return.
   Future<void> _openOnline() async {
@@ -308,9 +448,12 @@ class _DictionaryDialogPageState extends BasePageState {
 
   Widget _row(Dictionary dictionary, int index) {
     Color muted = theme.unselectedWidgetColor;
-    bool hidden = dictionary.isHidden(appModel.targetLanguage);
+    bool hidden = dictionary.isHiddenByUser(appModel.targetLanguage);
+    bool leftOut = !hidden && dictionary.isHidden(appModel.targetLanguage);
+    bool off = hidden || leftOut;
     bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
     String? note = appModel.dictionaryNoteOf(dictionary);
+    String? mode = appModel.dictionaryLanguageMode;
     return Padding(
       key: ValueKey(dictionary.id),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
@@ -342,9 +485,10 @@ class _DictionaryDialogPageState extends BasePageState {
                         overflow: TextOverflow.ellipsis,
                         style: textTheme.bodyLarge!.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: hidden ? muted : null,
+                          color: off ? muted : null,
                         ),
                       ),
+                      _labels(dictionary, off: off),
                       if (note != null) ...[
                         const SizedBox(height: 2),
                         Text(
@@ -352,11 +496,11 @@ class _DictionaryDialogPageState extends BasePageState {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodySmall!.copyWith(
-                            color: hidden ? muted : null,
+                            color: off ? muted : null,
                           ),
                         ),
                       ],
-                      if (collapsed && !hidden) ...[
+                      if (collapsed && !off) ...[
                         const SizedBox(height: 2),
                         Text(
                           t.dictionary_collapsed,
@@ -367,16 +511,25 @@ class _DictionaryDialogPageState extends BasePageState {
                   ),
                 ),
                 IconButton(
-                  tooltip: hidden ? t.options_show : t.options_hide,
+                  tooltip: leftOut && mode != null
+                      ? t.dictionary_off_in_mode(
+                          language: catalogLanguageName(mode))
+                      : hidden
+                          ? t.options_show
+                          : t.options_hide,
                   icon: Icon(
-                    hidden ? Ui.eyeCrossed : Ui.eye,
+                    off ? Ui.eyeCrossed : Ui.eye,
                     size: 20,
-                    color: hidden ? muted : null,
+                    color: off ? muted.withOpacity(leftOut ? 0.5 : 1) : null,
                   ),
-                  onPressed: () {
-                    appModel.toggleDictionaryHidden(dictionary);
-                    setState(() {});
-                  },
+                  // Out of the language mode, the dictionary comes back
+                  // with All.
+                  onPressed: leftOut
+                      ? null
+                      : () {
+                          appModel.toggleDictionaryHidden(dictionary);
+                          setState(() {});
+                        },
                 ),
               ],
             ),
@@ -404,6 +557,7 @@ class _DictionaryDialogPageState extends BasePageState {
             const TtuSheetHandle(),
             _header(dictionaries.length),
             _actions(),
+            _modes(),
             if (dictionaries.isEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),

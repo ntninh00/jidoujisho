@@ -210,6 +210,10 @@
     "speech_install": "INSTALL",
     "speech_enable": "TURN ON",
     "speech_download": "DOWNLOAD VOICE",
+    "dictionary_mode_all": "All",
+    "dictionary_mode_info": "Pick a language to turn on only its dictionaries, with their kanji, grammar, pitch and frequency lists. All brings back the dictionaries you turned on yourself.",
+    "dictionary_off_in_mode": "Off while $language is picked",
+    "search_language_hint": "Search $language…",
     "card_exported": "Card exported to 『$deck』.",
     "info_incognito_on":
         "Incognito mode on. Dictionary, media and search history will not be tracked.",
@@ -804,7 +808,8 @@
         "es": "Spanish",
         "ru": "Russian",
         "th": "Thai",
-        "ar": "Arabic"
+        "ar": "Arabic",
+        "la": "Latin"
     },
     "addons": {
         "field": {

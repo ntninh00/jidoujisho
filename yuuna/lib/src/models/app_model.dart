@@ -1372,6 +1372,8 @@ class AppModel with ChangeNotifier {
       installedVersion: _packageInfo.version,
       enabled: _packageInfo.packageName.endsWith('.dev'),
     )..loadKept();
+    _languageMode = _preferences.get('dictionary_language_mode') as String?;
+    Dictionary.hiddenByMode = _hiddenByMode;
 
     /// Nothing is asked for at startup. File and AnkiDroid access are asked
     /// for when a feature first needs them, see [requestFileAccess] and
@@ -1884,14 +1886,160 @@ class AppModel with ChangeNotifier {
         source.remove('note');
         changed = true;
       }
-      if (remote != null && source['language'] != remote.sourceLanguage) {
+      if (remote != null &&
+          (source['language'] != remote.sourceLanguage ||
+              source['target'] != remote.targetLanguage ||
+              source['section'] != remote.section.name)) {
         source['language'] = remote.sourceLanguage;
+        source['target'] = remote.targetLanguage;
+        source['section'] = remote.section.name;
         changed = true;
       }
     });
     if (changed) {
       await _preferences.put('dictionary_sources', jsonEncode(sources));
+      _profiles.clear();
+      if (_languageMode != null) {
+        dictionariesRevision++;
+      }
     }
+  }
+
+  /* ---------- what dictionaries are for ---------- */
+
+  /// What each dictionary is for, by id, as worked out this session.
+  final Map<int, DictionaryProfile> _profiles = {};
+
+  /// What [dictionary] looks up and holds: from the server's catalog when it
+  /// was installed from one, and otherwise told from a few of its rows,
+  /// which is kept so it is done once.
+  DictionaryProfile profileOf(Dictionary dictionary) {
+    DictionaryProfile? known = _profiles[dictionary.id];
+    if (known != null) {
+      return known;
+    }
+    Map<String, dynamic>? source = dictionarySources[dictionary.name];
+    String? language = source?['language'] as String?;
+    DictionaryProfile profile = DictionaryProfile.fromSource(source) ??
+        (source?['kind'] == 'server'
+            // Learnt from the catalog as the dictionaries sheet opens,
+            // rather than told from its rows meanwhile.
+            ? DictionaryProfile(
+                source: language,
+                target: null,
+                kind: DictionaryProfile.words,
+              )
+            : _guessedProfileOf(dictionary).withSource(language));
+    _profiles[dictionary.id] = profile;
+    return profile;
+  }
+
+  DictionaryProfile _guessedProfileOf(Dictionary dictionary) {
+    String key = 'dictionary_guess/${dictionary.id}';
+    String? kept = _preferences.get(key) as String?;
+    if (kept != null) {
+      try {
+        return DictionaryProfile.fromJson(
+            Map<String, dynamic>.from(jsonDecode(kept) as Map));
+      } catch (_) {}
+    }
+    DictionaryProfile guess = _guessProfile(dictionary);
+    _preferences.put(key, jsonEncode(guess.toJson()));
+    return guess;
+  }
+
+  /// Tells what [dictionary] is for from up to 40 of its rows: the script
+  /// of their words and of their meanings.
+  DictionaryProfile _guessProfile(Dictionary dictionary) {
+    List<String> wordsOf(Iterable<IsarLink<DictionaryHeading>> headings) => [
+          for (IsarLink<DictionaryHeading> heading in headings)
+            if ((heading..loadSync()).value != null) heading.value!.term,
+        ];
+
+    /// Through the dictionary's own links, which go straight to its rows.
+    List<DictionaryEntry> entries =
+        dictionary.entries.filter().idIsNotNull().limit(40).findAllSync();
+    if (entries.isNotEmpty) {
+      List<String> words = wordsOf(entries.map((entry) => entry.heading));
+      bool kanji = words.isNotEmpty &&
+          words.every((word) =>
+              word.runes.length == 1 && RegExp('[㐀-䶿一-鿿]').hasMatch(word));
+      return DictionaryProfile(
+        source: DictionaryProfile.languageOfMost(
+            words.map(WordSpeech.languageOfText)),
+        target: DictionaryProfile.languageOfMost(entries.map((entry) =>
+            DictionaryProfile.languageOfDefinitions(entry.definitions))),
+        kind: kanji ? DictionaryProfile.kanji : DictionaryProfile.words,
+      );
+    }
+    List<DictionaryFrequency> frequencies =
+        dictionary.frequencies.filter().idIsNotNull().limit(20).findAllSync();
+    List<DictionaryPitch> pitches = frequencies.isNotEmpty
+        ? const []
+        : dictionary.pitches.filter().idIsNotNull().limit(20).findAllSync();
+    List<String> words = wordsOf([
+      ...frequencies.map((frequency) => frequency.heading),
+      ...pitches.map((pitch) => pitch.heading),
+    ]);
+    return DictionaryProfile(
+      source: DictionaryProfile.languageOfMost(
+          words.map(WordSpeech.languageOfText)),
+      target: null,
+      kind: frequencies.isNotEmpty
+          ? DictionaryProfile.frequency
+          : pitches.isNotEmpty
+              ? DictionaryProfile.pronunciation
+              : DictionaryProfile.words,
+    );
+  }
+
+  /// The language whose dictionaries alone are on, as `ja`, or null when
+  /// every dictionary the user has not hidden is.
+  String? get dictionaryLanguageMode => _languageMode;
+  String? _languageMode;
+
+  /// Turns on only [language]'s dictionaries, or with null, all of them
+  /// again as the user left them. The user's own choices are not changed.
+  Future<void> setDictionaryLanguageMode(String? language) async {
+    _languageMode = language;
+    if (language == null) {
+      await _preferences.delete('dictionary_language_mode');
+    } else {
+      await _preferences.put('dictionary_language_mode', language);
+    }
+    dictionariesRevision++;
+    notifyListeners();
+  }
+
+  /// The languages installed dictionaries look up, with the most
+  /// dictionaries first and the one being learnt before all.
+  List<String> get dictionaryLanguages {
+    Map<String, int> counts = {};
+    for (Dictionary dictionary in dictionaries) {
+      String? language = profileOf(dictionary).source;
+      if (language != null) {
+        counts[language] = (counts[language] ?? 0) + 1;
+      }
+    }
+    String learning = targetLanguage.languageCode;
+    return counts.keys.toList()
+      ..sort((a, b) {
+        if (a == learning || b == learning) {
+          return a == learning ? -1 : 1;
+        }
+        return counts[b]!.compareTo(counts[a]!);
+      });
+  }
+
+  /// Whether the language mode leaves [dictionary] out. One whose language
+  /// is unknown stays on.
+  bool _hiddenByMode(Dictionary dictionary) {
+    String? mode = _languageMode;
+    if (mode == null) {
+      return false;
+    }
+    String? language = profileOf(dictionary).source;
+    return language != null && language != mode;
   }
 
   /* ---------- backups ---------- */
@@ -2478,7 +2626,7 @@ class AppModel with ChangeNotifier {
   void toggleDictionaryHidden(Dictionary dictionary) {
     dictionariesRevision++;
     _database.writeTxnSync(() {
-      if (dictionary.isHidden(targetLanguage)) {
+      if (dictionary.isHiddenByUser(targetLanguage)) {
         dictionary.hiddenLanguages = [...dictionary.hiddenLanguages]
           ..remove(targetLanguage.languageCode);
       } else {
@@ -2617,6 +2765,7 @@ class AppModel with ChangeNotifier {
   /// wrong.
   void clearDictionaryResultsCache() {
     _prefetched = null;
+    _profiles.clear();
     dictionariesRevision++;
   }
 
@@ -2634,7 +2783,8 @@ class AppModel with ChangeNotifier {
       return known.$2;
     }
     bool shows = headingsOf(result).any((heading) => heading.entries.any(
-        (entry) => !(entry.dictionary.value?.isHidden(targetLanguage) ?? true)));
+        (entry) =>
+            !(entry.dictionary.value?.isHidden(targetLanguage) ?? true)));
     _showsAnything[result] = (dictionariesRevision, shows);
     return shows;
   }
