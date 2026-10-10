@@ -49,6 +49,9 @@ class Settings:
     min_free_bytes: int
     # The app's strings files, copied here on deploy.
     strings_dir: Path = Path("strings")
+    # Google's text-to-speech, for words a phone can't read aloud (speech.py).
+    google_tts_key: str = ""
+    speech_daily_limit: int = 2000
 
     @property
     def incoming_dir(self) -> Path:
@@ -61,6 +64,10 @@ class Settings:
     @property
     def catalog_path(self) -> Path:
         return self.data_dir / "catalog.sqlite"
+
+    @property
+    def speech_dir(self) -> Path:
+        return self.data_dir / "speech"
 
 
 def load(env_file: Path | None = None) -> Settings:
@@ -76,4 +83,6 @@ def load(env_file: Path | None = None) -> Settings:
         max_entries=int(os.environ.get("DICT_MAX_ENTRIES", 60000)),
         min_free_bytes=_megabytes("DICT_MIN_FREE_MB", 5120),
         strings_dir=Path(os.environ.get("DICT_STRINGS_DIR", "strings")),
+        google_tts_key=os.environ.get("GOOGLE_TTS_KEY", "").strip(),
+        speech_daily_limit=int(os.environ.get("DICT_SPEECH_DAILY_LIMIT", 2000)),
     )

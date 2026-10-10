@@ -12,6 +12,7 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/download       -> the original zip
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
     GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
+    GET    /api/speech?text=&lang=               -> an MP3 of the text read aloud (speech.py)
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
     PATCH  /api/dictionaries/{id}                -> any of {"title", "sourceLanguage", "targetLanguage",
                                                     "notes": {"en": "...", "vi": null},
@@ -57,7 +58,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from . import config, indexer, search, tidy
+from . import config, indexer, search, speech, tidy
 from .checks import LANGUAGE, MEDIA_TYPES, Limits, Rejected, check_zip
 from .store import SECTIONS, Catalog
 from .strings import CODE, Invalid, Strings
@@ -137,8 +138,13 @@ def retitle(zip_path: Path, title: str) -> None:
     temp.replace(zip_path)
 
 
-def create_app(settings: config.Settings | None = None) -> Starlette:
+def create_app(settings: config.Settings | None = None, speech_fetch: speech.Fetch | None = None) -> Starlette:
     settings = settings or config.load()
+    voices = speech.Speech(
+        settings.speech_dir,
+        settings.speech_daily_limit,
+        speech_fetch or (speech.google(settings.google_tts_key) if settings.google_tts_key else None),
+    )
     settings.incoming_dir.mkdir(parents=True, exist_ok=True)
     catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
     strings = Strings(settings.strings_dir, settings.data_dir / "strings.sqlite")
@@ -346,6 +352,18 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             data,
             media_type="text/css; charset=utf-8",
             headers={"Content-Disposition": "attachment", "Cache-Control": "private, max-age=86400"},
+        )
+
+    def read_aloud(request: Request) -> Response:
+        role_of(request)
+        try:
+            path = voices.audio(request.query_params.get("text", ""), request.query_params.get("lang", ""))
+        except speech.SpeechError as error:
+            raise Problem(error.status, error.message) from None
+        return FileResponse(
+            path,
+            media_type="audio/mpeg",
+            headers={"Cache-Control": "private, max-age=2592000"},
         )
 
     async def upload(request: Request) -> Response:
@@ -619,6 +637,7 @@ def create_app(settings: config.Settings | None = None) -> Starlette:
             Route("/api/dictionaries/{id}/download", download),
             Route("/api/dictionaries/{id}/media", media),
             Route("/api/dictionaries/{id}/styles", styles),
+            Route("/api/speech", read_aloud),
             Route("/strings", page("strings.html", "text/html; charset=utf-8")),
             Route("/strings/page.js", page("strings.js", "text/javascript; charset=utf-8")),
             Route("/strings/page.css", page("strings.css", "text/css; charset=utf-8")),
