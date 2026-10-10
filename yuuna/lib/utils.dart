@@ -41,3 +41,4 @@ export 'src/utils/misc/dialog_content.dart';
 export 'src/utils/misc/browser_bookmark.dart';
 export 'src/utils/misc/ui_icons.dart';
 export 'src/utils/misc/word_speech.dart';
+export 'src/utils/misc/keep_focus_binding.dart';

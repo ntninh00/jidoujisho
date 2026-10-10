@@ -29,7 +29,9 @@ void main() {
   runZonedGuarded<Future<void>>(() async {
     /// Necessary to initialise Flutter when running native code before
     /// starting the application.
-    final binding = WidgetsFlutterBinding.ensureInitialized();
+    /// The binding also keeps the search bar focused when the keyboard
+    /// switches language (see [KeepFocusBinding]).
+    final binding = KeepFocusBinding.ensureInitialized();
 
     /// Initialise local file-based logging.
     await FlutterLogs.initLogs(
