@@ -120,20 +120,26 @@ class PageMediaFinder extends ChangeNotifier {
     ));
   }
 
-  /// Notes a video or a subtitle track a player on [page] shows.
+  /// Notes a video or a subtitle track a player on [page] shows. A [type]
+  /// the player gives, as `hls` or `video/mp4`, tells what it is when its
+  /// address doesn't.
   void noteElement({
     required Uri page,
     required String source,
     required bool track,
     String? label,
     String? language,
+    String? type,
   }) {
     Uri? url = Uri.tryParse(source);
-    if (url == null || !url.isScheme('http') && !url.isScheme('https')) {
+    if (url == null ||
+        !url.isScheme('http') && !url.isScheme('https') ||
+        isAdvert(url.host)) {
       return;
     }
-    PageMediaKind kind =
-        track ? PageMediaKind.subtitle : kindOf(url) ?? PageMediaKind.file;
+    PageMediaKind kind = track
+        ? PageMediaKind.subtitle
+        : kindOfType(type) ?? kindOf(url) ?? PageMediaKind.file;
     _add(PageMedia(
       url: url,
       kind: kind,
@@ -217,6 +223,25 @@ class PageMediaFinder extends ChangeNotifier {
     }
     if (url.path.toLowerCase().contains('.m3u8')) {
       return PageMediaKind.stream;
+    }
+    return null;
+  }
+
+  /// What a player's name for a source's type, as `hls`,
+  /// `application/x-mpegURL` or `video/mp4`, says it is.
+  static PageMediaKind? kindOfType(String? type) {
+    String value = type?.toLowerCase() ?? '';
+    if (value.isEmpty) {
+      return null;
+    }
+    if (value.contains('mpegurl') || value == 'hls' || value == 'm3u8') {
+      return PageMediaKind.stream;
+    }
+    if (value.contains('dash')) {
+      return PageMediaKind.dash;
+    }
+    if (value.startsWith('video/') || const ['mp4', 'webm'].contains(value)) {
+      return PageMediaKind.file;
     }
     return null;
   }

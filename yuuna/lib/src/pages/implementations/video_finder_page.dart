@@ -80,25 +80,69 @@ Future<bool> openVideoPageWindow(
 }
 
 /// Finds the videos and subtitle tracks of the players on a page, for
-/// those its requests don't show, as files in a page's own `<video>`.
+/// those its requests don't show: files in a page's own `<video>`, and what
+/// common players say they play, as JW Player's and Video.js's playlists,
+/// whose `<video>` only has a `blob:` address of the page's making.
 const String videoPageScan = '''
 (() => {
   const found = [];
+  const add = (source, track, label, language, type) => {
+    if (typeof source !== 'string' || !source ||
+        source.startsWith('blob:') || source.startsWith('data:')) {
+      return;
+    }
+    try {
+      found.push({ source: new URL(source, document.baseURI).href, track,
+        label: label || null, language: language || null,
+        type: type || null });
+    } catch (e) {}
+  };
   for (const media of document.querySelectorAll('video, audio')) {
-    const sources = [media.currentSrc, media.src,
-      ...[...media.querySelectorAll('source')].map((source) => source.src)];
-    for (const source of sources) {
-      if (source && !source.startsWith('blob:')) {
-        found.push({ source, track: false });
-      }
+    add(media.currentSrc, false);
+    add(media.src, false);
+    for (const source of media.querySelectorAll('source')) {
+      add(source.src, false, null, null, source.type);
     }
     for (const track of media.querySelectorAll('track')) {
-      if (track.src) {
-        found.push({ source: track.src, track: true, label: track.label,
-          language: track.srclang });
-      }
+      add(track.src, true, track.label, track.srclang);
     }
   }
+  try {
+    if (typeof window.jwplayer === 'function') {
+      for (const element of document.querySelectorAll('.jwplayer')) {
+        const player = window.jwplayer(element.id || element);
+        if (!player || typeof player.getPlaylistItem !== 'function') {
+          continue;
+        }
+        const item = player.getPlaylistItem() || {};
+        for (const source of item.sources || [{ file: item.file }]) {
+          add(source.file, false, source.label, null, source.type);
+        }
+        for (const track of item.tracks || []) {
+          if (!track.kind || track.kind === 'captions' ||
+              track.kind === 'subtitles') {
+            add(track.file, true, track.label, track.language);
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  try {
+    if (window.videojs && typeof window.videojs.getPlayers === 'function') {
+      for (const player of Object.values(window.videojs.getPlayers())) {
+        if (!player) {
+          continue;
+        }
+        add(player.currentSrc(), false, null, null, player.currentType());
+        const tracks = player.remoteTextTracks();
+        for (let i = 0; i < tracks.length; i++) {
+          if (tracks[i].kind === 'captions' || tracks[i].kind === 'subtitles') {
+            add(tracks[i].src, true, tracks[i].label, tracks[i].language);
+          }
+        }
+      }
+    }
+  } catch (e) {}
   return JSON.stringify(found);
 })()
 ''';
@@ -114,6 +158,7 @@ void noteVideoPageScan(PageMediaFinder finder, Uri page, Object? result) {
         track: found['track'] == true,
         label: found['label'] as String?,
         language: found['language'] as String?,
+        type: found['type'] as String?,
       );
     }
   } catch (error) {

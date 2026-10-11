@@ -24,6 +24,37 @@ void main() {
     expect(kind('blob:https://example.com/abc'), isNull);
   });
 
+  test("a player's own name for a source's type tells what it is", () {
+    PageMediaFinder finder = PageMediaFinder();
+    Uri page = Uri.parse('https://site.example.com/watch/5');
+    // An address without an ending, which only the player's type explains.
+    finder.noteElement(
+      page: page,
+      source: 'https://cdn.example.com/play/abc123?token=x',
+      track: false,
+      type: 'hls',
+    );
+    finder.noteElement(
+      page: page,
+      source: 'https://cdn.example.com/v/clip',
+      track: false,
+      type: 'video/mp4',
+    );
+    finder.noteElement(
+      page: page,
+      source: 'https://imasdk.googleapis.com/preroll',
+      track: false,
+      type: 'video/mp4',
+    );
+    expect(finder.videos.map((media) => media.kind),
+        [PageMediaKind.stream, PageMediaKind.file]);
+    expect(PageMediaFinder.kindOfType('application/x-mpegURL'),
+        PageMediaKind.stream);
+    expect(PageMediaFinder.kindOfType('application/dash+xml'),
+        PageMediaKind.dash);
+    expect(PageMediaFinder.kindOfType('text/html'), isNull);
+  });
+
   test("a stream's playlist of qualities lists its parts", () {
     PlaylistQualities qualities = PlaylistQualities.parse(
       Uri.parse('https://cdn.example.com/v/master.m3u8'),
