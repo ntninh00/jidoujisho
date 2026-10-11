@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1812 (906 per locale)
+/// Strings: 1818 (909 per locale)
 ///
-/// Built on 2026-10-11 at 09:37 UTC
+/// Built on 2026-10-11 at 09:53 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -435,6 +435,9 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get video_finder_info => TranslationOverrides.string(_root.$meta, 'video_finder_info', {}) ?? 'Plays the page\'s video in the app\'s player, where its subtitles can be looked up. Nothing is downloaded and pop-ups are blocked. Encrypted video, as on Netflix, can\'t be played.';
 	String get video_finder_reload => TranslationOverrides.string(_root.$meta, 'video_finder_reload', {}) ?? 'Reload';
 	String get video_finder_recent => TranslationOverrides.string(_root.$meta, 'video_finder_recent', {}) ?? 'Recent pages';
+	String get stream_open => TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Open a link';
+	String get stream_go => TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Open';
+	String get video_finder_forget => TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Remove';
 	String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 	String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 	String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -2014,6 +2017,9 @@ class _StringsVi extends _StringsEn {
 	@override String get video_finder_info => TranslationOverrides.string(_root.$meta, 'video_finder_info', {}) ?? 'Phát video của trang trong trình phát của ứng dụng, nơi có thể tra phụ đề. Không tải gì về máy và chặn cửa sổ bật lên. Video được mã hoá, như trên Netflix, không phát được.';
 	@override String get video_finder_reload => TranslationOverrides.string(_root.$meta, 'video_finder_reload', {}) ?? 'Tải lại';
 	@override String get video_finder_recent => TranslationOverrides.string(_root.$meta, 'video_finder_recent', {}) ?? 'Trang gần đây';
+	@override String get stream_open => TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Mở liên kết';
+	@override String get stream_go => TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Mở';
+	@override String get video_finder_forget => TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Xoá';
 	@override String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 	@override String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 	@override String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';
@@ -3572,6 +3578,9 @@ extension on _StringsEn {
 			case 'video_finder_info': return TranslationOverrides.string(_root.$meta, 'video_finder_info', {}) ?? 'Plays the page\'s video in the app\'s player, where its subtitles can be looked up. Nothing is downloaded and pop-ups are blocked. Encrypted video, as on Netflix, can\'t be played.';
 			case 'video_finder_reload': return TranslationOverrides.string(_root.$meta, 'video_finder_reload', {}) ?? 'Reload';
 			case 'video_finder_recent': return TranslationOverrides.string(_root.$meta, 'video_finder_recent', {}) ?? 'Recent pages';
+			case 'stream_open': return TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Open a link';
+			case 'stream_go': return TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Open';
+			case 'video_finder_forget': return TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Remove';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -4490,6 +4499,9 @@ extension on _StringsVi {
 			case 'video_finder_info': return TranslationOverrides.string(_root.$meta, 'video_finder_info', {}) ?? 'Phát video của trang trong trình phát của ứng dụng, nơi có thể tra phụ đề. Không tải gì về máy và chặn cửa sổ bật lên. Video được mã hoá, như trên Netflix, không phát được.';
 			case 'video_finder_reload': return TranslationOverrides.string(_root.$meta, 'video_finder_reload', {}) ?? 'Tải lại';
 			case 'video_finder_recent': return TranslationOverrides.string(_root.$meta, 'video_finder_recent', {}) ?? 'Trang gần đây';
+			case 'stream_open': return TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Mở liên kết';
+			case 'stream_go': return TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Mở';
+			case 'video_finder_forget': return TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Xoá';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';

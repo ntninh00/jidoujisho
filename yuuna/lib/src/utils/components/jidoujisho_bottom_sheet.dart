@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yuuna/models.dart';
+import 'package:yuuna/pages.dart';
 
 /// An option to show in a bottom sheet.
 class JidoujishoBottomSheetOption {
@@ -45,7 +45,7 @@ class JidoujishoBottomSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    AppModel appModel = ref.watch(appProvider);
+    ThemeData theme = Theme.of(context);
 
     ScrollController scrollController = ScrollController();
     SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -56,38 +56,67 @@ class JidoujishoBottomSheet extends ConsumerWidget {
       }
     });
 
-    return ListView.builder(
-      controller: scrollController,
-      shrinkWrap: true,
-      itemCount: options.length,
-      itemBuilder: (context, i) {
-        JidoujishoBottomSheetOption option = options[i];
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const TtuSheetHandle(),
+          Flexible(
+            child: ListView.builder(
+              controller: scrollController,
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+              itemCount: options.length,
+              itemBuilder: (context, i) {
+                JidoujishoBottomSheetOption option = options[i];
+                Color accent = theme.colorScheme.primary;
 
-        return ListTile(
-          tileColor: Theme.of(context).cardColor,
-          dense: true,
-          leading: Icon(
-            option.icon,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          title: Text(
-            option.label,
-            maxLines: 1,
-            style: TextStyle(
-              color: (option.active)
-                  ? Theme.of(context).colorScheme.primary
-                  : appModel.isDarkMode
-                      ? Colors.white
-                      : Colors.black,
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Material(
+                    color: option.active
+                        ? accent.withOpacity(0.12)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        await option.action();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 11,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(option.icon, size: 20, color: accent),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                option.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodyMedium!.copyWith(
+                                  color: option.active ? accent : null,
+                                  fontWeight: option.active
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
-          onTap: () async {
-            Navigator.of(context).pop();
-            await option.action();
-          },
-        );
-      },
+        ],
+      ),
     );
   }
 }

@@ -522,7 +522,7 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
           noteVideoPageRequest(_videos, request),
       shouldOverrideUrlLoading: (controller, action) =>
           allowVideoPageNavigation(action),
-      onCreateWindow: (controller, action) async => false,
+      onCreateWindow: openVideoPageWindow,
       onDownloadStartRequest: (controller, request) {
         Fluttertoast.showToast(msg: t.video_finder_no_downloads);
       },

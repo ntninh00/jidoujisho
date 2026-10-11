@@ -96,7 +96,7 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
     required WidgetRef ref,
     required AppModel appModel,
   }) {
-    showDialog(
+    showTtuSheet<void>(
       context: context,
       builder: (context) => NetworkStreamDialogPage(
         onPlay: (videoUrl) {

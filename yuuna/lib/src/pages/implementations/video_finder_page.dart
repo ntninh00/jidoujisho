@@ -64,6 +64,21 @@ Future<NavigationActionPolicy> allowVideoPageNavigation(
       : NavigationActionPolicy.CANCEL;
 }
 
+/// Opens a new window a page asks for: a link the user tapped opens in the
+/// page itself, and windows a page opens by itself, as pop-ups, don't.
+Future<bool> openVideoPageWindow(
+  InAppWebViewController controller,
+  CreateWindowAction action,
+) async {
+  WebUri? url = action.request.url;
+  if (action.hasGesture == true &&
+      url != null &&
+      await allowVideoPageNavigation(action) == NavigationActionPolicy.ALLOW) {
+    await controller.loadUrl(urlRequest: URLRequest(url: url));
+  }
+  return false;
+}
+
 /// Finds the videos and subtitle tracks of the players on a page, for
 /// those its requests don't show, as files in a page's own `<video>`.
 const String videoPageScan = '''
@@ -431,7 +446,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                         noteVideoPageRequest(_finder, request),
                     shouldOverrideUrlLoading: (controller, action) =>
                         allowVideoPageNavigation(action),
-                    onCreateWindow: (controller, action) async => false,
+                    onCreateWindow: openVideoPageWindow,
                     onDownloadStartRequest: (controller, request) {
                       Fluttertoast.showToast(msg: t.video_finder_no_downloads);
                     },
@@ -499,8 +514,11 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                 isDense: true,
                 filled: true,
                 fillColor: theme.dividerColor.withOpacity(0.08),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                prefixIcon: Icon(Ui.globe,
+                    size: 16, color: theme.unselectedWidgetColor),
+                prefixIconConstraints:
+                    const BoxConstraints(minWidth: 40, minHeight: 36),
+                contentPadding: const EdgeInsets.fromLTRB(0, 10, 16, 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
