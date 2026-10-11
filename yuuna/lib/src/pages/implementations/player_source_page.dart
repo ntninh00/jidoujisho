@@ -695,12 +695,15 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
         updateHistory();
       }
 
-      if (appModel.playerBackgroundPlay && !_sliderBeingDragged) {
+      JidoujishoAudioHandler? handler = appModel.audioHandler;
+      if (appModel.playerBackgroundPlay &&
+          handler != null &&
+          !_sliderBeingDragged) {
         if (_lastPlayingState != _playingNotifier.value) {
           _lastPlayingState = _playingNotifier.value;
 
-          appModel.audioHandler?.playbackState.add(
-            appModel.audioHandler!.playbackState.value.copyWith(
+          handler.playbackState.add(
+            handler.playbackState.value.copyWith(
               controls: [
                 ag.MediaControl.rewind,
                 if (_playingNotifier.value)
@@ -715,12 +718,12 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
           );
         } else {
           final distance = (_positionNotifier.value.inSeconds -
-                  appModel.audioHandler!.playbackState.value.position.inSeconds)
+                  handler.playbackState.value.position.inSeconds)
               .abs();
 
           if (distance > 3) {
-            appModel.audioHandler?.playbackState.add(
-              appModel.audioHandler!.playbackState.value.copyWith(
+            handler.playbackState.add(
+              handler.playbackState.value.copyWith(
                 updatePosition: _positionNotifier.value,
               ),
             );
@@ -852,6 +855,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
         buildBlurWidget(),
         buildBuffering(),
         buildMenuArea(),
+        buildExitButton(),
         if (MediaQuery.of(context).orientation == Orientation.landscape)
           Center(
             child: AspectRatio(
@@ -1190,6 +1194,43 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
             child: buildMenuContent(),
           );
         },
+      ),
+    );
+  }
+
+  /// Leaves the player, as back does, shown with the menu.
+  Widget buildExitButton() {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _isMenuHidden,
+            builder: (context, hidden, _) => IgnorePointer(
+              ignoring: hidden,
+              child: AnimatedOpacity(
+                opacity: hidden ? 0 : 1,
+                duration: const Duration(milliseconds: 200),
+                child: Material(
+                  color: theme.cardColor.withOpacity(0.8),
+                  shape: const CircleBorder(),
+                  clipBehavior: Clip.antiAlias,
+                  child: JidoujishoIconButton(
+                    size: 22,
+                    icon: Ui.close_fullscreen,
+                    tooltip: t.player_exit,
+                    onTap: () async {
+                      if (await onWillPop() && mounted) {
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

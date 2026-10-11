@@ -261,6 +261,7 @@
     "player_option_subtitle_appearance": "Subtitle Timing and Appearance",
     "player_option_load_subtitles": "Load External Subtitles",
     "player_option_find_subtitles": "Find Subtitles",
+    "player_exit": "Exit full screen",
     "subtitle_search_hint": "Show name",
     "subtitle_search_info": "Japanese subtitles from Jimaku, found through your dictionary server. Pick the show, then the episode's file.",
     "subtitle_search_empty": "No shows found. Try the name in romaji or Japanese.",

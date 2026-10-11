@@ -242,6 +242,7 @@
     "player_option_subtitle_appearance": "Thời gian và giao diện phụ đề",
     "player_option_load_subtitles": "Tải phụ đề bên ngoài",
     "player_option_find_subtitles": "Tìm phụ đề",
+    "player_exit": "Thoát toàn màn hình",
     "subtitle_search_hint": "Tên phim",
     "subtitle_search_info": "Phụ đề tiếng Nhật từ Jimaku, tìm qua máy chủ từ điển của bạn. Chọn phim, rồi chọn tệp của tập.",
     "subtitle_search_empty": "Không tìm thấy phim nào. Hãy thử tên bằng romaji hoặc tiếng Nhật.",

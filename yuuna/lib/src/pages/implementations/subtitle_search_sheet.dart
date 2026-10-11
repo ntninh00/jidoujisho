@@ -140,26 +140,60 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.75,
-      minChildSize: 0.4,
-      maxChildSize: 0.95,
-      builder: (context, controller) => ListView(
-        controller: controller,
-        padding: EdgeInsets.only(
-          bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+    MediaQueryData media = MediaQuery.of(context);
+    double keyboard = media.viewInsets.bottom;
+
+    /// The sheet stays above the keyboard, as tall as there is room for.
+    double room = media.size.height - keyboard - media.padding.top;
+
+    /// With little room, as on a phone on its side with the keyboard up,
+    /// the search takes the title's place.
+    bool short = room < 320;
+    bool searching = _server != null && _show == null;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboard),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: room * 0.92),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const TtuSheetHandle(),
+            if (short && searching) _shortHeader() else _header(),
+            if (searching && !short) _searchField(),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 24),
+                children: [
+                  if (_server == null)
+                    _message(
+                        Ui.subtitles_off_outlined, t.subtitle_search_no_server)
+                  else if (_show == null)
+                    ..._showList()
+                  else
+                    ..._fileList(),
+                ],
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// The search in the header's place, with the close button.
+  Widget _shortHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      child: Row(
         children: [
-          const TtuSheetHandle(),
-          _header(),
-          if (_server == null)
-            _message(Ui.subtitles_off_outlined, t.subtitle_search_no_server)
-          else if (_show == null) ...[
-            _searchField(),
-            ..._showList(),
-          ] else
-            ..._fileList(),
+          Expanded(child: _searchInput()),
+          IconButton(
+            tooltip: t.dialog_close,
+            icon: const Icon(Ui.close),
+            onPressed: () => Navigator.pop(context),
+          ),
         ],
       ),
     );
@@ -209,29 +243,33 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
   Widget _searchField() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: TextField(
-        controller: _query,
-        textInputAction: TextInputAction.search,
-        onSubmitted: (_) => _search(),
-        decoration: InputDecoration(
-          hintText: t.subtitle_search_hint,
-          isDense: true,
-          filled: true,
-          fillColor: theme.dividerColor.withOpacity(0.08),
-          prefixIcon: const Icon(Ui.search, size: 18),
-          suffixIcon: _busy && _show == null
-              ? const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: SizedBox.square(
-                    dimension: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: BorderSide.none,
-          ),
+      child: _searchInput(),
+    );
+  }
+
+  Widget _searchInput() {
+    return TextField(
+      controller: _query,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => _search(),
+      decoration: InputDecoration(
+        hintText: t.subtitle_search_hint,
+        isDense: true,
+        filled: true,
+        fillColor: theme.dividerColor.withOpacity(0.08),
+        prefixIcon: const Icon(Ui.search, size: 18),
+        suffixIcon: _busy && _show == null
+            ? const Padding(
+                padding: EdgeInsets.all(14),
+                child: SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
         ),
       ),
     );

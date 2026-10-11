@@ -1372,6 +1372,14 @@ class AppModel with ChangeNotifier {
     _preferences = await Hive.openBox('appModel');
     _dictionaryHistory = await Hive.openBox('dictionaryHistory');
     _dictionaryHistoryTimes = await Hive.openBox('dictionaryHistoryTimes');
+
+    /// Playing media is no longer shown in a notification, which Android
+    /// asks permission for, unless background play is turned on again: it
+    /// is set back to off once.
+    if (_preferences.get('player_background_play_reset') != true) {
+      await _preferences.delete('player_background_play');
+      await _preferences.put('player_background_play_reset', true);
+    }
     updates = AppUpdates(
       preferences: _preferences,
       installedVersion: _packageInfo.version,
@@ -3871,7 +3879,11 @@ class AppModel with ChangeNotifier {
 
     mediaSource.clearCurrentSentence();
     mediaSource.clearExtraData();
-    await initialiseAudioHandler();
+
+    /// Only playing in the background needs the media notification.
+    if (playerBackgroundPlay) {
+      await initialiseAudioHandler();
+    }
 
     _currentMediaSource = mediaSource;
     if (item != null) {
@@ -4800,7 +4812,7 @@ class AppModel with ChangeNotifier {
 
   /// Whether or not the player should allow background play.
   bool get playerBackgroundPlay {
-    return _preferences.get('player_background_play', defaultValue: true);
+    return _preferences.get('player_background_play', defaultValue: false);
   }
 
   /// Set whether or not the player should allow background play.

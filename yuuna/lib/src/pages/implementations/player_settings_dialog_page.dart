@@ -115,6 +115,11 @@ class _DictionaryDialogPageState extends BasePageState {
               onChanged: (value) {
                 appModel.setPlayerBackgroundPlay(value: value);
                 notifier.value = appModel.playerBackgroundPlay;
+                // Playing in the background shows a notification, which
+                // starts now rather than with the next video.
+                if (value) {
+                  appModel.initialiseAudioHandler();
+                }
               },
             );
           },
