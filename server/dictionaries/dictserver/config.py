@@ -52,6 +52,8 @@ class Settings:
     # Google's text-to-speech, for words a phone can't read aloud (speech.py).
     google_tts_key: str = ""
     speech_daily_limit: int = 2000
+    # Jimaku's subtitles, for videos the app plays without any (subtitles.py).
+    jimaku_key: str = ""
 
     @property
     def incoming_dir(self) -> Path:
@@ -69,6 +71,10 @@ class Settings:
     def speech_dir(self) -> Path:
         return self.data_dir / "speech"
 
+    @property
+    def subtitles_dir(self) -> Path:
+        return self.data_dir / "subtitles"
+
 
 def load(env_file: Path | None = None) -> Settings:
     _load_dotenv(env_file or Path(os.environ.get("DICT_ENV_FILE", ".env")))
@@ -85,4 +91,5 @@ def load(env_file: Path | None = None) -> Settings:
         strings_dir=Path(os.environ.get("DICT_STRINGS_DIR", "strings")),
         google_tts_key=os.environ.get("GOOGLE_TTS_KEY", "").strip(),
         speech_daily_limit=int(os.environ.get("DICT_SPEECH_DAILY_LIMIT", 2000)),
+        jimaku_key=os.environ.get("JIMAKU_KEY", "").strip(),
     )

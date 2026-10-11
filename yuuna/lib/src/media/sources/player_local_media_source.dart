@@ -346,8 +346,8 @@ class PlayerLocalMediaSource extends PlayerMediaSource {
     List<FileSystemEntity> matchingEntities = entityList.where((entity) {
       return entity is File &&
           path.basename(entity.path).startsWith(videoFileBasename) &&
-          (path.extension(entity.path).toLowerCase() == '.ass' ||
-              path.extension(entity.path).toLowerCase() == '.srt') &&
+          const ['.ass', '.ssa', '.srt', '.vtt']
+              .contains(path.extension(entity.path).toLowerCase()) &&
           videoFile.path != entity.path;
     }).toList();
 

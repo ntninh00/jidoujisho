@@ -13,6 +13,9 @@ and delete. Repeated wrong tokens from one address are refused for a while.
     GET    /api/dictionaries/{id}/media?path=    -> a picture used by an entry
     GET    /api/dictionaries/{id}/styles         -> the dictionary's styles.css
     GET    /api/speech?text=&lang=               -> an MP3 of the text read aloud (speech.py)
+    GET    /api/subtitles/search?query=          -> shows with Japanese subtitles (subtitles.py)
+    GET    /api/subtitles/{id}/files             -> a show's subtitle files, with their episodes
+    GET    /api/subtitles/{id}/file?name=        -> one subtitle file, as UTF-8 text
     PUT    /api/dictionaries?name=&replace=      -> 202, body is the zip
     PATCH  /api/dictionaries/{id}                -> any of {"title", "sourceLanguage", "targetLanguage",
                                                     "notes": {"en": "...", "vi": null},
@@ -58,7 +61,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import Route
 
-from . import config, indexer, search, speech, tidy
+from . import config, indexer, search, speech, subtitles, tidy
 from .checks import LANGUAGE, MEDIA_TYPES, Limits, Rejected, check_zip
 from .store import SECTIONS, Catalog
 from .strings import CODE, Invalid, Strings
@@ -138,12 +141,20 @@ def retitle(zip_path: Path, title: str) -> None:
     temp.replace(zip_path)
 
 
-def create_app(settings: config.Settings | None = None, speech_fetch: speech.Fetch | None = None) -> Starlette:
+def create_app(
+    settings: config.Settings | None = None,
+    speech_fetch: speech.Fetch | None = None,
+    subtitles_fetch: subtitles.Fetch | None = None,
+) -> Starlette:
     settings = settings or config.load()
     voices = speech.Speech(
         settings.speech_dir,
         settings.speech_daily_limit,
         speech_fetch or (speech.google(settings.google_tts_key) if settings.google_tts_key else None),
+    )
+    captions = subtitles.Subtitles(
+        settings.subtitles_dir,
+        subtitles_fetch or (subtitles.jimaku(settings.jimaku_key) if settings.jimaku_key else None),
     )
     settings.incoming_dir.mkdir(parents=True, exist_ok=True)
     catalog = Catalog(settings.catalog_path, settings.dictionaries_dir)
@@ -364,6 +375,43 @@ def create_app(settings: config.Settings | None = None, speech_fetch: speech.Fet
             path,
             media_type="audio/mpeg",
             headers={"Cache-Control": "private, max-age=2592000"},
+        )
+
+    def subtitle_entry(request: Request) -> int:
+        try:
+            return int(request.path_params["id"])
+        except ValueError:
+            raise Problem(404, "No such show.") from None
+
+    def subtitle_search(request: Request) -> Response:
+        role_of(request)
+        try:
+            entries = captions.search(request.query_params.get("query", ""))
+        except subtitles.SubtitleError as error:
+            raise Problem(error.status, error.message) from None
+        return JSONResponse({"entries": entries})
+
+    def subtitle_files(request: Request) -> Response:
+        role_of(request)
+        try:
+            files = captions.files(subtitle_entry(request))
+        except subtitles.SubtitleError as error:
+            raise Problem(error.status, error.message) from None
+        return JSONResponse({"files": files})
+
+    def subtitle_file(request: Request) -> Response:
+        role_of(request)
+        try:
+            path, suffix = captions.file(subtitle_entry(request), request.query_params.get("name", ""))
+        except subtitles.SubtitleError as error:
+            raise Problem(error.status, error.message) from None
+        return FileResponse(
+            path,
+            media_type="text/plain; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="subtitle{suffix}"',
+                "Cache-Control": "private, max-age=2592000",
+            },
         )
 
     async def upload(request: Request) -> Response:
@@ -638,6 +686,9 @@ def create_app(settings: config.Settings | None = None, speech_fetch: speech.Fet
             Route("/api/dictionaries/{id}/media", media),
             Route("/api/dictionaries/{id}/styles", styles),
             Route("/api/speech", read_aloud),
+            Route("/api/subtitles/search", subtitle_search),
+            Route("/api/subtitles/{id}/files", subtitle_files),
+            Route("/api/subtitles/{id}/file", subtitle_file),
             Route("/strings", page("strings.html", "text/html; charset=utf-8")),
             Route("/strings/page.js", page("strings.js", "text/javascript; charset=utf-8")),
             Route("/strings/page.css", page("strings.css", "text/css; charset=utf-8")),

@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1770 (885 per locale)
+/// Strings: 1790 (895 per locale)
 ///
-/// Built on 2026-10-11 at 08:11 UTC
+/// Built on 2026-10-11 at 09:28 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -414,6 +414,16 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get player_align_subtitle_transcript => TranslationOverrides.string(_root.$meta, 'player_align_subtitle_transcript', {}) ?? 'Align Subtitle with Transcript';
 	String get player_option_subtitle_appearance => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_appearance', {}) ?? 'Subtitle Timing and Appearance';
 	String get player_option_load_subtitles => TranslationOverrides.string(_root.$meta, 'player_option_load_subtitles', {}) ?? 'Load External Subtitles';
+	String get player_option_find_subtitles => TranslationOverrides.string(_root.$meta, 'player_option_find_subtitles', {}) ?? 'Find Subtitles';
+	String get subtitle_search_hint => TranslationOverrides.string(_root.$meta, 'subtitle_search_hint', {}) ?? 'Show name';
+	String get subtitle_search_info => TranslationOverrides.string(_root.$meta, 'subtitle_search_info', {}) ?? 'Japanese subtitles from Jimaku, found through your dictionary server. Pick the show, then the episode\'s file.';
+	String get subtitle_search_empty => TranslationOverrides.string(_root.$meta, 'subtitle_search_empty', {}) ?? 'No shows found. Try the name in romaji or Japanese.';
+	String get subtitle_search_no_server => TranslationOverrides.string(_root.$meta, 'subtitle_search_no_server', {}) ?? 'Finding subtitles goes through your dictionary server. Add it under Dictionaries → Online first.';
+	String get subtitle_search_not_set_up => TranslationOverrides.string(_root.$meta, 'subtitle_search_not_set_up', {}) ?? 'Your dictionary server isn\'t set up to find subtitles yet.';
+	String get subtitle_files_empty => TranslationOverrides.string(_root.$meta, 'subtitle_files_empty', {}) ?? 'This show has no subtitle files yet.';
+	String get subtitle_episode_empty => TranslationOverrides.string(_root.$meta, 'subtitle_episode_empty', {}) ?? 'No file names this episode. Try All files.';
+	String get subtitle_all_files => TranslationOverrides.string(_root.$meta, 'subtitle_all_files', {}) ?? 'All files';
+	String subtitle_episode({required Object n}) => TranslationOverrides.string(_root.$meta, 'subtitle_episode', {'n': n}) ?? 'Episode ${n}';
 	String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 	String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 	String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -1972,6 +1982,16 @@ class _StringsVi extends _StringsEn {
 	@override String get player_align_subtitle_transcript => TranslationOverrides.string(_root.$meta, 'player_align_subtitle_transcript', {}) ?? 'Căn phụ đề với bản chép lời';
 	@override String get player_option_subtitle_appearance => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_appearance', {}) ?? 'Thời gian và giao diện phụ đề';
 	@override String get player_option_load_subtitles => TranslationOverrides.string(_root.$meta, 'player_option_load_subtitles', {}) ?? 'Tải phụ đề bên ngoài';
+	@override String get player_option_find_subtitles => TranslationOverrides.string(_root.$meta, 'player_option_find_subtitles', {}) ?? 'Tìm phụ đề';
+	@override String get subtitle_search_hint => TranslationOverrides.string(_root.$meta, 'subtitle_search_hint', {}) ?? 'Tên phim';
+	@override String get subtitle_search_info => TranslationOverrides.string(_root.$meta, 'subtitle_search_info', {}) ?? 'Phụ đề tiếng Nhật từ Jimaku, tìm qua máy chủ từ điển của bạn. Chọn phim, rồi chọn tệp của tập.';
+	@override String get subtitle_search_empty => TranslationOverrides.string(_root.$meta, 'subtitle_search_empty', {}) ?? 'Không tìm thấy phim nào. Hãy thử tên bằng romaji hoặc tiếng Nhật.';
+	@override String get subtitle_search_no_server => TranslationOverrides.string(_root.$meta, 'subtitle_search_no_server', {}) ?? 'Tìm phụ đề cần máy chủ từ điển của bạn. Hãy thêm máy chủ trong Từ điển → Tải về trước.';
+	@override String get subtitle_search_not_set_up => TranslationOverrides.string(_root.$meta, 'subtitle_search_not_set_up', {}) ?? 'Máy chủ từ điển của bạn chưa được thiết lập để tìm phụ đề.';
+	@override String get subtitle_files_empty => TranslationOverrides.string(_root.$meta, 'subtitle_files_empty', {}) ?? 'Phim này chưa có tệp phụ đề nào.';
+	@override String get subtitle_episode_empty => TranslationOverrides.string(_root.$meta, 'subtitle_episode_empty', {}) ?? 'Không có tệp nào ghi tập này. Hãy thử Tất cả tệp.';
+	@override String get subtitle_all_files => TranslationOverrides.string(_root.$meta, 'subtitle_all_files', {}) ?? 'Tất cả tệp';
+	@override String subtitle_episode({required Object n}) => TranslationOverrides.string(_root.$meta, 'subtitle_episode', {'n': n}) ?? 'Tập ${n}';
 	@override String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 	@override String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 	@override String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';
@@ -3509,6 +3529,16 @@ extension on _StringsEn {
 			case 'player_align_subtitle_transcript': return TranslationOverrides.string(_root.$meta, 'player_align_subtitle_transcript', {}) ?? 'Align Subtitle with Transcript';
 			case 'player_option_subtitle_appearance': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_appearance', {}) ?? 'Subtitle Timing and Appearance';
 			case 'player_option_load_subtitles': return TranslationOverrides.string(_root.$meta, 'player_option_load_subtitles', {}) ?? 'Load External Subtitles';
+			case 'player_option_find_subtitles': return TranslationOverrides.string(_root.$meta, 'player_option_find_subtitles', {}) ?? 'Find Subtitles';
+			case 'subtitle_search_hint': return TranslationOverrides.string(_root.$meta, 'subtitle_search_hint', {}) ?? 'Show name';
+			case 'subtitle_search_info': return TranslationOverrides.string(_root.$meta, 'subtitle_search_info', {}) ?? 'Japanese subtitles from Jimaku, found through your dictionary server. Pick the show, then the episode\'s file.';
+			case 'subtitle_search_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_search_empty', {}) ?? 'No shows found. Try the name in romaji or Japanese.';
+			case 'subtitle_search_no_server': return TranslationOverrides.string(_root.$meta, 'subtitle_search_no_server', {}) ?? 'Finding subtitles goes through your dictionary server. Add it under Dictionaries → Online first.';
+			case 'subtitle_search_not_set_up': return TranslationOverrides.string(_root.$meta, 'subtitle_search_not_set_up', {}) ?? 'Your dictionary server isn\'t set up to find subtitles yet.';
+			case 'subtitle_files_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_files_empty', {}) ?? 'This show has no subtitle files yet.';
+			case 'subtitle_episode_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_episode_empty', {}) ?? 'No file names this episode. Try All files.';
+			case 'subtitle_all_files': return TranslationOverrides.string(_root.$meta, 'subtitle_all_files', {}) ?? 'All files';
+			case 'subtitle_episode': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'subtitle_episode', {'n': n}) ?? 'Episode ${n}';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -4406,6 +4436,16 @@ extension on _StringsVi {
 			case 'player_align_subtitle_transcript': return TranslationOverrides.string(_root.$meta, 'player_align_subtitle_transcript', {}) ?? 'Căn phụ đề với bản chép lời';
 			case 'player_option_subtitle_appearance': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_appearance', {}) ?? 'Thời gian và giao diện phụ đề';
 			case 'player_option_load_subtitles': return TranslationOverrides.string(_root.$meta, 'player_option_load_subtitles', {}) ?? 'Tải phụ đề bên ngoài';
+			case 'player_option_find_subtitles': return TranslationOverrides.string(_root.$meta, 'player_option_find_subtitles', {}) ?? 'Tìm phụ đề';
+			case 'subtitle_search_hint': return TranslationOverrides.string(_root.$meta, 'subtitle_search_hint', {}) ?? 'Tên phim';
+			case 'subtitle_search_info': return TranslationOverrides.string(_root.$meta, 'subtitle_search_info', {}) ?? 'Phụ đề tiếng Nhật từ Jimaku, tìm qua máy chủ từ điển của bạn. Chọn phim, rồi chọn tệp của tập.';
+			case 'subtitle_search_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_search_empty', {}) ?? 'Không tìm thấy phim nào. Hãy thử tên bằng romaji hoặc tiếng Nhật.';
+			case 'subtitle_search_no_server': return TranslationOverrides.string(_root.$meta, 'subtitle_search_no_server', {}) ?? 'Tìm phụ đề cần máy chủ từ điển của bạn. Hãy thêm máy chủ trong Từ điển → Tải về trước.';
+			case 'subtitle_search_not_set_up': return TranslationOverrides.string(_root.$meta, 'subtitle_search_not_set_up', {}) ?? 'Máy chủ từ điển của bạn chưa được thiết lập để tìm phụ đề.';
+			case 'subtitle_files_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_files_empty', {}) ?? 'Phim này chưa có tệp phụ đề nào.';
+			case 'subtitle_episode_empty': return TranslationOverrides.string(_root.$meta, 'subtitle_episode_empty', {}) ?? 'Không có tệp nào ghi tập này. Hãy thử Tất cả tệp.';
+			case 'subtitle_all_files': return TranslationOverrides.string(_root.$meta, 'subtitle_all_files', {}) ?? 'Tất cả tệp';
+			case 'subtitle_episode': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'subtitle_episode', {'n': n}) ?? 'Tập ${n}';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';

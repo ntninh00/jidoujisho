@@ -1812,6 +1812,18 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
           }
         },
       ),
+      JidoujishoBottomSheetOption(
+        label: t.player_option_find_subtitles,
+        icon: Ui.manage_search,
+        action: () async {
+          bool shouldResume = !_dialogSmartPaused;
+          await dialogSmartPause();
+          await findSubtitles();
+          if (shouldResume) {
+            await dialogSmartResume();
+          }
+        },
+      ),
     ]);
 
     return Material(
@@ -2090,9 +2102,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       ),
       JidoujishoBottomSheetOption(
         label: t.stretch_to_fill_screen,
-        icon: appModel.isStretchToFill
-            ? Ui.fit_screen
-            : Ui.fit_screen_outlined,
+        icon: appModel.isStretchToFill ? Ui.fit_screen : Ui.fit_screen_outlined,
         active: appModel.isStretchToFill,
         action: () async {
           appModel.toggleStretchToFill();
@@ -2663,7 +2673,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
 
     Iterable<String>? filePaths = await FilesystemPicker.open(
       title: '',
-      allowedExtensions: ['.ass', '.srt'],
+      allowedExtensions: ['.ass', '.srt', '.ssa', '.vtt'],
       pickText: t.dialog_select,
       cancelText: t.dialog_cancel,
       context: context,
@@ -2685,14 +2695,30 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
       directory: Directory(path.dirname(filePath)),
     );
 
-    File file = File(filePath);
+    await useSubtitleFile(File(filePath), name: path.extension(filePath));
+  }
 
-    String fileExtension = path.extension(filePath);
+  /// Finds subtitles for the video on Jimaku and shows the one picked.
+  Future<void> findSubtitles() async {
+    MediaItem item = widget.item!;
+    String name = item.title.trim().isNotEmpty
+        ? item.title
+        : path.basename(Uri.decodeFull(item.mediaIdentifier));
+    File? file = await showTtuSheet<File>(
+      context: context,
+      builder: (_) => SubtitleSearchSheet(name: name),
+    );
+    if (file != null && mounted) {
+      await useSubtitleFile(file, name: 'Jimaku');
+    }
+  }
 
+  /// Shows the subtitles in [file], listed as [name] among the tracks.
+  Future<void> useSubtitleFile(File file, {required String name}) async {
     SubtitleItem? item = await SubtitleUtils.subtitlesFromFile(
       file: file,
       type: SubtitleItemType.externalSubtitle,
-      metadata: fileExtension,
+      metadata: name,
     );
 
     await item.controller.initial();

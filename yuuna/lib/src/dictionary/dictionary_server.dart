@@ -653,4 +653,103 @@ class DictionaryServer {
             ? strings.map((key, value) => MapEntry('$key', '$value'))
             : <String, String>{};
       });
+
+  /// Shows with Japanese subtitles on Jimaku whose names match [query],
+  /// found by the server with its own account.
+  Future<List<SubtitleShow>> searchSubtitles(String query) => _guard(() async {
+        Response response = await _dio.get(
+          'subtitles/search',
+          queryParameters: {'query': query},
+        );
+        return ((response.data as Map)['entries'] as List)
+            .map((json) =>
+                SubtitleShow.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+      });
+
+  /// The subtitle files of [show], those in its archives too.
+  Future<List<SubtitleFile>> subtitleFiles(SubtitleShow show) =>
+      _guard(() async {
+        Response response = await _dio.get(
+          'subtitles/${show.id}/files',
+          options: Options(receiveTimeout: const Duration(minutes: 2)),
+        );
+        return ((response.data as Map)['files'] as List)
+            .map((json) =>
+                SubtitleFile.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+      });
+
+  /// Saves one of [show]'s subtitle files in [directory], as UTF-8 text
+  /// with the file's own type, and gives where.
+  Future<File> subtitleFile(
+    SubtitleShow show,
+    SubtitleFile file,
+    Directory directory,
+  ) =>
+      _guard(() async {
+        directory.createSync(recursive: true);
+        File target = File(path.join(
+          directory.path,
+          'jimaku ${show.id} ${fastHash(file.name)}${file.type}',
+        ));
+        await _dio.download(
+          'subtitles/${show.id}/file',
+          target.path,
+          queryParameters: {'name': file.name},
+        );
+        return target;
+      });
+}
+
+/// A show on Jimaku, with Japanese subtitles for its episodes.
+class SubtitleShow {
+  /// Read a show from the server's JSON.
+  SubtitleShow.fromJson(Map<String, dynamic> json)
+      : id = json['id'] as int,
+        name = json['name'] as String? ?? '',
+        japaneseName = json['japaneseName'] as String?,
+        englishName = json['englishName'] as String?;
+
+  /// Jimaku's id for the show.
+  final int id;
+
+  /// Its name in romaji.
+  final String name;
+
+  /// Its name in Japanese, when known.
+  final String? japaneseName;
+
+  /// Its English name, when known.
+  final String? englishName;
+}
+
+/// One subtitle file of a [SubtitleShow].
+class SubtitleFile {
+  /// Read a file from the server's JSON.
+  SubtitleFile.fromJson(Map<String, dynamic> json)
+      : name = json['name'] as String,
+        size = (json['size'] as num?)?.toInt() ?? 0,
+        episode = (json['episode'] as num?)?.toInt();
+
+  /// Its name, as `season.zip/episode 01.srt` for one in an archive.
+  final String name;
+
+  /// Its size in bytes.
+  final int size;
+
+  /// The episode its name suggests, when it does.
+  final int? episode;
+
+  /// The file's own name, without the archive it is in.
+  String get fileName => name.split('/').last;
+
+  /// The archive the file is in, if it is in one.
+  String? get archive {
+    int cut = name.toLowerCase().indexOf('.zip/');
+    return cut < 0 ? null : name.substring(0, cut + 4);
+  }
+
+  /// Its type, as `.srt`.
+  String get type => path.extension(fileName).toLowerCase();
 }

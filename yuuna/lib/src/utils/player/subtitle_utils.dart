@@ -87,6 +87,18 @@ class SubtitleUtils {
           type: type,
           index: index,
         );
+      case '.vtt':
+        return SubtitleItem(
+          controller: SubtitleController(
+            provider: SubtitleProvider.fromString(
+              data: file.readAsStringSync(),
+              type: SubtitleType.vtt,
+            ),
+          ),
+          metadata: metadata,
+          type: type,
+          index: index,
+        );
       case '.ass':
       case '.ssa':
         return SubtitleItem(
