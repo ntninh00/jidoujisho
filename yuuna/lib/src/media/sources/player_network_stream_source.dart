@@ -8,6 +8,7 @@ import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
@@ -100,17 +101,63 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
       builder: (context) => NetworkStreamDialogPage(
         onPlay: (videoUrl) {
           Navigator.pop(context);
-
-          MediaItem item = getMediaItemFromUrl(videoUrl: videoUrl);
-
-          appModel.openMedia(
+          openLink(
+            context: context,
             ref: ref,
-            mediaSource: this,
-            item: item,
+            appModel: appModel,
+            link: videoUrl,
           );
         },
       ),
     );
+  }
+
+  /// Plays [link] when it is a video, or opens it as a page to find the
+  /// video on.
+  void openLink({
+    required BuildContext context,
+    required WidgetRef ref,
+    required AppModel appModel,
+    required String link,
+  }) {
+    if (isVideoLink(link)) {
+      appModel.openMedia(
+        ref: ref,
+        mediaSource: this,
+        item: getMediaItemFromUrl(videoUrl: link),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => VideoFinderPage(url: link)),
+    );
+  }
+
+  /// Whether [link] is a video or stream itself rather than a page.
+  static bool isVideoLink(String link) {
+    Uri? url = Uri.tryParse(link.trim());
+    if (url == null) {
+      return false;
+    }
+    if (url.hasScheme && !url.isScheme('http') && !url.isScheme('https')) {
+      return true;
+    }
+    PageMediaKind? kind = PageMediaFinder.kindOf(url);
+    return kind != null && kind != PageMediaKind.subtitle;
+  }
+
+  /// The headers a page found the video with, which its host may insist
+  /// on.
+  static Map<String, String> headersOf(MediaItem item) {
+    try {
+      Object? headers = (jsonDecode(item.extra ?? '{}') as Map)['headers'];
+      return headers is Map
+          ? headers.map((key, value) => MapEntry('$key', '$value'))
+          : {};
+    } catch (_) {
+      return {};
+    }
   }
 
   @override
@@ -139,9 +186,13 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
       VlcVideoOptions.dropLateFrames(false),
       VlcVideoOptions.skipFrames(false),
     ];
+    Map<String, String> headers = headersOf(item);
     List<String> advancedParams = [
       '--start-time=$startTime',
       VlcAdvancedOptions.networkCaching(20000),
+      if (headers['Referer'] != null) '--http-referrer=${headers['Referer']}',
+      if (headers['User-Agent'] != null)
+        '--http-user-agent=${headers['User-Agent']}',
     ];
     List<String> soutParams = [
       '--start-time=$startTime',
@@ -201,9 +252,15 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
           'jidoujisho-${DateFormat('yyyyMMddTkkmmss').format(DateTime.now())}';
 
       try {
-        File file = File('$temporaryDirectoryPath/$temporaryFileName.ass');
+        /// Saved under its own type when it has one; others are converted.
+        String type = path.extension(Uri.parse(fileName).path).toLowerCase();
+        if (!const ['.srt', '.vtt', '.ass', '.ssa'].contains(type)) {
+          type = '.ass';
+        }
+        File file = File('$temporaryDirectoryPath/$temporaryFileName-$i$type');
 
-        http.Response request = await http.get(Uri.parse(fileName));
+        http.Response request =
+            await http.get(Uri.parse(fileName), headers: headersOf(item));
         Uint8List bytes = request.bodyBytes;
         await file.writeAsBytes(bytes);
         SubtitleItem? subtitleItem = await SubtitleUtils.subtitlesFromFile(

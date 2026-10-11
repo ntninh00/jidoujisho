@@ -41,6 +41,13 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
 
   Timer? _menuHideTimer;
 
+  /// Videos the page loads, to play in the app's player.
+  final PageMediaFinder _videos = PageMediaFinder();
+
+  /// Looks over the page's players now and then, for videos their
+  /// requests didn't show.
+  Timer? _videoScan;
+
   @override
   void initState() {
     _readingListUrls = appModelNoUpdate
@@ -49,12 +56,49 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
         .toList();
 
     super.initState();
+    _videoScan = Timer.periodic(const Duration(seconds: 4), (_) async {
+      Uri? page = _uriNotifier.value;
+      if (!_controllerInitialised || page == null) {
+        return;
+      }
+      try {
+        noteVideoPageScan(_videos, page,
+            await _controller.evaluateJavascript(source: videoPageScan));
+      } catch (_) {}
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.item != null && widget.item!.position != 0) {
         widget.item!.position = DateTime.now().millisecondsSinceEpoch;
         appModel.addMediaItem(widget.item!);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _videoScan?.cancel();
+    _videos.dispose();
+    super.dispose();
+  }
+
+  /// Plays the page's video in the app's player.
+  Future<void> _playVideo() async {
+    PageMedia? media = _videos.videos.length == 1
+        ? _videos.videos.single
+        : await pickPageMedia(context, _videos);
+    Uri? page = _uriNotifier.value;
+    if (media == null || page == null || !mounted) {
+      return;
+    }
+    await _controller.evaluateJavascript(source: videoPagePause);
+    await playPageMedia(
+      ref: ref,
+      appModel: appModel,
+      media: media,
+      subtitles: _videos.subtitles,
+      page: page,
+      title: _titleNotifier.value ?? media.name,
+    );
   }
 
   bool _controllerInitialised = false;
@@ -473,9 +517,21 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
         scrollX = newX;
         scrollY = newY;
       },
-      initialSettings: InAppWebViewSettings(
-        userAgent: userAgent,
-      ),
+      initialSettings: videoPageSettings(userAgent: userAgent),
+      shouldInterceptRequest: (controller, request) =>
+          noteVideoPageRequest(_videos, request),
+      shouldOverrideUrlLoading: (controller, action) =>
+          allowVideoPageNavigation(action),
+      onCreateWindow: (controller, action) async => false,
+      onDownloadStartRequest: (controller, request) {
+        Fluttertoast.showToast(msg: t.video_finder_no_downloads);
+      },
+      onLoadStart: (controller, url) {
+        if (url?.removeFragment().toString() !=
+            _uriNotifier.value?.removeFragment().toString()) {
+          _videos.clear();
+        }
+      },
       initialUrlRequest: URLRequest(url: WebUri(widget.item!.mediaIdentifier)),
       contextMenu: contextMenu,
       onConsoleMessage: onConsoleMessage,
@@ -540,6 +596,17 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
             fit: StackFit.expand,
             children: <Widget>[
               buildWebView(),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 24,
+                child: Center(
+                  child: VideoFoundButton(
+                    finder: _videos,
+                    onPressed: _playVideo,
+                  ),
+                ),
+              ),
               Padding(
                 padding: Spacing.of(context).insets.onlyTop.extraBig * 1.5,
                 child: buildDictionary(),

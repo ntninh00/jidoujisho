@@ -274,6 +274,16 @@ class _JidoujishoAppState extends ConsumerState<JidoujishoApp>
             },
           );
         });
+      } else {
+        /// Any other page or video: its video plays in the app.
+        BuildContext context = appModel.navigatorKey.currentContext!;
+        Navigator.popUntil(context, (route) => route.isFirst);
+        PlayerNetworkStreamSource.instance.openLink(
+          context: context,
+          ref: ref,
+          appModel: appModel,
+          link: data.trim().split(RegExp(r'\s')).first,
+        );
       }
     } else {
       if (data.trim().isNotEmpty) {

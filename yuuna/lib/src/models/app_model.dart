@@ -3906,11 +3906,42 @@ class AppModel with ChangeNotifier {
     }
   }
 
+  /// Opens [item] in [mediaSource] over the media open now, as a video
+  /// found on a page in the browser, and makes that media current again
+  /// once it is closed.
+  Future<void> openMediaOver({
+    required WidgetRef ref,
+    required MediaSource mediaSource,
+    required MediaItem item,
+  }) async {
+    MediaSource? under = _currentMediaSource;
+    MediaItem? underItem = _currentMediaItem;
+    await openMedia(ref: ref, mediaSource: mediaSource, item: item);
+    await _closingMedia;
+    if (under == null) {
+      return;
+    }
+    _currentMediaSource = under;
+    _currentMediaItem = underItem;
+    _currentSubtitleOptions = ValueNotifier(subtitleOptions);
+    await Wakelock.enable();
+    await applyMediaSystemUi();
+  }
+
+  /// The closing of media under way, which [openMediaOver] waits for.
+  Future<void>? _closingMedia;
+
   /// Ends a media session and ensures that values are reset.
   Future<void> closeMedia({
     required WidgetRef ref,
     required MediaSource mediaSource,
     MediaItem? item,
+  }) =>
+      _closingMedia = _closeMedia(ref: ref, mediaSource: mediaSource);
+
+  Future<void> _closeMedia({
+    required WidgetRef ref,
+    required MediaSource mediaSource,
   }) async {
     _audioHandler?.mediaItem.add(null);
 
@@ -4997,6 +5028,49 @@ class AppModel with ChangeNotifier {
     Set<int> kept = _dictionaryHistory.values.toSet();
     await _dictionaryHistoryTimes.deleteAll(
         _dictionaryHistoryTimes.keys.where((key) => !kept.contains(key)));
+  }
+
+  /// Pages whose videos were played or looked for, newest first, to open
+  /// again for a fresh link to their video: their address and title.
+  List<({String url, String title})> get videoPages {
+    try {
+      return [
+        for (Map<String, dynamic> page in List<Map<String, dynamic>>.from(
+            jsonDecode(_preferences.get('video_pages', defaultValue: '[]'))
+                as List))
+          (url: page['url'] as String, title: page['title'] as String? ?? ''),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// Puts the page at [url] first among [videoPages].
+  Future<void> rememberVideoPage({
+    required String url,
+    required String title,
+  }) async {
+    List<({String url, String title})> pages = videoPages
+      ..removeWhere((page) => page.url == url)
+      ..insert(0, (url: url, title: title));
+    await _preferences.put(
+      'video_pages',
+      jsonEncode([
+        for (var page in pages.take(12)) {'url': page.url, 'title': page.title},
+      ]),
+    );
+  }
+
+  /// Takes the page at [url] out of [videoPages].
+  Future<void> forgetVideoPage(String url) async {
+    List<({String url, String title})> pages = videoPages
+      ..removeWhere((page) => page.url == url);
+    await _preferences.put(
+      'video_pages',
+      jsonEncode([
+        for (var page in pages) {'url': page.url, 'title': page.title},
+      ]),
+    );
   }
 
   /// When [result] was looked up for the Dictionary tab's history, if that

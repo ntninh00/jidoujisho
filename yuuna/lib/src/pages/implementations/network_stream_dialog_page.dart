@@ -83,11 +83,76 @@ class _NetworkStreamDialogPageState
                   labelText: t.stream_url,
                 ),
               ),
+              ..._recentPages(),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// Pages whose videos were played, to open again for a fresh link.
+  List<Widget> _recentPages() {
+    List<({String url, String title})> pages =
+        appModel.videoPages.take(6).toList();
+    if (pages.isEmpty) {
+      return const [];
+    }
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 16, bottom: 4),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            t.video_finder_recent,
+            style: textTheme.labelMedium!.copyWith(
+              color: theme.unselectedWidgetColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+      for (var page in pages)
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => widget.onPlay(page.url),
+          onLongPress: () async {
+            await appModel.forgetVideoPage(page.url);
+            setState(() {});
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(Ui.globe, size: 16, color: theme.unselectedWidgetColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        page.title.isNotEmpty
+                            ? page.title
+                            : Uri.tryParse(page.url)?.host ?? page.url,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodyMedium,
+                      ),
+                      Text(
+                        Uri.tryParse(page.url)?.host ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.bodySmall!
+                            .copyWith(color: theme.unselectedWidgetColor),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget buildPlayButton() {
