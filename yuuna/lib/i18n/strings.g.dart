@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1768 (884 per locale)
+/// Strings: 1770 (885 per locale)
 ///
-/// Built on 2026-10-10 at 13:34 UTC
+/// Built on 2026-10-11 at 08:11 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -670,6 +670,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String ttu_minutes_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_minutes_ago', {'n': n}) ?? '${n} min ago';
 	String get ttu_today => TranslationOverrides.string(_root.$meta, 'ttu_today', {}) ?? 'Today';
 	String get ttu_yesterday => TranslationOverrides.string(_root.$meta, 'ttu_yesterday', {}) ?? 'Yesterday';
+	String get history_earlier => TranslationOverrides.string(_root.$meta, 'history_earlier', {}) ?? 'Earlier';
 	String ttu_days_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_days_ago', {'n': n}) ?? '${n} days ago';
 	String get ttu_week_ago => TranslationOverrides.string(_root.$meta, 'ttu_week_ago', {}) ?? '1 week ago';
 	String ttu_weeks_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_weeks_ago', {'n': n}) ?? '${n} weeks ago';
@@ -2227,6 +2228,7 @@ class _StringsVi extends _StringsEn {
 	@override String ttu_minutes_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_minutes_ago', {'n': n}) ?? '${n} phút trước';
 	@override String get ttu_today => TranslationOverrides.string(_root.$meta, 'ttu_today', {}) ?? 'Hôm nay';
 	@override String get ttu_yesterday => TranslationOverrides.string(_root.$meta, 'ttu_yesterday', {}) ?? 'Hôm qua';
+	@override String get history_earlier => TranslationOverrides.string(_root.$meta, 'history_earlier', {}) ?? 'Trước đó';
 	@override String ttu_days_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_days_ago', {'n': n}) ?? '${n} ngày trước';
 	@override String get ttu_week_ago => TranslationOverrides.string(_root.$meta, 'ttu_week_ago', {}) ?? '1 tuần trước';
 	@override String ttu_weeks_ago({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_weeks_ago', {'n': n}) ?? '${n} tuần trước';
@@ -3769,6 +3771,7 @@ extension on _StringsEn {
 			case 'ttu_minutes_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_minutes_ago', {'n': n}) ?? '${n} min ago';
 			case 'ttu_today': return TranslationOverrides.string(_root.$meta, 'ttu_today', {}) ?? 'Today';
 			case 'ttu_yesterday': return TranslationOverrides.string(_root.$meta, 'ttu_yesterday', {}) ?? 'Yesterday';
+			case 'history_earlier': return TranslationOverrides.string(_root.$meta, 'history_earlier', {}) ?? 'Earlier';
 			case 'ttu_days_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_days_ago', {'n': n}) ?? '${n} days ago';
 			case 'ttu_week_ago': return TranslationOverrides.string(_root.$meta, 'ttu_week_ago', {}) ?? '1 week ago';
 			case 'ttu_weeks_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_weeks_ago', {'n': n}) ?? '${n} weeks ago';
@@ -4665,6 +4668,7 @@ extension on _StringsVi {
 			case 'ttu_minutes_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_minutes_ago', {'n': n}) ?? '${n} phút trước';
 			case 'ttu_today': return TranslationOverrides.string(_root.$meta, 'ttu_today', {}) ?? 'Hôm nay';
 			case 'ttu_yesterday': return TranslationOverrides.string(_root.$meta, 'ttu_yesterday', {}) ?? 'Hôm qua';
+			case 'history_earlier': return TranslationOverrides.string(_root.$meta, 'history_earlier', {}) ?? 'Trước đó';
 			case 'ttu_days_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_days_ago', {'n': n}) ?? '${n} ngày trước';
 			case 'ttu_week_ago': return TranslationOverrides.string(_root.$meta, 'ttu_week_ago', {}) ?? '1 tuần trước';
 			case 'ttu_weeks_ago': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_weeks_ago', {'n': n}) ?? '${n} tuần trước';

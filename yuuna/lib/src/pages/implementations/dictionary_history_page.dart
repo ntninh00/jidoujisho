@@ -1,5 +1,6 @@
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:spaces/spaces.dart';
 import 'package:yuuna/creator.dart';
 import 'package:yuuna/dictionary.dart';
@@ -51,6 +52,14 @@ class _DictionaryHistoryPageState extends BasePageState<DictionaryHistoryPage> {
           dictionaries.map((e) => MapEntry(e.name, e.order))),
     );
 
+    /// Each day's results come under its date. Those from before dates were
+    /// kept are the oldest, and come last as earlier ones.
+    List<String> days = historyResults
+        .map((result) => _dayOf(appModel.dictionaryHistoryTimeOf(result)))
+        .toList();
+    bool dated = historyResults
+        .any((result) => appModel.dictionaryHistoryTimeOf(result) != null);
+
     return CustomScrollView(
       controller: DictionaryMediaType.instance.scrollController,
       physics: const AlwaysScrollableScrollPhysics(
@@ -58,19 +67,57 @@ class _DictionaryHistoryPageState extends BasePageState<DictionaryHistoryPage> {
       ),
       slivers: [
         const SliverPadding(padding: EdgeInsets.only(top: 60)),
-        ...historyResults
-            .map(
-              (result) => _DictionaryHistoryScrollableItem(
-                result: result,
-                onSearch: widget.onSearch,
-                onStash: widget.onStash,
-                onShare: widget.onShare,
-                lastSelectedMapping: lastSelectedMapping,
-                names: names,
-              ),
-            )
-            .toList(),
+        for (int i = 0; i < historyResults.length; i++) ...[
+          if (dated && (i == 0 || days[i] != days[i - 1]))
+            SliverToBoxAdapter(
+              key: ValueKey('day ${days[i]}'),
+              child: _buildDay(days[i]),
+            ),
+          _DictionaryHistoryScrollableItem(
+            key: ValueKey(historyResults[i].id),
+            result: historyResults[i],
+            onSearch: widget.onSearch,
+            onStash: widget.onStash,
+            onShare: widget.onShare,
+            lastSelectedMapping: lastSelectedMapping,
+            names: names,
+          ),
+        ],
       ],
+    );
+  }
+
+  /// The day of [time] as the history shows it: today, yesterday, or its
+  /// date, with the year when it isn't this one.
+  String _dayOf(DateTime? time) {
+    if (time == null) {
+      return t.history_earlier;
+    }
+    DateTime now = DateTime.now();
+    DateTime today = DateTime(now.year, now.month, now.day);
+    DateTime day = DateTime(time.year, time.month, time.day);
+    int daysAgo = (today.difference(day).inHours / 24).round();
+    if (daysAgo <= 0) {
+      return t.ttu_today;
+    }
+    if (daysAgo == 1) {
+      return t.ttu_yesterday;
+    }
+    return (day.year == today.year ? DateFormat.MMMEd() : DateFormat.yMMMEd())
+        .format(day);
+  }
+
+  Widget _buildDay(String day) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 14, 6, 6),
+      child: Text(
+        day,
+        style: textTheme.labelMedium!.copyWith(
+          color: theme.unselectedWidgetColor,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+        ),
+      ),
     );
   }
 }
@@ -96,6 +143,7 @@ class _DictionaryHistoryScrollableItem extends BasePage {
     required this.onShare,
     required this.lastSelectedMapping,
     required this.names,
+    super.key,
   });
 
   /// Dictionary settings shared by the list.

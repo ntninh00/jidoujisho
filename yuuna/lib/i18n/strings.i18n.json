@@ -533,6 +533,7 @@
     "ttu_minutes_ago": "$n min ago",
     "ttu_today": "Today",
     "ttu_yesterday": "Yesterday",
+    "history_earlier": "Earlier",
     "ttu_days_ago": "$n days ago",
     "ttu_week_ago": "1 week ago",
     "ttu_weeks_ago": "$n weeks ago",

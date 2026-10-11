@@ -74,16 +74,10 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
   bool get shouldPlaceholderBeShown => appModel.dictionaryHistory.isEmpty;
 
-  /// The tab opens blank, with only the search bar; earlier results show
-  /// once something has been looked up.
-  bool _searchedYet = false;
-
   @override
   Widget build(BuildContext context) {
     return Stack(children: [
-      if (!_searchedYet)
-        const SizedBox.expand()
-      else if (shouldPlaceholderBeShown)
+      if (shouldPlaceholderBeShown)
         buildPlaceholder()
       else
         buildDictionaryHistory(),
@@ -234,9 +228,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
 
     int maximumTerms = overrideMaximumTerms ?? appModel.maximumTerms;
     int serial = ++_searchSerial;
-    if (query.trim().isNotEmpty) {
-      _searchedYet = true;
-    }
 
     if (mounted) {
       setState(() {
@@ -444,7 +435,11 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     if (appModel.dictionaries.isEmpty) {
       return buildImportDictionariesPlaceholderMessage();
     }
-    if (mediaType.floatingSearchBarController.query.isEmpty) {
+
+    /// The first search of a word shows what was searched before until it
+    /// has found something, rather than a blank page.
+    if (mediaType.floatingSearchBarController.query.isEmpty ||
+        (_isSearching && _result == null)) {
       if (appModel.getSearchHistory(historyKey: mediaType.uniqueKey).isEmpty) {
         return buildEnterSearchTermPlaceholderMessage();
       } else {
@@ -462,12 +457,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
           },
         );
       }
-    }
-
-    /// While a search runs, what the last one found stays: results, or that
-    /// there were none, instead of blinking blank on every key.
-    if (_isSearching && _result == null) {
-      return const SizedBox.shrink();
     }
 
     if (_result == null ||

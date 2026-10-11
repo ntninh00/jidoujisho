@@ -72,7 +72,17 @@ public class MainActivity extends AudioServiceActivity {
         // Create the example data
         mAnkiDroid = new AnkiDroidHelper(context);
     }
-    
+
+    /// Back on the first screen puts the app behind the others, as Android 12
+    /// and later do for an app's first screen, rather than closing it. Closed,
+    /// its Dart code is stopped without letting go of the reader's ports, and
+    /// the app opened again could not serve the reader until Android ended it.
+    @Override
+    public boolean popSystemNavigator() {
+        moveTaskToBack(true);
+        return true;
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {

@@ -149,6 +149,10 @@ class AppModel with ChangeNotifier {
   /// Used for accessing persistent dictonary history. See [initialise].
   late final Box<int> _dictionaryHistory;
 
+  /// When each result in the dictionary history was looked up, by result
+  /// id, in milliseconds. Results from before this was kept have none.
+  late final Box<int> _dictionaryHistoryTimes;
+
   /// Used for accessing persistent database data. See [initialise].
   late final Isar _database;
 
@@ -1367,6 +1371,7 @@ class AppModel with ChangeNotifier {
     await Hive.initFlutter();
     _preferences = await Hive.openBox('appModel');
     _dictionaryHistory = await Hive.openBox('dictionaryHistory');
+    _dictionaryHistoryTimes = await Hive.openBox('dictionaryHistoryTimes');
     updates = AppUpdates(
       preferences: _preferences,
       installedVersion: _packageInfo.version,
@@ -2169,6 +2174,7 @@ class AppModel with ChangeNotifier {
     return {
       'app': _preferences.toMap(),
       'dictionaryHistory': _dictionaryHistory.toMap(),
+      'dictionaryHistoryTimes': _dictionaryHistoryTimes.toMap(),
       for (Map<String, MediaSource> sources in mediaSources.values)
         for (MediaSource source in sources.values)
           if (source.isInitialised)
@@ -2197,6 +2203,14 @@ class AppModel with ChangeNotifier {
       await _dictionaryHistory.putAll(
         history.map((key, value) => MapEntry(key, (value as num).toInt())),
       );
+      await _dictionaryHistoryTimes.clear();
+      Map<dynamic, dynamic> times = stores['dictionaryHistoryTimes'] ?? {};
+      for (MapEntry<dynamic, dynamic> time in times.entries) {
+        int? id = int.tryParse('${time.key}');
+        if (id != null && _isHistoryKey(id) && time.value is num) {
+          await _dictionaryHistoryTimes.put(id, (time.value as num).toInt());
+        }
+      }
     }
     for (Map<String, MediaSource> sources in mediaSources.values) {
       for (MediaSource source in sources.values) {
@@ -2669,6 +2683,7 @@ class AppModel with ChangeNotifier {
 
     await compute(deleteDictionariesHelper, params);
     await _dictionaryHistory.clear();
+    await _dictionaryHistoryTimes.clear();
 
     if (dictionaryResourceDirectory.existsSync()) {
       dictionaryResourceDirectory.deleteSync(recursive: true);
@@ -4964,16 +4979,38 @@ class AppModel with ChangeNotifier {
         .toList());
 
     await _dictionaryHistory.add(id);
+    if (_isHistoryKey(id)) {
+      await _dictionaryHistoryTimes.put(
+          id, DateTime.now().millisecondsSinceEpoch);
+    }
 
     int countInSameHistory = _dictionaryHistory.length;
 
     if (maximumDictionaryHistoryItems < countInSameHistory) {
       int surplus = countInSameHistory - maximumDictionaryHistoryItems;
 
-      _dictionaryHistory
+      await _dictionaryHistory
           .deleteAll(_dictionaryHistory.keys.toList().sublist(0, surplus));
     }
+
+    /// Times of results no longer in the history go with them.
+    Set<int> kept = _dictionaryHistory.values.toSet();
+    await _dictionaryHistoryTimes.deleteAll(
+        _dictionaryHistoryTimes.keys.where((key) => !kept.contains(key)));
   }
+
+  /// When [result] was looked up for the Dictionary tab's history, if that
+  /// was kept.
+  DateTime? dictionaryHistoryTimeOf(DictionarySearchResult result) {
+    int? id = result.id;
+    int? time = id != null && _isHistoryKey(id)
+        ? _dictionaryHistoryTimes.get(id)
+        : null;
+    return time == null ? null : DateTime.fromMillisecondsSinceEpoch(time);
+  }
+
+  /// Whether [id] can be a key of a Hive box, which takes 32 bits.
+  bool _isHistoryKey(int id) => id >= 0 && id <= 0xFFFFFFFF;
 
   /// Adds a [DictionarySearchResult] to dictionary history.
   List<DictionaryFrequency> getNoReadingFrequencies(

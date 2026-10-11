@@ -513,7 +513,9 @@ class ReaderTtuSource extends ReaderMediaSource {
         logger: const DebugLogger(),
       );
 
-      await server.serve();
+      /// Shared, so the app's Dart code started again in the same process
+      /// can still serve on the port, which keeps each copy's books.
+      await server.serve(shared: true);
 
       return server;
     } catch (e) {
