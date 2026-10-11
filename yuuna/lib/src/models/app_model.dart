@@ -2015,7 +2015,6 @@ class AppModel with ChangeNotifier {
       await _preferences.put('dictionary_mode_languages', languages.toList());
     }
     dictionariesRevision++;
-    notifyListeners();
   }
 
   /// The languages installed dictionaries look up, with the most
@@ -2321,14 +2320,25 @@ class AppModel with ChangeNotifier {
 
   /// Show the dictionary menu. This should be callable from many parts of the
   /// app, so it is appropriately handled by the model.
+  ///
+  /// What changed in it is shown only once the sheet has gone, so that
+  /// searching and drawing the results again doesn't hold up its closing.
   Future<void> showDictionaryMenu() async {
-    await showTtuSheet<void>(
-      context: navigatorKey.currentContext!,
+    BuildContext context = navigatorKey.currentContext!;
+    int revision = dictionariesRevision;
+    ModalBottomSheetRoute<void> route = ttuSheetRoute<void>(
+      context: context,
       builder: (context) => const DictionaryDialogPage(),
     );
+    Navigator.of(context).push(route);
+    await route.completed;
+    if (revision == dictionariesRevision) {
+      return;
+    }
 
     notifyListeners();
     dictionaryMenuNotifier.notifyListeners();
+    dictionarySearchAgainNotifier.notifyListeners();
   }
 
   /// Show the language menu. This should be callable from many parts of the

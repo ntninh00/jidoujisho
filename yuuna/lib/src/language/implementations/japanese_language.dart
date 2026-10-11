@@ -644,8 +644,12 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
     }
   }
 
-  List<DictionaryHeading> headings =
-      uniqueHeadingsById.values.where((e) => e.entries.isNotEmpty).toList();
+  /// Words only hidden dictionaries have are left out before any are
+  /// counted, and with none left, nothing was found.
+  List<DictionaryHeading> headings = uniqueHeadingsById.values
+      .where((e) => e.entries.isNotEmpty)
+      .where(params.showsHeading)
+      .toList();
   Map<DictionaryHeading, int> headingOrders = Map.fromEntries(
     headings.mapIndexed(
       (index, id) => MapEntry(headings[index], index),
@@ -737,14 +741,15 @@ Future<DictionarySearchOutcome?> prepareSearchResultsJapaneseLanguage(
   if (searchTerm.length == 1 && kanaKit.isKanji(searchTerm)) {
     DictionaryHeading? heading = database.dictionaryHeadings
         .getSync(DictionaryHeading.hash(term: searchTerm, reading: ''));
-    if (heading != null && heading.entries.isNotEmpty) {
+    if (heading != null &&
+        heading.entries.isNotEmpty &&
+        params.showsHeading(heading)) {
       headings.remove(heading);
       headings.insert(0, heading);
     }
   }
 
   headings = _withoutRepeatedSpellings(headings);
-  headings = headings.where(params.showsHeading).toList();
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 

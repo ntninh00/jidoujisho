@@ -119,9 +119,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  /// The search bar to show at the topmost of the tab body. When selected,
-  /// [buildSearchBarBody] will take the place of the remainder tab body, or
-  /// the elements below the search bar when unselected.
   /// The languages picked in the dictionaries sheet, as `Japanese,
   /// Vietnamese`, in its order.
   String _modeNames() {
@@ -132,6 +129,9 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         .join(', ');
   }
 
+  /// The search bar to show at the topmost of the tab body. When selected,
+  /// [buildSearchBarBody] will take the place of the remainder tab body, or
+  /// the elements below the search bar when unselected.
   @override
   Widget buildFloatingSearchBar() {
     return FloatingSearchBar(

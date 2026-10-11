@@ -57,20 +57,33 @@ void main() {
         word('コーヒー', '', 'coffee', score: 9),
       ]),
     );
-    ReceivePort port = ReceivePort()..listen((_) {});
-    await compute(
-      depositDictionaryDataHelper,
-      PrepareDictionaryParams(
-        dictionary:
-            Dictionary(id: 1, name: 'Test', formatKey: 'yomichan', order: 0),
-        dictionaryFormat: YomichanFormat.instance,
-        resourceDirectory: resources,
-        directoryPath: directory.path,
-        sendPort: port.sendPort,
-        alertSendPort: port.sendPort,
-      ),
-    );
-    port.close();
+
+    /// An English dictionary too, for Latin text.
+    Directory english = Directory(path.join(directory.path, 'en'))
+      ..createSync();
+    File(path.join(english.path, 'index.json'))
+        .writeAsStringSync(jsonEncode({'title': 'English', 'revision': '1'}));
+    File(path.join(english.path, 'term_bank_1.json'))
+        .writeAsStringSync(jsonEncode([word('zu', '', 'a word in English')]));
+    for (var (id, name, files) in [
+      (1, 'Test', resources),
+      (2, 'English', english),
+    ]) {
+      ReceivePort port = ReceivePort()..listen((_) {});
+      await compute(
+        depositDictionaryDataHelper,
+        PrepareDictionaryParams(
+          dictionary:
+              Dictionary(id: id, name: name, formatKey: 'yomichan', order: id),
+          dictionaryFormat: YomichanFormat.instance,
+          resourceDirectory: files,
+          directoryPath: directory.path,
+          sendPort: port.sendPort,
+          alertSendPort: port.sendPort,
+        ),
+      );
+      port.close();
+    }
     isar = await Isar.open(globalSchemas,
         directory: directory.path, maxSizeMiB: 256);
   });
@@ -84,15 +97,17 @@ void main() {
     }
   });
 
-  /// The words found for [text], as `term【reading】`.
+  /// The words found for [text], as `term【reading】`. Latin text is looked
+  /// up as English, then as romaji, as in the search bar.
   Future<List<String>> search(String text,
       {required bool typed, List<int> hidden = const []}) async {
-    DictionarySearchOutcome? outcome =
-        await prepareSearchResultsJapaneseLanguage(DictionarySearchParams(
+    DictionarySearchOutcome? outcome = await (isLatinOnly(text)
+        ? prepareSearchResultsLatinForJapanese
+        : prepareSearchResultsJapaneseLanguage)(DictionarySearchParams(
       searchTerm: text,
       maximumDictionarySearchResults: 200,
       maximumDictionaryTermsInResult: 10,
-      enabledDictionaryIds: const [1],
+      enabledDictionaryIds: const [1, 2],
       searchWithWildcards: typed,
       sendPort: ReceivePort().sendPort,
       directoryPath: directory.path,
@@ -137,6 +152,11 @@ void main() {
     expect(await search('へいし', typed: true, hidden: [1]), isEmpty);
     expect(await search('へいし', typed: true, hidden: [2]),
         await search('へいし', typed: true));
+  });
+
+  test('Latin text a hidden dictionary has is read as romaji', () async {
+    expect(await search('zu', typed: false), ['zu【】']);
+    expect((await search('zu', typed: false, hidden: [2])).first, '図【ず】');
   });
 
   test('tapped in a book, the longest word comes first', () async {

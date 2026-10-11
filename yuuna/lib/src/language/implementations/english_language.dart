@@ -323,14 +323,17 @@ Future<DictionarySearchOutcome?> prepareSearchResultsEnglishLanguage(
     }
   }
 
-  List<DictionaryHeading> headings =
-      uniqueHeadingsById.values.where((e) => e.entries.isNotEmpty).toList();
+  /// Words only hidden dictionaries have are left out, and with none left,
+  /// nothing was found: a Japanese search then reads the text as romaji.
+  List<DictionaryHeading> headings = uniqueHeadingsById.values
+      .where((e) => e.entries.isNotEmpty)
+      .where(params.showsHeading)
+      .toList();
 
   if (headings.isEmpty) {
     return null;
   }
 
-  headings = headings.where(params.showsHeading).toList();
   headings = headings.sublist(
       0, min(headings.length, params.maximumDictionaryTermsInResult));
 

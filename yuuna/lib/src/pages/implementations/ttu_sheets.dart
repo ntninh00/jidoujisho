@@ -25,16 +25,33 @@ Future<T?> showTtuSheet<T>({
   required BuildContext context,
   required WidgetBuilder builder,
 }) {
-  return showModalBottomSheet<T>(
-    context: context,
+  return Navigator.of(context)
+      .push(ttuSheetRoute<T>(context: context, builder: builder));
+}
+
+/// The route of [showTtuSheet], for a caller that waits for the sheet to
+/// have gone from the screen with [TransitionRoute.completed].
+ModalBottomSheetRoute<T> ttuSheetRoute<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  NavigatorState navigator = Navigator.of(context);
+  MaterialLocalizations localizations = MaterialLocalizations.of(context);
+  return ModalBottomSheetRoute<T>(
+    builder: builder,
+    capturedThemes:
+        InheritedTheme.capture(from: context, to: navigator.context),
     isScrollControlled: true,
     useSafeArea: true,
+    barrierLabel: localizations.scrimLabel,
+    barrierOnTapHint:
+        localizations.scrimOnTapHint(localizations.bottomSheetLabel),
     backgroundColor: Theme.of(context).cardColor,
     clipBehavior: Clip.antiAlias,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: builder,
+    modalBarrierColor: Theme.of(context).bottomSheetTheme.modalBarrierColor,
   );
 }
 
