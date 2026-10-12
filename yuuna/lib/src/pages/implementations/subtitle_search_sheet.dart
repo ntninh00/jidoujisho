@@ -146,9 +146,11 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
     /// The sheet stays above the keyboard, as tall as there is room for.
     double room = media.size.height - keyboard - media.padding.top;
 
-    /// With little room, as on a phone on its side with the keyboard up,
-    /// the search takes the title's place.
-    bool short = room < 320;
+    /// On a phone on its side, the search takes the title's place, so it
+    /// shows above the keyboard. Told from the screen, not the room the
+    /// keyboard leaves, or the field would move, and lose the keyboard, as
+    /// it opens.
+    bool short = media.size.height - media.padding.top < 480;
     bool searching = _server != null && _show == null;
     return Padding(
       padding: EdgeInsets.only(bottom: keyboard),
@@ -247,8 +249,12 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
     );
   }
 
+  /// Keeps the search field, and the keyboard with it, wherever it shows.
+  final GlobalKey _searchKey = GlobalKey();
+
   Widget _searchInput() {
     return TextField(
+      key: _searchKey,
       controller: _query,
       textInputAction: TextInputAction.search,
       onSubmitted: (_) => _search(),
