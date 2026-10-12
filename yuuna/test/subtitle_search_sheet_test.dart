@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:spaces/spaces.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
@@ -29,6 +30,10 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [appProvider.overrideWith((ref) => _AppModel())],
       child: MaterialApp(
+        builder: (context, child) => Spacing(
+          dataBuilder: (context) => SpacingData.generate(10),
+          child: child!,
+        ),
         home: Builder(
           builder: (context) => Scaffold(
             body: Center(
