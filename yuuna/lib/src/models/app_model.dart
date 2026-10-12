@@ -743,8 +743,16 @@ class AppModel with ChangeNotifier {
             .copyWith(background: Colors.black),
       );
 
+  /// The subtitle line a word was looked up in on a video page, which is no
+  /// media source, while its popup is open.
+  JidoujishoTextSelection? pageSentence;
+
   /// Get the sentence to be used by the [SentenceField] upon card creation.
   JidoujishoTextSelection getCurrentSentence() {
+    JidoujishoTextSelection? page = pageSentence;
+    if (page != null) {
+      return page;
+    }
     if (isMediaOpen) {
       return _currentMediaSource!.currentSentence;
     } else {

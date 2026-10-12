@@ -14,6 +14,7 @@ class SubtitleText extends StatelessWidget {
     required this.options,
     this.scale = 1,
     this.textKey,
+    this.highlight,
     super.key,
   });
 
@@ -28,6 +29,30 @@ class SubtitleText extends StatelessWidget {
 
   /// Given to the line's text, to find which character was tapped.
   final Key? textKey;
+
+  /// The part of [text] being looked up, marked as the player marks it.
+  final TextRange? highlight;
+
+  TextSpan _spans(BuildContext context) {
+    TextRange? range = highlight;
+    if (range == null ||
+        !range.isValid ||
+        range.isCollapsed ||
+        range.end > text.length) {
+      return TextSpan(text: text);
+    }
+    return TextSpan(children: [
+      TextSpan(text: range.textBefore(text)),
+      TextSpan(
+        text: range.textInside(text),
+        style: TextStyle(
+          backgroundColor:
+              Theme.of(context).colorScheme.primary.withOpacity(0.4),
+        ),
+      ),
+      TextSpan(text: range.textAfter(text)),
+    ]);
+  }
 
   TextStyle _style({Paint? foreground}) {
     double size = options.fontSize * scale;
@@ -66,8 +91,8 @@ class SubtitleText extends StatelessWidget {
                 ..color = Colors.black.withOpacity(0.8),
             ),
           ),
-        Text(
-          text,
+        Text.rich(
+          _spans(context),
           key: textKey,
           textAlign: TextAlign.center,
           style: _style(),

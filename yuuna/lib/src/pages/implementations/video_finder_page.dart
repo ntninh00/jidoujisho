@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:spaces/spaces.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
@@ -397,18 +398,18 @@ Future<PageMedia?> pickPageMedia(BuildContext context, PageMediaFinder finder) {
 
 /// A web page opened to play its video in the app: the video the page
 /// loads is found and offered, with the page's subtitles.
-class VideoFinderPage extends BasePage {
+class VideoFinderPage extends BaseSourcePage {
   /// Open [url].
-  const VideoFinderPage({required this.url, super.key});
+  const VideoFinderPage({required this.url, super.key}) : super(item: null);
 
   /// The page's address.
   final String url;
 
   @override
-  BasePageState<VideoFinderPage> createState() => _VideoFinderPageState();
+  BaseSourcePageState<VideoFinderPage> createState() => _VideoFinderPageState();
 }
 
-class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
+class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
   final PageMediaFinder _finder = PageMediaFinder();
   late final TextEditingController _address =
       TextEditingController(text: widget.url);
@@ -431,6 +432,15 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   Timer? _follow;
 
   final GlobalKey _lineKey = GlobalKey();
+
+  /// The part of the line being looked up.
+  final ValueNotifier<TextRange?> _highlight = ValueNotifier(null);
+
+  /// Whether the dictionary popup shows.
+  bool _popupOpen = false;
+
+  /// Whether the video was paused for the popup, to play on when it closes.
+  bool _pausedForPopup = false;
 
   /// How subtitles look, as in the player.
   late SubtitleOptions _style = appModelNoUpdate.subtitleOptions;
@@ -467,6 +477,8 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     _address.dispose();
     _finder.dispose();
     _line.dispose();
+    _highlight.dispose();
+    appModelNoUpdate.pageSentence = null;
     if (_fullscreen) {
       _restoreScreen();
     }
@@ -498,6 +510,9 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   }
 
   Future<void> _play() async {
+    if (_popupOpen) {
+      onDictionaryDismiss();
+    }
     PageMedia? media = _finder.videos.length == 1
         ? _finder.videos.single
         : await pickPageMedia(context, _finder);
@@ -543,8 +558,12 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     ]);
   }
 
-  /// Back leaves the page's full screen first.
+  /// Back closes the popup, then leaves the page's full screen, first.
   Future<bool> _onWillPop() async {
+    if (_popupOpen) {
+      onDictionaryDismiss();
+      return false;
+    }
     if (!_fullscreen) {
       return true;
     }
@@ -576,6 +595,9 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   }
 
   void _removeSubtitles() {
+    if (_popupOpen) {
+      onDictionaryDismiss();
+    }
     _follow?.cancel();
     _follow = null;
     _subtitles = null;
@@ -724,37 +746,134 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
           line = line.replaceAll(RegExp(filter), '').trim();
         } catch (_) {}
       }
+      if (line != _line.value) {
+        _highlight.value = null;
+      }
       _line.value = line;
     }
   }
 
-  /// Looks up the line from the character tapped, with the video paused
-  /// meanwhile.
+  /// Looks up the word tapped as the player does: it is marked, the video
+  /// pauses, and the dictionary pops up over the page. A tap on the marked
+  /// word closes it again.
   Future<void> _lookUp(TapUpDetails details) async {
     String line = _line.value;
     RenderObject? paragraph = _lineKey.currentContext?.findRenderObject();
     if (line.isEmpty || paragraph is! RenderParagraph) {
       return;
     }
-    int index = paragraph
-        .getPositionForOffset(details.localPosition)
-        .offset
-        .clamp(0, line.length);
-    String text = line.substring(index).replaceAll('\n', '');
-    if (text.trim().isEmpty) {
+    TextPosition position =
+        paragraph.getPositionForOffset(details.localPosition);
+    int index = (position.affinity == TextAffinity.upstream
+            ? position.offset - 1
+            : position.offset)
+        .clamp(0, line.length - 1);
+
+    /// A lone surrogate is the second half of the character meant.
+    if (index > 0 && _isTrailSurrogate(line.codeUnitAt(index))) {
+      index--;
+    }
+
+    TextRange? marked = _highlight.value;
+    if (_popupOpen &&
+        marked != null &&
+        marked.start <= index &&
+        index < marked.end) {
+      onDictionaryDismiss();
       return;
     }
+
+    String searchTerm = appModel.targetLanguage
+        .getSearchTermFromIndex(text: line, index: index)
+        .replaceAll('\n', '');
+    if (searchTerm.trim().isEmpty) {
+      return;
+    }
+    int whitespace = searchTerm.length - searchTerm.trimLeft().length;
+    int start =
+        appModel.targetLanguage.getStartingIndex(text: line, index: index) +
+            whitespace;
+    _highlight.value = _rangeOf(
+        line,
+        start,
+        appModel.targetLanguage
+            .getGuessHighlightLength(searchTerm: searchTerm));
+    if (!_popupOpen) {
+      _quickTimer?.cancel();
+      setState(() {
+        _popupOpen = true;
+        _quick = false;
+      });
+      await _pauseForPopup();
+    }
+
+    await searchDictionaryResult(
+      searchTerm: searchTerm,
+      position: JidoujishoPopupPosition.topThreeFourths,
+    );
+    if (!mounted || !_popupOpen || _line.value != line) {
+      return;
+    }
+    TextRange range = _rangeOf(
+      line,
+      start,
+      appModel.targetLanguage.getFinalHighlightLength(
+        result: currentResult,
+        searchTerm: searchTerm,
+      ),
+    );
+    _highlight.value = range;
+    appModel.pageSentence = JidoujishoTextSelection(text: line, range: range);
+  }
+
+  static bool _isTrailSurrogate(int unit) => unit >= 0xDC00 && unit <= 0xDFFF;
+
+  /// [length] characters of [line] from [start], within it.
+  TextRange _rangeOf(String line, int start, int length) {
+    int from = start.clamp(0, line.length);
+    return TextRange(
+        start: from, end: (from + length).clamp(from, line.length));
+  }
+
+  /// Pauses the page's video while the popup shows, if it plays.
+  Future<void> _pauseForPopup() async {
     PageVideoTime? time = await _videoTime();
-    bool wasPlaying = time != null && !time.paused;
-    await _controller?.evaluateJavascript(
-        source: "window.__jdj && window.__jdj.control('pause')");
+    if (time != null && !time.paused) {
+      _pausedForPopup = true;
+      await _controller?.evaluateJavascript(
+          source: "window.__jdj && window.__jdj.control('pause')");
+    }
+  }
+
+  /// Closes the popup, and plays the video on if it was paused for it.
+  @override
+  void onDictionaryDismiss() {
+    _highlight.value = null;
+    appModel.pageSentence = null;
+    super.clearDictionaryResult();
+    if (_popupOpen && mounted) {
+      setState(() => _popupOpen = false);
+    }
+    if (_pausedForPopup) {
+      _pausedForPopup = false;
+      _controller?.evaluateJavascript(
+          source: "window.__jdj && window.__jdj.control('play')");
+    }
+  }
+
+  /// Searches from the popup in full, with the phone's bars back meanwhile
+  /// when the page's player fills the screen.
+  @override
+  void onSearch(String searchTerm, {String? sentence = ''}) async {
+    if (_fullscreen) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     await appModel.openRecursiveDictionarySearch(
-      searchTerm: text,
+      searchTerm: searchTerm,
       killOnPop: false,
     );
-    if (wasPlaying && mounted) {
-      await _controller?.evaluateJavascript(
-          source: "window.__jdj && window.__jdj.control('play')");
+    if (_fullscreen && mounted) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
   }
 
@@ -957,6 +1076,13 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                 child: Stack(
                   children: [
                     _webView(),
+                    if (_popupOpen)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: onDictionaryDismiss,
+                        ),
+                      ),
                     Positioned(
                       left: 16,
                       right: 16,
@@ -1012,6 +1138,17 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                         ],
                       ),
                     ),
+                    if (_popupOpen)
+                      Positioned.fill(
+                        child: Padding(
+                          padding: MediaQuery.of(context).orientation ==
+                                  Orientation.landscape
+                              ? Spacing.of(context).insets.horizontal.extraBig *
+                                  5
+                              : Spacing.of(context).insets.onlyTop.big,
+                          child: buildDictionary(),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -1080,9 +1217,10 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   /// The subtitle line over the page's video, as the player draws its own;
   /// a tap looks a word up.
   Widget _subtitleLine() {
-    return ValueListenableBuilder<String>(
-      valueListenable: _line,
-      builder: (context, line, _) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_line, _highlight]),
+      builder: (context, _) {
+        String line = _line.value;
         if (line.isEmpty || _lineHidden) {
           return const SizedBox.shrink();
         }
@@ -1096,6 +1234,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
               options: _style,
               scale: _fullscreen ? 1 : 0.85,
               textKey: _lineKey,
+              highlight: _highlight.value,
             ),
           ),
         );
