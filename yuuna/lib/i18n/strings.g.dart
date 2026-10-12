@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1820 (910 per locale)
+/// Strings: 1834 (917 per locale)
 ///
-/// Built on 2026-10-11 at 10:31 UTC
+/// Built on 2026-10-12 at 01:27 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -439,6 +439,13 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get stream_open => TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Open a link';
 	String get stream_go => TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Open';
 	String get video_finder_forget => TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Remove';
+	String get page_subtitles => TranslationOverrides.string(_root.$meta, 'page_subtitles', {}) ?? 'Subtitles';
+	String get page_subtitles_info => TranslationOverrides.string(_root.$meta, 'page_subtitles_info', {}) ?? 'Shows subtitles over the page\'s own video, timed to it; tap a word to look it up. When the page\'s player goes full screen, it fills the screen here, so the subtitles stay on top.';
+	String get page_subtitles_timing => TranslationOverrides.string(_root.$meta, 'page_subtitles_timing', {}) ?? 'Timing';
+	String get page_subtitles_earlier => TranslationOverrides.string(_root.$meta, 'page_subtitles_earlier', {}) ?? 'Earlier';
+	String get page_subtitles_later => TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Later';
+	String get page_subtitles_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Remove subtitles';
+	String get page_subtitles_empty => TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'That file has no subtitles the app can read.';
 	String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 	String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 	String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -2022,6 +2029,13 @@ class _StringsVi extends _StringsEn {
 	@override String get stream_open => TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Mở liên kết';
 	@override String get stream_go => TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Mở';
 	@override String get video_finder_forget => TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Xoá';
+	@override String get page_subtitles => TranslationOverrides.string(_root.$meta, 'page_subtitles', {}) ?? 'Phụ đề';
+	@override String get page_subtitles_info => TranslationOverrides.string(_root.$meta, 'page_subtitles_info', {}) ?? 'Hiện phụ đề trên video của chính trang, khớp theo thời gian; chạm vào một từ để tra. Khi trình phát của trang mở toàn màn hình, nó sẽ lấp đầy màn hình ở đây để phụ đề vẫn hiện bên trên.';
+	@override String get page_subtitles_timing => TranslationOverrides.string(_root.$meta, 'page_subtitles_timing', {}) ?? 'Canh giờ';
+	@override String get page_subtitles_earlier => TranslationOverrides.string(_root.$meta, 'page_subtitles_earlier', {}) ?? 'Sớm hơn';
+	@override String get page_subtitles_later => TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Muộn hơn';
+	@override String get page_subtitles_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Gỡ phụ đề';
+	@override String get page_subtitles_empty => TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'Tệp đó không có phụ đề mà ứng dụng đọc được.';
 	@override String get player_option_subtitle_delay => TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 	@override String get player_option_audio_allowance => TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 	@override String get player_option_font_name => TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';
@@ -3584,6 +3598,13 @@ extension on _StringsEn {
 			case 'stream_open': return TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Open a link';
 			case 'stream_go': return TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Open';
 			case 'video_finder_forget': return TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Remove';
+			case 'page_subtitles': return TranslationOverrides.string(_root.$meta, 'page_subtitles', {}) ?? 'Subtitles';
+			case 'page_subtitles_info': return TranslationOverrides.string(_root.$meta, 'page_subtitles_info', {}) ?? 'Shows subtitles over the page\'s own video, timed to it; tap a word to look it up. When the page\'s player goes full screen, it fills the screen here, so the subtitles stay on top.';
+			case 'page_subtitles_timing': return TranslationOverrides.string(_root.$meta, 'page_subtitles_timing', {}) ?? 'Timing';
+			case 'page_subtitles_earlier': return TranslationOverrides.string(_root.$meta, 'page_subtitles_earlier', {}) ?? 'Earlier';
+			case 'page_subtitles_later': return TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Later';
+			case 'page_subtitles_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Remove subtitles';
+			case 'page_subtitles_empty': return TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'That file has no subtitles the app can read.';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Subtitle delay';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Audio allowance';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Subtitle font name';
@@ -4506,6 +4527,13 @@ extension on _StringsVi {
 			case 'stream_open': return TranslationOverrides.string(_root.$meta, 'stream_open', {}) ?? 'Mở liên kết';
 			case 'stream_go': return TranslationOverrides.string(_root.$meta, 'stream_go', {}) ?? 'Mở';
 			case 'video_finder_forget': return TranslationOverrides.string(_root.$meta, 'video_finder_forget', {}) ?? 'Xoá';
+			case 'page_subtitles': return TranslationOverrides.string(_root.$meta, 'page_subtitles', {}) ?? 'Phụ đề';
+			case 'page_subtitles_info': return TranslationOverrides.string(_root.$meta, 'page_subtitles_info', {}) ?? 'Hiện phụ đề trên video của chính trang, khớp theo thời gian; chạm vào một từ để tra. Khi trình phát của trang mở toàn màn hình, nó sẽ lấp đầy màn hình ở đây để phụ đề vẫn hiện bên trên.';
+			case 'page_subtitles_timing': return TranslationOverrides.string(_root.$meta, 'page_subtitles_timing', {}) ?? 'Canh giờ';
+			case 'page_subtitles_earlier': return TranslationOverrides.string(_root.$meta, 'page_subtitles_earlier', {}) ?? 'Sớm hơn';
+			case 'page_subtitles_later': return TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Muộn hơn';
+			case 'page_subtitles_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Gỡ phụ đề';
+			case 'page_subtitles_empty': return TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'Tệp đó không có phụ đề mà ứng dụng đọc được.';
 			case 'player_option_subtitle_delay': return TranslationOverrides.string(_root.$meta, 'player_option_subtitle_delay', {}) ?? 'Độ trễ phụ đề';
 			case 'player_option_audio_allowance': return TranslationOverrides.string(_root.$meta, 'player_option_audio_allowance', {}) ?? 'Thời gian đệm âm thanh';
 			case 'player_option_font_name': return TranslationOverrides.string(_root.$meta, 'player_option_font_name', {}) ?? 'Tên phông chữ phụ đề';

@@ -23,6 +23,7 @@ export 'src/utils/converters/enhancements_converter.dart';
 export 'src/utils/converters/media_item_converter.dart';
 
 export 'src/utils/player/page_media.dart';
+export 'src/utils/player/page_subtitles.dart';
 export 'src/utils/player/subtitle_guess.dart';
 export 'src/utils/player/subtitle_utils.dart';
 export 'src/utils/player/player_payload.dart';

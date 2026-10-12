@@ -1,0 +1,38 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:subtitle/subtitle.dart';
+import 'package:yuuna/utils.dart';
+
+void main() {
+  Subtitle cue(int start, int end, String text) => Subtitle(
+        start: Duration(milliseconds: start),
+        end: Duration(milliseconds: end),
+        data: text,
+        index: start,
+      );
+
+  test('the lines showing at a time, nudged by the timing', () {
+    PageSubtitles subtitles = PageSubtitles([
+      cue(5000, 7000, '壬氏様が'),
+      cue(1000, 3000, '猫猫、薬を作る。'),
+      // Lines can overlap, as a sign shown while someone speaks.
+      cue(6000, 8000, '後宮'),
+    ]);
+    expect(subtitles.at(const Duration(milliseconds: 500)), '');
+    expect(subtitles.at(const Duration(seconds: 2)), '猫猫、薬を作る。');
+    expect(subtitles.at(const Duration(milliseconds: 6500)), '壬氏様が\n後宮');
+    // Later by a second and a half: the first line shows from 2.5 s.
+    subtitles.offset = const Duration(milliseconds: 1500);
+    expect(subtitles.at(const Duration(seconds: 2)), '');
+    expect(subtitles.at(const Duration(milliseconds: 2600)), '猫猫、薬を作る。');
+  });
+
+  test("the page's video time is read from what the page reports", () {
+    PageVideoTime? time =
+        PageVideoTime.parse('{"time":12.345,"paused":false}');
+    expect(time?.position, const Duration(milliseconds: 12345));
+    expect(time?.paused, isFalse);
+    expect(PageVideoTime.parse(null), isNull);
+    expect(PageVideoTime.parse('null'), isNull);
+    expect(PageVideoTime.parse('{"oops"'), isNull);
+  });
+}

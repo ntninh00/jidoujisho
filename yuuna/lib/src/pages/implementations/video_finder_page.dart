@@ -1,8 +1,13 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
+import 'dart:ui' show FontFeature;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -412,6 +417,20 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   double _progress = 0;
   Timer? _scan;
 
+  /// Whether the page's player fills the screen, with the app's bars away.
+  bool _fullscreen = false;
+
+  /// Subtitles shown over the page's video, if any.
+  PageSubtitles? _subtitles;
+
+  /// The subtitle line showing now.
+  final ValueNotifier<String> _line = ValueNotifier('');
+
+  /// Follows the page's video for [_subtitles].
+  Timer? _follow;
+
+  final GlobalKey _lineKey = GlobalKey();
+
   @override
   void initState() {
     super.initState();
@@ -421,8 +440,13 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   @override
   void dispose() {
     _scan?.cancel();
+    _follow?.cancel();
     _address.dispose();
     _finder.dispose();
+    _line.dispose();
+    if (_fullscreen) {
+      _restoreScreen();
+    }
     super.dispose();
   }
 
@@ -468,72 +492,450 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            _bar(),
-            if (_progress < 1)
-              LinearProgressIndicator(value: _progress, minHeight: 2)
-            else
-              const SizedBox(height: 2),
-            Expanded(
-              child: Stack(
-                children: [
-                  InAppWebView(
-                    initialSettings: videoPageSettings(),
-                    initialUrlRequest:
-                        URLRequest(url: WebUri(_address.text.trim())),
-                    onWebViewCreated: (controller) => _controller = controller,
-                    shouldInterceptRequest: (controller, request) =>
-                        noteVideoPageRequest(_finder, request),
-                    shouldOverrideUrlLoading: (controller, action) =>
-                        allowVideoPageNavigation(action),
-                    onCreateWindow: openVideoPageWindow,
-                    onDownloadStartRequest: (controller, request) {
-                      Fluttertoast.showToast(msg: t.video_finder_no_downloads);
-                    },
-                    onLoadStart: (controller, url) {
-                      if (url != null &&
-                          url.removeFragment().toString() !=
-                              _page?.removeFragment().toString()) {
-                        _finder.clear();
-                      }
-                      _page = url;
-                      if (url != null) {
-                        _address.text = url.toString();
-                      }
-                    },
-                    onProgressChanged: (controller, progress) =>
-                        setState(() => _progress = progress / 100),
-                    onLoadStop: (controller, url) async {
-                      _page = url;
-                      _title = await controller.getTitle() ?? '';
-                      if (url != null) {
-                        appModel.rememberVideoPage(
-                            url: url.toString(), title: _title);
-                      }
-                      _scanPage();
-                    },
+  /// The page's player asked to fill the screen, or stopped: the app's bars
+  /// go, and the phone turns on its side.
+  Future<void> _setFullscreen(bool on) async {
+    if (_fullscreen == on || !mounted) {
+      return;
+    }
+    setState(() => _fullscreen = on);
+    if (on) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      await _restoreScreen();
+    }
+  }
+
+  Future<void> _restoreScreen() async {
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  /// Back leaves the page's full screen first.
+  Future<bool> _onWillPop() async {
+    if (!_fullscreen) {
+      return true;
+    }
+    await _controller?.evaluateJavascript(
+        source: 'window.__jdj && window.__jdj.exit()');
+    await _setFullscreen(false);
+    return false;
+  }
+
+  /// Shows the subtitles in [file] over the page's video.
+  Future<void> _loadSubtitles(File file) async {
+    SubtitleItem item = await SubtitleUtils.subtitlesFromFile(
+      file: file,
+      type: SubtitleItemType.externalSubtitle,
+    );
+    await item.controller.initial();
+    if (!mounted) {
+      return;
+    }
+    if (item.controller.subtitles.isEmpty) {
+      Fluttertoast.showToast(msg: t.page_subtitles_empty);
+      return;
+    }
+    _subtitles = PageSubtitles(item.controller.subtitles);
+    _follow?.cancel();
+    _follow = Timer.periodic(
+        const Duration(milliseconds: 200), (_) => _followVideo());
+    setState(() {});
+  }
+
+  void _removeSubtitles() {
+    _follow?.cancel();
+    _follow = null;
+    _subtitles = null;
+    _line.value = '';
+    setState(() {});
+  }
+
+  Future<PageVideoTime?> _videoTime() async {
+    try {
+      return PageVideoTime.parse(await _controller?.evaluateJavascript(
+          source: 'window.__jdj ? window.__jdj.now() : null'));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _followVideo() async {
+    PageSubtitles? subtitles = _subtitles;
+    if (subtitles == null) {
+      return;
+    }
+    PageVideoTime? time = await _videoTime();
+    if (mounted && identical(subtitles, _subtitles)) {
+      _line.value = time == null ? '' : subtitles.at(time.position);
+    }
+  }
+
+  /// Looks up the line from the character tapped, with the video paused
+  /// meanwhile.
+  Future<void> _lookUp(TapUpDetails details) async {
+    String line = _line.value;
+    RenderObject? paragraph = _lineKey.currentContext?.findRenderObject();
+    if (line.isEmpty || paragraph is! RenderParagraph) {
+      return;
+    }
+    int index = paragraph
+        .getPositionForOffset(details.localPosition)
+        .offset
+        .clamp(0, line.length);
+    String text = line.substring(index).replaceAll('\n', '');
+    if (text.trim().isEmpty) {
+      return;
+    }
+    PageVideoTime? time = await _videoTime();
+    bool wasPlaying = time != null && !time.paused;
+    await _controller?.evaluateJavascript(
+        source: "window.__jdj && window.__jdj.control('pause')");
+    await appModel.openRecursiveDictionarySearch(
+      searchTerm: text,
+      killOnPop: false,
+    );
+    if (wasPlaying && mounted) {
+      await _controller?.evaluateJavascript(
+          source: "window.__jdj && window.__jdj.control('play')");
+    }
+  }
+
+  /// A row of [_subtitleMenu].
+  Widget _menuRow(IconData icon, String label, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: textTheme.bodyMedium!
+                        .copyWith(fontWeight: FontWeight.w500),
                   ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 24,
-                    child: Center(
-                      child: VideoFoundButton(
-                        finder: _finder,
-                        onPressed: _play,
-                      ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _findSubtitles() async {
+    File? file = await showTtuSheet<File>(
+      context: context,
+      builder: (_) => SubtitleSearchSheet(
+        name: _title.isNotEmpty ? _title : _page?.pathSegments.lastOrNull ?? '',
+      ),
+    );
+    if (file != null) {
+      await _loadSubtitles(file);
+    }
+  }
+
+  Future<void> _pickSubtitles() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    String? path = result?.files.singleOrNull?.path;
+    if (path != null) {
+      await _loadSubtitles(File(path));
+    }
+  }
+
+  /// Finding, loading, timing and removing the subtitles shown.
+  Future<void> _subtitleMenu() async {
+    await showTtuSheet<void>(
+      context: context,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheet) {
+          PageSubtitles? subtitles = _subtitles;
+          void nudge(int milliseconds) {
+            subtitles!.offset += Duration(milliseconds: milliseconds);
+            setSheet(() {});
+            _followVideo();
+          }
+
+          double seconds = (subtitles?.offset.inMilliseconds ?? 0) / 1000;
+          String timing =
+              '${seconds > 0 ? '+' : ''}${seconds.toStringAsFixed(1)} s';
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const TtuSheetHandle(),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 8, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            t.page_subtitles,
+                            style: textTheme.titleLarge!
+                                .copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        JidoujishoInfoButton(message: t.page_subtitles_info),
+                      ],
                     ),
                   ),
+                  _menuRow(Ui.manage_search, t.player_option_find_subtitles,
+                      () {
+                    Navigator.pop(sheetContext);
+                    _findSubtitles();
+                  }),
+                  _menuRow(Ui.upload_file, t.player_option_load_subtitles, () {
+                    Navigator.pop(sheetContext);
+                    _pickSubtitles();
+                  }),
+                  if (subtitles != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 4, 16, 4),
+                      child: Row(
+                        children: [
+                          Icon(Ui.timer,
+                              size: 20, color: theme.colorScheme.primary),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              t.page_subtitles_timing,
+                              style: textTheme.bodyMedium!
+                                  .copyWith(fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: t.page_subtitles_earlier,
+                            icon: const Icon(Ui.remove, size: 18),
+                            onPressed: () => nudge(-500),
+                          ),
+                          SizedBox(
+                            width: 64,
+                            child: Text(
+                              timing,
+                              textAlign: TextAlign.center,
+                              style: textTheme.bodyMedium!.copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: t.page_subtitles_later,
+                            icon: const Icon(Ui.add, size: 18),
+                            onPressed: () => nudge(500),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _menuRow(Ui.subtitles_off_outlined, t.page_subtitles_remove,
+                        () {
+                      Navigator.pop(sheetContext);
+                      _removeSubtitles();
+                    }),
+                  ],
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        backgroundColor: _fullscreen ? Colors.black : null,
+        body: SafeArea(
+          top: !_fullscreen,
+          bottom: !_fullscreen,
+          left: !_fullscreen,
+          right: !_fullscreen,
+          child: Column(
+            children: [
+              if (!_fullscreen) ...[
+                _bar(),
+                if (_progress < 1)
+                  LinearProgressIndicator(value: _progress, minHeight: 2)
+                else
+                  const SizedBox(height: 2),
+              ],
+              Expanded(
+                child: Stack(
+                  children: [
+                    _webView(),
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: _fullscreen ? 20 : 84,
+                      child: Center(child: _subtitleLine()),
+                    ),
+                    if (!_fullscreen)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 24,
+                        child: Center(
+                          child: VideoFoundButton(
+                            finder: _finder,
+                            onPressed: _play,
+                          ),
+                        ),
+                      )
+                    else
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: _subtitleButton(faint: true),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _webView() {
+    return InAppWebView(
+      initialSettings: videoPageSettings(),
+      initialUserScripts: UnmodifiableListView([
+        UserScript(
+          source: pageSubtitleScript,
+          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          forMainFrameOnly: false,
+        ),
+      ]),
+      initialUrlRequest: URLRequest(url: WebUri(_address.text.trim())),
+      onWebViewCreated: (controller) {
+        _controller = controller;
+        controller.addJavaScriptHandler(
+          handlerName: 'jdjFullscreen',
+          callback: (arguments) =>
+              _setFullscreen(arguments.isNotEmpty && arguments.first == true),
+        );
+      },
+      shouldInterceptRequest: (controller, request) =>
+          noteVideoPageRequest(_finder, request),
+      shouldOverrideUrlLoading: (controller, action) =>
+          allowVideoPageNavigation(action),
+      onCreateWindow: openVideoPageWindow,
+      onDownloadStartRequest: (controller, request) {
+        Fluttertoast.showToast(msg: t.video_finder_no_downloads);
+      },
+      onLoadStart: (controller, url) {
+        if (url != null &&
+            url.removeFragment().toString() !=
+                _page?.removeFragment().toString()) {
+          _finder.clear();
+          _setFullscreen(false);
+        }
+        _page = url;
+        if (url != null) {
+          _address.text = url.toString();
+        }
+      },
+      onProgressChanged: (controller, progress) =>
+          setState(() => _progress = progress / 100),
+      onLoadStop: (controller, url) async {
+        _page = url;
+        _title = await controller.getTitle() ?? '';
+        if (url != null) {
+          appModel.rememberVideoPage(url: url.toString(), title: _title);
+        }
+        _scanPage();
+      },
+    );
+  }
+
+  /// The subtitle line over the page's video; a tap looks a word up.
+  Widget _subtitleLine() {
+    return ValueListenableBuilder<String>(
+      valueListenable: _line,
+      builder: (context, line, _) {
+        if (line.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: _lookUp,
+            child: Text(
+              line,
+              key: _lineKey,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: _fullscreen ? 24 : 20,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+                shadows: const [
+                  Shadow(blurRadius: 3),
+                  Shadow(offset: Offset(1, 1), blurRadius: 2),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Opens [_subtitleMenu]; [faint] over a full screen video.
+  Widget _subtitleButton({bool faint = false}) {
+    bool shown = _subtitles != null;
+    Widget button = IconButton(
+      tooltip: t.page_subtitles,
+      icon: Icon(
+        Ui.closed_caption,
+        color: shown
+            ? theme.colorScheme.primary
+            : faint
+                ? Colors.white
+                : null,
+      ),
+      onPressed: _subtitleMenu,
+    );
+    if (!faint) {
+      return button;
+    }
+    return Opacity(
+      opacity: 0.6,
+      child: Material(
+        color: Colors.black.withOpacity(0.4),
+        shape: const CircleBorder(),
+        child: button,
       ),
     );
   }
@@ -571,7 +973,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
               ),
             ),
           ),
-          JidoujishoInfoButton(message: t.video_finder_info),
+          _subtitleButton(),
           IconButton(
             tooltip: t.video_finder_reload,
             icon: const Icon(Ui.replay),
