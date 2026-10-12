@@ -67,6 +67,8 @@ void main() {
       title: 'Episode 3',
       name: '[Group] Show - 03.srt',
       path: '/data/pageSubtitles/1a2b.srt',
+      show: {'id': 7, 'name': 'Show'},
+      episode: 3,
     ).withOffset(const Duration(milliseconds: -1500));
     RememberedSubtitles read =
         RememberedSubtitles.fromJson(Map.of(kept.toJson()));
@@ -75,6 +77,8 @@ void main() {
     expect(read.name, '[Group] Show - 03.srt');
     expect(read.path, '/data/pageSubtitles/1a2b.srt');
     expect(read.offset, const Duration(milliseconds: -1500));
+    expect(read.show, {'id': 7, 'name': 'Show'});
+    expect(read.episode, 3);
 
     // Kept before timing could be nudged.
     expect(

@@ -4784,11 +4784,14 @@ class AppModel with ChangeNotifier {
   }
 
   /// Keeps a copy of [file] to show over the video of [page], titled
-  /// [title], when it opens again. The newest 30 pages are kept.
+  /// [title], when it opens again, with the Jimaku [show] and [episode]
+  /// it is of when known. The newest 30 pages are kept.
   Future<RememberedSubtitles> rememberSubtitles({
     required String page,
     required String title,
     required File file,
+    Map<String, dynamic>? show,
+    int? episode,
   }) async {
     Directory directory =
         Directory(path.join(databaseDirectory.path, 'pageSubtitles'));
@@ -4813,6 +4816,8 @@ class AppModel with ChangeNotifier {
       title: title,
       name: path.basename(file.path),
       path: kept,
+      show: show,
+      episode: episode,
     );
     entries.insert(0, entry);
     for (RememberedSubtitles dropped in entries.skip(30)) {

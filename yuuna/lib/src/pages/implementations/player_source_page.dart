@@ -2738,12 +2738,12 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     String name = item.title.trim().isNotEmpty
         ? item.title
         : path.basename(Uri.decodeFull(item.mediaIdentifier));
-    File? file = await showTtuSheet<File>(
+    SubtitlePick? pick = await showTtuSheet<SubtitlePick>(
       context: context,
       builder: (_) => SubtitleSearchSheet(name: name),
     );
-    if (file != null && mounted) {
-      await useSubtitleFile(file, name: 'Jimaku');
+    if (pick != null && mounted) {
+      await useSubtitleFile(pick.file, name: 'Jimaku');
     }
   }
 

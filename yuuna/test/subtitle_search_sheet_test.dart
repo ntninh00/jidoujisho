@@ -13,6 +13,16 @@ class _Server extends DictionaryServer {
 
   @override
   Future<List<SubtitleShow>> searchSubtitles(String query) async => [];
+
+  @override
+  Future<List<SubtitleFile>> subtitleFiles(SubtitleShow show) async => [
+        for (int episode in [1, 2, 3])
+          SubtitleFile.fromJson({
+            'name': 'Show - 0$episode.srt',
+            'size': 20000,
+            'episode': episode,
+          }),
+      ];
 }
 
 class _AppModel extends AppModel {
@@ -38,7 +48,7 @@ void main() {
           builder: (context) => Scaffold(
             body: Center(
               child: TextButton(
-                onPressed: () => showTtuSheet<File>(
+                onPressed: () => showTtuSheet<SubtitlePick>(
                   context: context,
                   builder: (_) =>
                       const SubtitleSearchSheet(name: 'Show 05.mkv'),
@@ -65,5 +75,35 @@ void main() {
     tester.view.viewInsets = const FakeViewPadding(bottom: 600);
     await tester.pumpAndSettle();
     expect(focused(), isTrue);
+  });
+
+  testWidgets('opened on a show, it lists its files at the episode given',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [appProvider.overrideWith((ref) => _AppModel())],
+      child: MaterialApp(
+        builder: (context, child) => Spacing(
+          dataBuilder: (context) => SpacingData.generate(10),
+          child: child!,
+        ),
+        home: Scaffold(
+          body: SubtitleSearchSheet(
+            name: '',
+            fillQuery: false,
+            show: SubtitleShow.fromJson(
+                {'id': 7, 'name': 'Show', 'japaneseName': 'ショー'}),
+            episode: 2,
+          ),
+        ),
+      ),
+    ));
+
+    /// Straight to the show's files: no search, so no keyboard, first.
+    expect(find.byType(TextField), findsNothing);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('ショー'), findsOneWidget);
+    expect(find.text('Show - 02.srt'), findsOneWidget);
+    expect(find.text('Show - 01.srt'), findsNothing);
   });
 }

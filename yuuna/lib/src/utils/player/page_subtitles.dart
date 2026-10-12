@@ -252,6 +252,8 @@ class RememberedSubtitles {
     required this.name,
     required this.path,
     this.offset = Duration.zero,
+    this.show,
+    this.episode,
   });
 
   /// Reads what [toJson] wrote.
@@ -262,6 +264,10 @@ class RememberedSubtitles {
         name: json['name'] as String? ?? '',
         path: json['path'] as String,
         offset: Duration(milliseconds: (json['offset'] as num?)?.toInt() ?? 0),
+        show: json['show'] is Map
+            ? Map<String, dynamic>.from(json['show'] as Map)
+            : null,
+        episode: (json['episode'] as num?)?.toInt(),
       );
 
   /// The page's address, as [keyOf] gives it.
@@ -279,6 +285,12 @@ class RememberedSubtitles {
   /// Their timing, as [PageSubtitles.offset].
   final Duration offset;
 
+  /// The Jimaku show they are of, as its JSON, when found there.
+  final Map<String, dynamic>? show;
+
+  /// The episode they are for, when their name says.
+  final int? episode;
+
   /// To keep as JSON.
   Map<String, dynamic> toJson() => {
         'page': page,
@@ -286,6 +298,8 @@ class RememberedSubtitles {
         'name': name,
         'path': path,
         'offset': offset.inMilliseconds,
+        if (show != null) 'show': show,
+        if (episode != null) 'episode': episode,
       };
 
   /// These subtitles timed by [offset].
@@ -295,6 +309,8 @@ class RememberedSubtitles {
         name: name,
         path: path,
         offset: offset,
+        show: show,
+        episode: episode,
       );
 
   /// The address subtitles for [page] are remembered by: the same page

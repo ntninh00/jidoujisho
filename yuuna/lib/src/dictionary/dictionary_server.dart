@@ -729,6 +729,14 @@ class SubtitleShow {
 
   /// Its English name, when known.
   final String? englishName;
+
+  /// To keep as JSON, read back with [SubtitleShow.fromJson].
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (japaneseName != null) 'japaneseName': japaneseName,
+        if (englishName != null) 'englishName': englishName,
+      };
 }
 
 /// One subtitle file of a [SubtitleShow].

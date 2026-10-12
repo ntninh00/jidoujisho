@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui' show FontFeature;
 
+import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -13,6 +13,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:spaces/spaces.dart';
+import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/media.dart';
 import 'package:yuuna/models.dart';
 import 'package:yuuna/pages.dart';
@@ -469,6 +470,12 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
   /// The page the subtitles shown are remembered for.
   String? _subtitlesPage;
 
+  /// The Jimaku show the subtitles shown are of, for the next episode's.
+  SubtitleShow? _show;
+
+  /// The episode the subtitles shown are for, when their name says.
+  int? _episode;
+
   /// Whether the quick buttons beside the subtitle button show.
   bool _quick = false;
 
@@ -627,18 +634,60 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     return true;
   }
 
-  /// Shows the subtitles in [file], and keeps them for this page.
-  Future<void> _useSubtitles(File file) async {
+  /// The address the page open now keeps its subtitles by.
+  String get _pageKey =>
+      RememberedSubtitles.keyOf(_page ?? Uri.parse(widget.url));
+
+  /// Shows the subtitles in [file], of the Jimaku [show] and [episode] when
+  /// found there, and keeps them for this page.
+  Future<void> _useSubtitles(File file,
+      {SubtitleShow? show, int? episode}) async {
     if (!await _loadSubtitles(file)) {
       return;
     }
-    String page = RememberedSubtitles.keyOf(_page ?? Uri.parse(widget.url));
-    _subtitlesPage = page;
+    String page = _pageKey;
+    setState(() {
+      _subtitlesPage = page;
+      _show = show;
+      _episode = episode;
+    });
     try {
-      await appModel.rememberSubtitles(page: page, title: _title, file: file);
+      await appModel.rememberSubtitles(
+        page: page,
+        title: _title,
+        file: file,
+        show: show?.toJson(),
+        episode: episode,
+      );
     } catch (error) {
       debugPrint('Subtitles not kept: $error');
     }
+  }
+
+  /// The episode the page open now is for: as its title or address says,
+  /// or else the one after the subtitles shown.
+  int? _episodeHere() {
+    for (String name in [
+      _title,
+      _page?.pathSegments.lastWhereOrNull((part) => part.isNotEmpty) ?? '',
+    ]) {
+      int? episode = SubtitleGuess.of(name).episode;
+      if (episode != null) {
+        return episode;
+      }
+    }
+    int? episode = _episode;
+    return episode == null ? null : episode + 1;
+  }
+
+  /// The episode to offer subtitles of from the same show, when the page
+  /// open now is another than the one the subtitles shown are for.
+  int? get _nextEpisode {
+    String? page = _subtitlesPage;
+    if (_show == null || page == null || page == _pageKey) {
+      return null;
+    }
+    return _episodeHere();
   }
 
   /// Shows the subtitles kept for [url] when it opens, in place of others.
@@ -656,6 +705,13 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
       return;
     }
     _subtitlesPage = page;
+    Map<String, dynamic>? show = kept.show;
+    try {
+      _show = show == null ? null : SubtitleShow.fromJson(show);
+    } catch (_) {
+      _show = null;
+    }
+    _episode = kept.episode;
     if (await _loadSubtitles(File(kept.path), offset: kept.offset)) {
       Fluttertoast.showToast(msg: t.page_subtitles_restored);
     }
@@ -667,6 +723,8 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     }
     String? page = _subtitlesPage;
     _subtitlesPage = null;
+    _show = null;
+    _episode = null;
     if (page != null) {
       appModel.forgetSubtitles(page);
     }
@@ -980,16 +1038,25 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     );
   }
 
+  /// Finds subtitles on Jimaku: those of the show shown already, at this
+  /// page's episode, when there is one.
   Future<void> _findSubtitles() async {
-    File? file = await showTtuSheet<File>(
+    bool samePage = _subtitlesPage == _pageKey;
+    SubtitlePick? pick = await showTtuSheet<SubtitlePick>(
       context: context,
       builder: (_) => SubtitleSearchSheet(
         name: _title.isNotEmpty ? _title : _page?.pathSegments.lastOrNull ?? '',
         fillQuery: false,
+        show: _show,
+        episode: _show == null
+            ? null
+            : samePage
+                ? _episode
+                : _episodeHere(),
       ),
     );
-    if (file != null) {
-      await _useSubtitles(file);
+    if (pick != null) {
+      await _useSubtitles(pick.file, show: pick.show, episode: pick.episode);
     }
   }
 
@@ -1216,6 +1283,8 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
                                 ? _quickBar()
                                 : const SizedBox.shrink(),
                           ),
+                          if (!_quick && !_popupOpen && _nextEpisode != null)
+                            _nextEpisodeButton(_nextEpisode!),
                           if (_fullscreen) ...[
                             const SizedBox(width: 8),
                             _subtitleButton(faint: true),
@@ -1288,6 +1357,9 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
       onLoadStop: (controller, url) async {
         _page = url;
         _title = await controller.getTitle() ?? '';
+        if (mounted) {
+          setState(() {});
+        }
         if (url != null) {
           appModel.rememberVideoPage(url: url.toString(), title: _title);
         }
@@ -1368,6 +1440,39 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
           ),
         );
       },
+    );
+  }
+
+  /// Offers subtitles of the show shown on the page before, at [episode],
+  /// when another page opens, as the next episode's.
+  Widget _nextEpisodeButton(int episode) {
+    Color accent = theme.colorScheme.primary;
+    return Material(
+      color: accent,
+      shape: const StadiumBorder(),
+      elevation: 2,
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: _findSubtitles,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(10, 7, 14, 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Ui.closed_caption,
+                  size: 18, color: theme.colorScheme.onPrimary),
+              const SizedBox(width: 6),
+              Text(
+                t.subtitle_episode(n: episode),
+                style: textTheme.labelLarge!.copyWith(
+                  color: theme.colorScheme.onPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

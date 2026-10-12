@@ -5,13 +5,35 @@ import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
+/// A subtitle file picked on Jimaku: where it was saved, and what it is.
+class SubtitlePick {
+  /// [file], saved from [show], for [episode] when its name says.
+  const SubtitlePick({
+    required this.file,
+    required this.show,
+    required this.episode,
+  });
+
+  /// The file, saved on the phone.
+  final File file;
+
+  /// The show it is of.
+  final SubtitleShow show;
+
+  /// The episode it is for, when its name says.
+  final int? episode;
+}
+
 /// Finds Japanese subtitles for a video on Jimaku, through the dictionary
-/// server, and closes with the file picked, saved on the phone.
+/// server, and closes with the [SubtitlePick] made.
 class SubtitleSearchSheet extends BasePage {
-  /// Search for [name]'s subtitles, the name of the video's file or page.
+  /// Search for [name]'s subtitles, the name of the video's file or page,
+  /// or open on [show]'s files at [episode].
   const SubtitleSearchSheet({
     required this.name,
     this.fillQuery = true,
+    this.show,
+    this.episode,
     super.key,
   });
 
@@ -24,6 +46,13 @@ class SubtitleSearchSheet extends BasePage {
   /// type in.
   final bool fillQuery;
 
+  /// The show to open on, as the one of the subtitles last picked, for the
+  /// next episode; back goes to the search.
+  final SubtitleShow? show;
+
+  /// The episode looked for, in place of the one guessed from [name].
+  final int? episode;
+
   @override
   BasePageState<SubtitleSearchSheet> createState() =>
       _SubtitleSearchSheetState();
@@ -35,9 +64,15 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
       TextEditingController(text: widget.fillQuery ? _guess.show : '');
 
   List<SubtitleShow>? _shows;
-  SubtitleShow? _show;
+
+  /// The show whose files are listed; opened on at once when given, so the
+  /// search, and the keyboard, don't show first.
+  late SubtitleShow? _show = widget.show;
   List<SubtitleFile>? _files;
-  late int? _episode = _guess.episode;
+
+  /// The episode looked for at first, its chip scrolled to.
+  late final int? _lookedFor = widget.episode ?? _guess.episode;
+  late int? _episode = _lookedFor;
   bool _allFiles = false;
 
   /// The chip of the episode looked for, scrolled to when the files come.
@@ -49,7 +84,10 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
   @override
   void initState() {
     super.initState();
-    if (_query.text.isNotEmpty) {
+    SubtitleShow? show = widget.show;
+    if (show != null && _server != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _open(show));
+    } else if (_query.text.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _search());
     }
   }
@@ -103,6 +141,9 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
 
   Future<void> _open(SubtitleShow show) async {
     DictionaryServer server = _server!;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _show = show;
       _files = null;
@@ -126,13 +167,17 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
       _error = null;
     });
     try {
+      SubtitleShow show = _show!;
       File saved = await server.subtitleFile(
-        _show!,
+        show,
         file,
         Directory('${appModel.temporaryDirectory.path}/subtitles'),
       );
       if (mounted) {
-        Navigator.pop(context, saved);
+        Navigator.pop(
+          context,
+          SubtitlePick(file: saved, show: show, episode: file.episode),
+        );
       }
     } catch (error) {
       if (mounted) {
@@ -392,7 +437,7 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
           ),
           for (int episode in episodes)
             KeyedSubtree(
-              key: episode == _guess.episode ? _episodeChip : null,
+              key: episode == _lookedFor ? _episodeChip : null,
               child: chip(
                 t.subtitle_episode(n: episode),
                 selected: !_allFiles && _episode == episode,
