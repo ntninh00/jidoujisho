@@ -11,12 +11,18 @@ class SubtitleSearchSheet extends BasePage {
   /// Search for [name]'s subtitles, the name of the video's file or page.
   const SubtitleSearchSheet({
     required this.name,
+    this.fillQuery = true,
     super.key,
   });
 
   /// The video's file or page name, which the show and episode are
   /// guessed from.
   final String name;
+
+  /// Whether the search starts with the show guessed from [name]. A page's
+  /// title is mostly the site's, so for a page it starts empty, ready to
+  /// type in.
+  final bool fillQuery;
 
   @override
   BasePageState<SubtitleSearchSheet> createState() =>
@@ -26,7 +32,7 @@ class SubtitleSearchSheet extends BasePage {
 class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
   late final SubtitleGuess _guess = SubtitleGuess.of(widget.name);
   late final TextEditingController _query =
-      TextEditingController(text: _guess.show);
+      TextEditingController(text: widget.fillQuery ? _guess.show : '');
 
   List<SubtitleShow>? _shows;
   SubtitleShow? _show;
@@ -43,7 +49,7 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
   @override
   void initState() {
     super.initState();
-    if (_guess.show.isNotEmpty) {
+    if (_query.text.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _search());
     }
   }
@@ -256,6 +262,7 @@ class _SubtitleSearchSheetState extends BasePageState<SubtitleSearchSheet> {
     return TextField(
       key: _searchKey,
       controller: _query,
+      autofocus: _query.text.isEmpty,
       textInputAction: TextInputAction.search,
       onSubmitted: (_) => _search(),
       decoration: InputDecoration(

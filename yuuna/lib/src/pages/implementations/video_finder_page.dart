@@ -431,6 +431,12 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
 
   final GlobalKey _lineKey = GlobalKey();
 
+  /// How subtitles look, as in the player.
+  late SubtitleOptions _style = appModelNoUpdate.subtitleOptions;
+
+  /// How high the line sits, as a share of the screen.
+  late double _lineHeight = appModelNoUpdate.pageSubtitleHeight;
+
   @override
   void initState() {
     super.initState();
@@ -576,7 +582,14 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     }
     PageVideoTime? time = await _videoTime();
     if (mounted && identical(subtitles, _subtitles)) {
-      _line.value = time == null ? '' : subtitles.at(time.position);
+      String line = time == null ? '' : subtitles.at(time.position);
+      String filter = _style.regexFilter;
+      if (filter.isNotEmpty && line.isNotEmpty) {
+        try {
+          line = line.replaceAll(RegExp(filter), '').trim();
+        } catch (_) {}
+      }
+      _line.value = line;
     }
   }
 
@@ -646,6 +659,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
       context: context,
       builder: (_) => SubtitleSearchSheet(
         name: _title.isNotEmpty ? _title : _page?.pathSegments.lastOrNull ?? '',
+        fillQuery: false,
       ),
     );
     if (file != null) {
@@ -708,6 +722,10 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                     Navigator.pop(sheetContext);
                     _pickSubtitles();
                   }),
+                  _menuRow(Ui.text_fields, t.subtitle_appearance, () {
+                    Navigator.pop(sheetContext);
+                    _changeAppearance();
+                  }),
                   if (subtitles != null) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 4, 16, 4),
@@ -764,6 +782,22 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     );
   }
 
+  Future<void> _changeAppearance() async {
+    await showTtuSheet<void>(
+      context: context,
+      builder: (_) => SubtitleAppearanceSheet(
+        showHeight: true,
+        onChanged: () {
+          setState(() {
+            _style = appModel.subtitleOptions;
+            _lineHeight = appModel.pageSubtitleHeight;
+          });
+          _followVideo();
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -791,7 +825,9 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                     Positioned(
                       left: 16,
                       right: 16,
-                      bottom: _fullscreen ? 20 : 84,
+                      bottom: _fullscreen
+                          ? 8 + MediaQuery.of(context).size.height * _lineHeight
+                          : 84,
                       child: Center(child: _subtitleLine()),
                     ),
                     if (!_fullscreen)
@@ -874,7 +910,8 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     );
   }
 
-  /// The subtitle line over the page's video; a tap looks a word up.
+  /// The subtitle line over the page's video, as the player draws its own;
+  /// a tap looks a word up.
   Widget _subtitleLine() {
     return ValueListenableBuilder<String>(
       valueListenable: _line,
@@ -882,29 +919,16 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
         if (line.isEmpty) {
           return const SizedBox.shrink();
         }
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        return SubtitleBox(
+          options: _style,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTapUp: _lookUp,
-            child: Text(
-              line,
-              key: _lineKey,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: _fullscreen ? 24 : 20,
-                fontWeight: FontWeight.w600,
-                height: 1.35,
-                shadows: const [
-                  Shadow(blurRadius: 3),
-                  Shadow(offset: Offset(1, 1), blurRadius: 2),
-                ],
-              ),
+            child: SubtitleText(
+              text: line,
+              options: _style,
+              scale: _fullscreen ? 1 : 0.85,
+              textKey: _lineKey,
             ),
           ),
         );

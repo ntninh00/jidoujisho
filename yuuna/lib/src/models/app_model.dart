@@ -4727,6 +4727,16 @@ class AppModel with ChangeNotifier {
     );
   }
 
+  /// How high subtitles over a page's video sit, as a share of the screen
+  /// from its bottom.
+  double get pageSubtitleHeight =>
+      _preferences.get('page_subtitle_height', defaultValue: 0.05);
+
+  /// Sets [pageSubtitleHeight].
+  Future<void> setPageSubtitleHeight(double height) async {
+    await _preferences.put('page_subtitle_height', height);
+  }
+
   /// Set the subtitle options used in the player.
   void setSubtitleOptions(SubtitleOptions options) {
     _preferences.put('audio_allowance', options.audioAllowance);
