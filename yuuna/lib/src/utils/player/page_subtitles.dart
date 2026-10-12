@@ -242,6 +242,66 @@ const String pageSubtitleScript = '''
 })();
 ''';
 
+/// Subtitles shown over a page's video, kept to show again when the page
+/// opens: a copy of their file, and their timing.
+class RememberedSubtitles {
+  /// Subtitles kept at [path] for [page].
+  RememberedSubtitles({
+    required this.page,
+    required this.title,
+    required this.name,
+    required this.path,
+    this.offset = Duration.zero,
+  });
+
+  /// Reads what [toJson] wrote.
+  factory RememberedSubtitles.fromJson(Map<String, dynamic> json) =>
+      RememberedSubtitles(
+        page: json['page'] as String,
+        title: json['title'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        path: json['path'] as String,
+        offset: Duration(milliseconds: (json['offset'] as num?)?.toInt() ?? 0),
+      );
+
+  /// The page's address, as [keyOf] gives it.
+  final String page;
+
+  /// The page's title when they were loaded.
+  final String title;
+
+  /// The subtitle file's own name.
+  final String name;
+
+  /// Where the copy is kept.
+  final String path;
+
+  /// Their timing, as [PageSubtitles.offset].
+  final Duration offset;
+
+  /// To keep as JSON.
+  Map<String, dynamic> toJson() => {
+        'page': page,
+        'title': title,
+        'name': name,
+        'path': path,
+        'offset': offset.inMilliseconds,
+      };
+
+  /// These subtitles timed by [offset].
+  RememberedSubtitles withOffset(Duration offset) => RememberedSubtitles(
+        page: page,
+        title: title,
+        name: name,
+        path: path,
+        offset: offset,
+      );
+
+  /// The address subtitles for [page] are remembered by: the same page
+  /// scrolled to another part is the same.
+  static String keyOf(Uri page) => page.removeFragment().toString();
+}
+
 /// The page's video, as [pageSubtitleScript] reports it.
 class PageVideoTime {
   PageVideoTime._(this.position, this.paused);

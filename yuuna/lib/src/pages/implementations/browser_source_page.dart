@@ -98,6 +98,8 @@ class _BrowserSourcePageState extends BaseSourcePageState<BrowserSourcePage> {
       subtitles: _videos.subtitles,
       page: page,
       title: _titleNotifier.value ?? media.name,
+      remembered:
+          appModel.rememberedSubtitlesOf(RememberedSubtitles.keyOf(page)),
     );
   }
 

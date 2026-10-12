@@ -179,7 +179,7 @@ const String videoPagePause =
     '{ try { media.pause(); } catch (e) {} });';
 
 /// Plays [media] found on [page], titled [title], in the app's player,
-/// with the subtitles the page had.
+/// with the subtitles the page had, and first those [remembered] for it.
 Future<void> playPageMedia({
   required WidgetRef ref,
   required AppModel appModel,
@@ -187,19 +187,31 @@ Future<void> playPageMedia({
   required List<PageMedia> subtitles,
   required Uri page,
   required String title,
+  RememberedSubtitles? remembered,
 }) async {
   String referer = media.referer ?? page.toString();
   String userAgent = media.userAgent ?? videoPageUserAgent;
   PlayerNetworkStreamSource source = PlayerNetworkStreamSource.instance;
+  String? kept = remembered != null && File(remembered.path).existsSync()
+      ? Uri.file(remembered.path).toString()
+      : null;
   MediaItem item = source.getMediaItemFromUrl(
     videoUrl: media.url.toString(),
     title: title,
     extra: jsonEncode({
-      'subs': subtitles.map((subtitle) => subtitle.url.toString()).toList(),
-      'subs.name': subtitles
-          .map((subtitle) =>
-              subtitle.label ?? subtitle.language ?? subtitle.name)
-          .toList(),
+      'subs': [
+        if (kept != null) kept,
+        ...subtitles.map((subtitle) => subtitle.url.toString()),
+      ],
+      'subs.name': [
+        if (kept != null) remembered!.name,
+        ...subtitles.map(
+            (subtitle) => subtitle.label ?? subtitle.language ?? subtitle.name),
+      ],
+      if (kept != null) ...{
+        'subs.enable': [kept],
+        'subs.delay': -remembered!.offset.inMilliseconds,
+      },
       'headers': {'Referer': referer, 'User-Agent': userAgent},
       'page': page.toString(),
     }),
@@ -445,8 +457,17 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
   /// How subtitles look, as in the player.
   late SubtitleOptions _style = appModelNoUpdate.subtitleOptions;
 
-  /// How high the line sits, as a share of the screen.
+  /// How high the line sits in full screen, as a share of the screen.
   late double _lineHeight = appModelNoUpdate.pageSubtitleHeight;
+
+  /// How high the line sits outside full screen, as a share of the page.
+  late double _lineHeightInPage = appModelNoUpdate.pageSubtitleHeightInPage;
+
+  /// Where the line was as a long press began to move it.
+  double? _dragFrom;
+
+  /// The page the subtitles shown are remembered for.
+  String? _subtitlesPage;
 
   /// Whether the quick buttons beside the subtitle button show.
   bool _quick = false;
@@ -527,6 +548,9 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
       subtitles: _finder.subtitles,
       page: _page ?? Uri.parse(widget.url),
       title: _title.isNotEmpty ? _title : media.name,
+      remembered: _subtitles == null || _subtitlesPage == null
+          ? null
+          : appModel.rememberedSubtitlesOf(_subtitlesPage!),
     );
   }
 
@@ -558,45 +582,93 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     ]);
   }
 
-  /// Back closes the popup, then leaves the page's full screen, first.
+  /// Back closes the popup, leaves the page's full screen, and goes back a
+  /// page, before it leaves; ✕ leaves at once.
   Future<bool> _onWillPop() async {
     if (_popupOpen) {
       onDictionaryDismiss();
       return false;
     }
-    if (!_fullscreen) {
-      return true;
+    if (_fullscreen) {
+      await _controller?.evaluateJavascript(
+          source: 'window.__jdj && window.__jdj.exit()');
+      await _setFullscreen(false);
+      return false;
     }
-    await _controller?.evaluateJavascript(
-        source: 'window.__jdj && window.__jdj.exit()');
-    await _setFullscreen(false);
-    return false;
+    InAppWebViewController? controller = _controller;
+    if (controller != null && await controller.canGoBack()) {
+      await controller.goBack();
+      return false;
+    }
+    return true;
   }
 
-  /// Shows the subtitles in [file] over the page's video.
-  Future<void> _loadSubtitles(File file) async {
+  /// Shows the subtitles in [file] over the page's video, timed by
+  /// [offset]; whether there were any.
+  Future<bool> _loadSubtitles(File file,
+      {Duration offset = Duration.zero}) async {
     SubtitleItem item = await SubtitleUtils.subtitlesFromFile(
       file: file,
       type: SubtitleItemType.externalSubtitle,
     );
     await item.controller.initial();
     if (!mounted) {
-      return;
+      return false;
     }
     if (item.controller.subtitles.isEmpty) {
       Fluttertoast.showToast(msg: t.page_subtitles_empty);
-      return;
+      return false;
     }
-    _subtitles = PageSubtitles(item.controller.subtitles);
+    _subtitles = PageSubtitles(item.controller.subtitles)..offset = offset;
     _follow?.cancel();
     _follow = Timer.periodic(
         const Duration(milliseconds: 200), (_) => _followVideo());
     setState(() {});
+    return true;
+  }
+
+  /// Shows the subtitles in [file], and keeps them for this page.
+  Future<void> _useSubtitles(File file) async {
+    if (!await _loadSubtitles(file)) {
+      return;
+    }
+    String page = RememberedSubtitles.keyOf(_page ?? Uri.parse(widget.url));
+    _subtitlesPage = page;
+    try {
+      await appModel.rememberSubtitles(page: page, title: _title, file: file);
+    } catch (error) {
+      debugPrint('Subtitles not kept: $error');
+    }
+  }
+
+  /// Shows the subtitles kept for [url] when it opens, in place of others.
+  Future<void> _restoreSubtitles(Uri? url) async {
+    if (url == null) {
+      return;
+    }
+    String page = RememberedSubtitles.keyOf(url);
+    RememberedSubtitles? kept = appModel.rememberedSubtitlesOf(page);
+    if (kept == null || _subtitlesPage == page) {
+      return;
+    }
+    if (!File(kept.path).existsSync()) {
+      await appModel.forgetSubtitles(page);
+      return;
+    }
+    _subtitlesPage = page;
+    if (await _loadSubtitles(File(kept.path), offset: kept.offset)) {
+      Fluttertoast.showToast(msg: t.page_subtitles_restored);
+    }
   }
 
   void _removeSubtitles() {
     if (_popupOpen) {
       onDictionaryDismiss();
+    }
+    String? page = _subtitlesPage;
+    _subtitlesPage = null;
+    if (page != null) {
+      appModel.forgetSubtitles(page);
     }
     _follow?.cancel();
     _follow = null;
@@ -762,8 +834,8 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     if (line.isEmpty || paragraph is! RenderParagraph) {
       return;
     }
-    TextPosition position =
-        paragraph.getPositionForOffset(details.localPosition);
+    TextPosition position = paragraph
+        .getPositionForOffset(paragraph.globalToLocal(details.globalPosition));
     int index = (position.affinity == TextAffinity.upstream
             ? position.offset - 1
             : position.offset)
@@ -917,7 +989,7 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
       ),
     );
     if (file != null) {
-      await _loadSubtitles(file);
+      await _useSubtitles(file);
     }
   }
 
@@ -925,7 +997,7 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles();
     String? path = result?.files.singleOrNull?.path;
     if (path != null) {
-      await _loadSubtitles(File(path));
+      await _useSubtitles(File(path));
     }
   }
 
@@ -940,6 +1012,10 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
             subtitles!.offset += Duration(milliseconds: milliseconds);
             setSheet(() {});
             _followVideo();
+            String? page = _subtitlesPage;
+            if (page != null) {
+              appModel.setRememberedSubtitlesOffset(page, subtitles.offset);
+            }
           }
 
           double seconds = (subtitles?.offset.inMilliseconds ?? 0) / 1000;
@@ -1083,13 +1159,22 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
                           onTap: onDictionaryDismiss,
                         ),
                       ),
-                    Positioned(
-                      left: 16,
-                      right: 16,
-                      bottom: _fullscreen
-                          ? 8 + MediaQuery.of(context).size.height * _lineHeight
-                          : 84,
-                      child: Center(child: _subtitleLine()),
+                    Positioned.fill(
+                      child: LayoutBuilder(
+                        builder: (context, area) => Stack(
+                          children: [
+                            Positioned(
+                              left: 16,
+                              right: 16,
+                              bottom: _fullscreen
+                                  ? 8 + area.maxHeight * _lineHeight
+                                  : area.maxHeight * _lineHeightInPage,
+                              child:
+                                  Center(child: _subtitleLine(area.maxHeight)),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     if (!_fullscreen)
                       Positioned(
@@ -1210,13 +1295,16 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
         if (_blurBox != null) {
           _applyBlur();
         }
+        _restoreSubtitles(url);
       },
     );
   }
 
   /// The subtitle line over the page's video, as the player draws its own;
-  /// a tap looks a word up.
-  Widget _subtitleLine() {
+  /// a tap looks a word up, and a long press moves it up or down the
+  /// [area], in full screen and out of it each.
+  Widget _subtitleLine(double area) {
+    bool moving = _dragFrom != null;
     return AnimatedBuilder(
       animation: Listenable.merge([_line, _highlight]),
       builder: (context, _) {
@@ -1224,17 +1312,58 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
         if (line.isEmpty || _lineHidden) {
           return const SizedBox.shrink();
         }
-        return SubtitleBox(
-          options: _style,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapUp: _lookUp,
-            child: SubtitleText(
-              text: line,
-              options: _style,
-              scale: _fullscreen ? 1 : 0.85,
-              textKey: _lineKey,
-              highlight: _highlight.value,
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapUp: _lookUp,
+          onLongPressStart: (_) {
+            HapticFeedback.selectionClick();
+            setState(() =>
+                _dragFrom = _fullscreen ? _lineHeight : _lineHeightInPage);
+          },
+          onLongPressMoveUpdate: (details) {
+            double? from = _dragFrom;
+            if (from == null || area <= 0) {
+              return;
+            }
+            double height =
+                (from - details.offsetFromOrigin.dy / area).clamp(0.0, 0.85);
+            setState(() {
+              if (_fullscreen) {
+                _lineHeight = height;
+              } else {
+                _lineHeightInPage = height;
+              }
+            });
+          },
+          onLongPressEnd: (_) {
+            setState(() => _dragFrom = null);
+            if (_fullscreen) {
+              appModel.setPageSubtitleHeight(_lineHeight);
+            } else {
+              appModel.setPageSubtitleHeightInPage(_lineHeightInPage);
+            }
+          },
+          child: AnimatedScale(
+            scale: moving ? 1.05 : 1,
+            duration: const Duration(milliseconds: 120),
+            child: DecoratedBox(
+              position: DecorationPosition.foreground,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: moving
+                    ? Border.all(color: theme.colorScheme.primary, width: 2)
+                    : null,
+              ),
+              child: SubtitleBox(
+                options: _style,
+                child: SubtitleText(
+                  text: line,
+                  options: _style,
+                  scale: _fullscreen ? 1 : 0.85,
+                  textKey: _lineKey,
+                  highlight: _highlight.value,
+                ),
+              ),
             ),
           ),
         );

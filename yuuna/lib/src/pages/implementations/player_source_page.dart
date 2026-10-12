@@ -395,6 +395,12 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     _currentSubtitle = appModel.currentSubtitle;
     _subtitleOptionsNotifier = appModel.currentSubtitleOptions!;
 
+    /// Subtitles remembered for a page come timed as they were there.
+    int? pageDelay = PlayerNetworkStreamSource.subtitleDelayOf(widget.item!);
+    if (pageDelay != null) {
+      _subtitleOptionsNotifier.value.subtitleDelay = pageDelay;
+    }
+
     _currentSubtitle.value = null;
     appModel.blockCreatorInitialMedia = true;
 
@@ -855,7 +861,6 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
         buildBlurWidget(),
         buildBuffering(),
         buildMenuArea(),
-        buildExitButton(),
         if (MediaQuery.of(context).orientation == Orientation.landscape)
           Center(
             child: AspectRatio(
@@ -1198,39 +1203,26 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
     );
   }
 
-  /// Leaves the player, as back does, shown with the menu.
-  Widget buildExitButton() {
-    return Align(
-      alignment: Alignment.topLeft,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: ValueListenableBuilder<bool>(
-            valueListenable: _isMenuHidden,
-            builder: (context, hidden, _) => IgnorePointer(
-              ignoring: hidden,
-              child: AnimatedOpacity(
-                opacity: hidden ? 0 : 1,
-                duration: const Duration(milliseconds: 200),
-                child: Material(
-                  color: theme.cardColor.withOpacity(0.8),
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: JidoujishoIconButton(
-                    size: 22,
-                    icon: Ui.close_fullscreen,
-                    tooltip: t.player_exit,
-                    onTap: () async {
-                      if (await onWillPop() && mounted) {
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+  /// Leaves the player at once, from the bottom right as in other players;
+  /// back still asks first.
+  Widget buildMinimizeButton() {
+    return Material(
+      color: Colors.transparent,
+      child: JidoujishoIconButton(
+        size: 24,
+        icon: Ui.close_fullscreen,
+        tooltip: t.player_exit,
+        onTap: () async {
+          await onSourcePagePop();
+          if (mounted) {
+            Navigator.pop(context);
+          }
+          await appModel.closeMedia(
+            ref: ref,
+            mediaSource: appModel.currentMediaSource!,
+            item: widget.item,
+          );
+        },
       ),
     );
   }
@@ -1255,6 +1247,7 @@ class _PlayerSourcePageState extends BaseSourcePageState<PlayerSourcePage>
                 buildSourceButton(),
                 buildAudioSubtitlesButton(),
                 buildOptionsButton(),
+                buildMinimizeButton(),
                 const Space.small(),
               ],
             ),

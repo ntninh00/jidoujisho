@@ -4735,14 +4735,116 @@ class AppModel with ChangeNotifier {
     );
   }
 
-  /// How high subtitles over a page's video sit, as a share of the screen
-  /// from its bottom.
+  /// How high subtitles over a page's video sit in full screen, as a share
+  /// of the screen from its bottom.
   double get pageSubtitleHeight =>
       _preferences.get('page_subtitle_height', defaultValue: 0.05);
 
   /// Sets [pageSubtitleHeight].
   Future<void> setPageSubtitleHeight(double height) async {
     await _preferences.put('page_subtitle_height', height);
+  }
+
+  /// How high subtitles over a page's video sit outside full screen, as a
+  /// share of the page from its bottom: above the play button at first.
+  double get pageSubtitleHeightInPage =>
+      _preferences.get('page_subtitle_height_in_page', defaultValue: 0.12);
+
+  /// Sets [pageSubtitleHeightInPage].
+  Future<void> setPageSubtitleHeightInPage(double height) async {
+    await _preferences.put('page_subtitle_height_in_page', height);
+  }
+
+  /// Subtitles shown over pages' videos, newest first, to show again when
+  /// those pages open.
+  List<RememberedSubtitles> get rememberedSubtitles {
+    try {
+      return [
+        for (Map<String, dynamic> json in List<Map<String, dynamic>>.from(
+            jsonDecode(_preferences.get('page_subtitles', defaultValue: '[]'))
+                as List))
+          RememberedSubtitles.fromJson(json),
+      ];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// The subtitles remembered for [page], if any.
+  RememberedSubtitles? rememberedSubtitlesOf(String page) =>
+      rememberedSubtitles.firstWhereOrNull((entry) => entry.page == page);
+
+  Future<void> _putRememberedSubtitles(
+      List<RememberedSubtitles> entries) async {
+    await _preferences.put(
+      'page_subtitles',
+      jsonEncode([for (RememberedSubtitles entry in entries) entry.toJson()]),
+    );
+    PlayerMediaType.instance.refreshTab();
+  }
+
+  /// Keeps a copy of [file] to show over the video of [page], titled
+  /// [title], when it opens again. The newest 30 pages are kept.
+  Future<RememberedSubtitles> rememberSubtitles({
+    required String page,
+    required String title,
+    required File file,
+  }) async {
+    Directory directory =
+        Directory(path.join(databaseDirectory.path, 'pageSubtitles'));
+    directory.createSync(recursive: true);
+    String kept = path.join(
+      directory.path,
+      '${fastHash(page).toUnsigned(62).toRadixString(16)}'
+      '${path.extension(file.path).toLowerCase()}',
+    );
+    if (!path.equals(file.path, kept)) {
+      await file.copy(kept);
+    }
+    List<RememberedSubtitles> entries = rememberedSubtitles;
+    for (RememberedSubtitles old in entries.where((e) => e.page == page)) {
+      if (!path.equals(old.path, kept)) {
+        _deleteQuietly(old.path);
+      }
+    }
+    entries.removeWhere((entry) => entry.page == page);
+    RememberedSubtitles entry = RememberedSubtitles(
+      page: page,
+      title: title,
+      name: path.basename(file.path),
+      path: kept,
+    );
+    entries.insert(0, entry);
+    for (RememberedSubtitles dropped in entries.skip(30)) {
+      _deleteQuietly(dropped.path);
+    }
+    await _putRememberedSubtitles(entries.take(30).toList());
+    return entry;
+  }
+
+  /// Keeps [offset] as the timing of the subtitles remembered for [page].
+  Future<void> setRememberedSubtitlesOffset(
+      String page, Duration offset) async {
+    await _putRememberedSubtitles([
+      for (RememberedSubtitles entry in rememberedSubtitles)
+        entry.page == page ? entry.withOffset(offset) : entry,
+    ]);
+  }
+
+  /// Forgets the subtitles remembered for [page], and their copy.
+  Future<void> forgetSubtitles(String page) async {
+    List<RememberedSubtitles> entries = rememberedSubtitles;
+    for (RememberedSubtitles entry in entries.where((e) => e.page == page)) {
+      _deleteQuietly(entry.path);
+    }
+    await _putRememberedSubtitles(
+        entries.where((entry) => entry.page != page).toList());
+  }
+
+  void _deleteQuietly(String file) {
+    try {
+      File(file).deleteSync();
+    } catch (_) {}
   }
 
   /// Where the blur box over burnt-in subtitles goes, as shares of the

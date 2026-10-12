@@ -688,11 +688,18 @@ class DictionaryServer {
     Directory directory,
   ) =>
       _guard(() async {
-        directory.createSync(recursive: true);
+        /// Kept under its own name, to be told apart where it is shown.
+        Directory folder = Directory(path.join(
+            directory.path, 'jimaku ${show.id} ${fastHash(file.name)}'));
+        folder.createSync(recursive: true);
+        String name = file.fileName
+            .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1f]'), '_')
+            .trim();
+        if (name.length > 120) {
+          name = name.substring(0, 120 - file.type.length) + file.type;
+        }
         File target = File(path.join(
-          directory.path,
-          'jimaku ${show.id} ${fastHash(file.name)}${file.type}',
-        ));
+            folder.path, name.isEmpty ? 'subtitles${file.type}' : name));
         await _dio.download(
           'subtitles/${show.id}/file',
           target.path,

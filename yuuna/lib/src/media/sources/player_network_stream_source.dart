@@ -147,6 +147,17 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
     return kind != null && kind != PageMediaKind.subtitle;
   }
 
+  /// The subtitle delay, in milliseconds, [item]'s page had its subtitles
+  /// timed by, if it was played from a page with remembered subtitles.
+  static int? subtitleDelayOf(MediaItem item) {
+    try {
+      Object? delay = (jsonDecode(item.extra ?? '{}') as Map)['subs.delay'];
+      return delay is num ? delay.toInt() : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The headers a page found the video with, which its host may insist
   /// on.
   static Map<String, String> headersOf(MediaItem item) {
@@ -252,6 +263,18 @@ class PlayerNetworkStreamSource extends PlayerMediaSource {
           'jidoujisho-${DateFormat('yyyyMMddTkkmmss').format(DateTime.now())}';
 
       try {
+        /// Subtitles kept in the app, as those remembered for a page.
+        Uri location = Uri.parse(fileName);
+        if (location.isScheme('file')) {
+          items.add(await SubtitleUtils.subtitlesFromFile(
+            file: File(location.toFilePath()),
+            metadata: subtitleName,
+            source: fileName,
+            type: SubtitleItemType.webSubtitle,
+          ));
+          continue;
+        }
+
         /// Saved under its own type when it has one; others are converted.
         String type = path.extension(Uri.parse(fileName).path).toLowerCase();
         if (!const ['.srt', '.vtt', '.ass', '.ssa'].contains(type)) {

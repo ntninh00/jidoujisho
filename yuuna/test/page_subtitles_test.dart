@@ -56,4 +56,30 @@ void main() {
     subtitles.offset = at(1000);
     expect(subtitles.replayFrom(at(6500)), at(6000));
   });
+
+  test('subtitles kept for a page are read back as kept', () {
+    String page = RememberedSubtitles.keyOf(
+        Uri.parse('https://example.com/watch/ep-3?server=2#player'));
+    expect(page, 'https://example.com/watch/ep-3?server=2');
+
+    RememberedSubtitles kept = RememberedSubtitles(
+      page: page,
+      title: 'Episode 3',
+      name: '[Group] Show - 03.srt',
+      path: '/data/pageSubtitles/1a2b.srt',
+    ).withOffset(const Duration(milliseconds: -1500));
+    RememberedSubtitles read =
+        RememberedSubtitles.fromJson(Map.of(kept.toJson()));
+    expect(read.page, page);
+    expect(read.title, 'Episode 3');
+    expect(read.name, '[Group] Show - 03.srt');
+    expect(read.path, '/data/pageSubtitles/1a2b.srt');
+    expect(read.offset, const Duration(milliseconds: -1500));
+
+    // Kept before timing could be nudged.
+    expect(
+      RememberedSubtitles.fromJson({'page': page, 'path': 'a.srt'}).offset,
+      Duration.zero,
+    );
+  });
 }

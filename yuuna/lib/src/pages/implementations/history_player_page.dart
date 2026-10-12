@@ -58,17 +58,20 @@ class HistoryPlayerPageState<T extends HistoryPlayerPage>
   Widget build(BuildContext context) {
     List<MediaItem> items = appModel.getMediaTypeHistory(mediaType: mediaType);
 
-    if (shouldPlaceholderBeShown) {
+    if (shouldPlaceholderBeShown && appModel.rememberedSubtitles.isEmpty) {
       return buildPlaceholder();
     } else {
       return buildHistory(items);
     }
   }
 
-  /// This is shown as the body when [shouldPlaceholderBeShown] is false.
+  /// This is shown as the body when [shouldPlaceholderBeShown] is false,
+  /// after the pages whose videos have subtitles kept.
   @override
   Widget buildHistory(List<MediaItem> items) {
     items = items.reversed.toList();
+    List<RememberedSubtitles> pages = appModel.rememberedSubtitles;
+    int first = pages.isEmpty ? 0 : 1;
 
     return RawScrollbar(
       thumbVisibility: true,
@@ -80,9 +83,110 @@ class HistoryPlayerPageState<T extends HistoryPlayerPage>
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
-        itemCount: items.length,
-        itemBuilder: (context, index) => buildMediaItem(items[index]),
+        itemCount: items.length + first,
+        itemBuilder: (context, index) => index < first
+            ? buildSubtitledPages(pages)
+            : buildMediaItem(items[index - first]),
       ),
+    );
+  }
+
+  /// Pages whose videos have subtitles kept, to open again with them; a
+  /// long press forgets them.
+  Widget buildSubtitledPages(List<RememberedSubtitles> pages) {
+    Color muted = theme.unselectedWidgetColor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+          child: Row(
+            children: [
+              Icon(Ui.closed_caption,
+                  size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                t.page_subtitles_pages,
+                style:
+                    textTheme.labelLarge!.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 84,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: pages.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              RememberedSubtitles page = pages[index];
+              String host = Uri.tryParse(page.page)?.host ?? page.page;
+              return Material(
+                color: theme.dividerColor.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(16),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => VideoFinderPage(url: page.page)),
+                  ),
+                  onLongPress: () => showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    builder: (_) => JidoujishoBottomSheet(
+                      options: [
+                        JidoujishoBottomSheetOption(
+                          label: t.page_subtitles_forget,
+                          icon: Ui.subtitles_off_outlined,
+                          action: () => appModel.forgetSubtitles(page.page),
+                        ),
+                      ],
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: 240,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            page.title.isNotEmpty ? page.title : host,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodyMedium!
+                                .copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            page.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall!.copyWith(color: muted),
+                          ),
+                          Text(
+                            host,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall!
+                                .copyWith(color: muted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
