@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' show FontFeature;
 
 import 'package:file_picker/file_picker.dart';
@@ -437,6 +438,22 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
   /// How high the line sits, as a share of the screen.
   late double _lineHeight = appModelNoUpdate.pageSubtitleHeight;
 
+  /// Whether the quick buttons beside the subtitle button show.
+  bool _quick = false;
+
+  /// Folds the quick buttons away when they go untouched.
+  Timer? _quickTimer;
+
+  /// Whether the subtitle line is hidden for now.
+  bool _lineHidden = false;
+
+  /// The blur box over subtitles burnt into the video, as shares of the
+  /// screen, when there is one.
+  Rect? _blurBox;
+
+  /// Whether the blur box is being moved or sized.
+  bool _blurEditing = false;
+
   @override
   void initState() {
     super.initState();
@@ -563,7 +580,125 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     _follow = null;
     _subtitles = null;
     _line.value = '';
+    _quick = false;
     setState(() {});
+  }
+
+  /// With subtitles shown, the subtitle button unfolds the quick buttons;
+  /// without, it offers to find some.
+  void _tapSubtitleButton() {
+    if (_subtitles == null) {
+      _subtitleMenu();
+      return;
+    }
+    setState(() => _quick = !_quick);
+    _keepQuick();
+  }
+
+  /// Keeps the quick buttons a while longer after one is used.
+  void _keepQuick() {
+    _quickTimer?.cancel();
+    if (_quick) {
+      _quickTimer = Timer(const Duration(seconds: 6), () {
+        if (mounted && !_blurEditing) {
+          setState(() => _quick = false);
+        }
+      });
+    }
+  }
+
+  /// Moves the page's video to where [step] says, from where it is.
+  Future<void> _seek(
+      Duration? Function(PageSubtitles subtitles, Duration position)
+          step) async {
+    _keepQuick();
+    PageSubtitles? subtitles = _subtitles;
+    PageVideoTime? time = await _videoTime();
+    if (subtitles == null || time == null) {
+      return;
+    }
+    Duration? to = step(subtitles, time.position);
+    if (to == null) {
+      return;
+    }
+    double seconds = max(0, to.inMilliseconds / 1000 - 0.05);
+    await _controller?.evaluateJavascript(
+        source: 'window.__jdj && window.__jdj.seek($seconds)');
+    _followVideo();
+  }
+
+  void _toggleLine() {
+    _keepQuick();
+    setState(() => _lineHidden = !_lineHidden);
+  }
+
+  /// Draws the blur box in the page, or takes it away.
+  Future<void> _applyBlur() async {
+    Rect? box = _blurBox;
+    await _controller?.evaluateJavascript(
+      source: box == null
+          ? 'window.__jdj && window.__jdj.blur(null)'
+          : 'window.__jdj && window.__jdj.blur({x: ${box.left}, '
+              'y: ${box.top}, width: ${box.width}, height: ${box.height}, '
+              'blur: 14})',
+    );
+  }
+
+  /// Puts the blur box where it was last, ready to be moved or sized.
+  void _editBlur() {
+    _quickTimer?.cancel();
+    setState(() {
+      _blurBox ??= appModel.pageBlurBox;
+      _blurEditing = true;
+    });
+    _applyBlur();
+  }
+
+  void _doneBlur() {
+    Rect? box = _blurBox;
+    setState(() => _blurEditing = false);
+    if (box != null) {
+      appModel.setPageBlurBox(box);
+    }
+    _applyBlur();
+    _keepQuick();
+  }
+
+  void _removeBlur() {
+    setState(() {
+      _blurBox = null;
+      _blurEditing = false;
+    });
+    _applyBlur();
+    _keepQuick();
+  }
+
+  /// Every line, the one showing first in view; one tapped plays from
+  /// there.
+  Future<void> _transcript() async {
+    PageSubtitles? subtitles = _subtitles;
+    if (subtitles == null) {
+      return;
+    }
+    _quickTimer?.cancel();
+    PageVideoTime? time = await _videoTime();
+    if (!mounted) {
+      return;
+    }
+    Duration? picked = await showTtuSheet<Duration>(
+      context: context,
+      builder: (_) => _TranscriptSheet(
+        subtitles: subtitles,
+        current: time == null ? -1 : subtitles.indexAt(time.position),
+      ),
+    );
+    if (picked != null) {
+      await _controller?.evaluateJavascript(
+          source: 'window.__jdj && window.__jdj.seek('
+              '${max(0, picked.inMilliseconds / 1000 - 0.05)})');
+      _followVideo();
+    }
+    _keepQuick();
   }
 
   Future<PageVideoTime?> _videoTime() async {
@@ -841,13 +976,42 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                             onPressed: _play,
                           ),
                         ),
-                      )
-                    else
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: _subtitleButton(faint: true),
                       ),
+                    if (_blurEditing && _blurBox != null)
+                      Positioned.fill(
+                        child: LayoutBuilder(
+                          builder: (context, size) => _blurEditor(size),
+                        ),
+                      ),
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                              opacity: animation,
+                              child: SizeTransition(
+                                sizeFactor: animation,
+                                axis: Axis.horizontal,
+                                axisAlignment: 1,
+                                child: child,
+                              ),
+                            ),
+                            child: _quick && _subtitles != null
+                                ? _quickBar()
+                                : const SizedBox.shrink(),
+                          ),
+                          if (_fullscreen) ...[
+                            const SizedBox(width: 8),
+                            _subtitleButton(faint: true),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -906,6 +1070,9 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
           appModel.rememberVideoPage(url: url.toString(), title: _title);
         }
         _scanPage();
+        if (_blurBox != null) {
+          _applyBlur();
+        }
       },
     );
   }
@@ -916,7 +1083,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     return ValueListenableBuilder<String>(
       valueListenable: _line,
       builder: (context, line, _) {
-        if (line.isEmpty) {
+        if (line.isEmpty || _lineHidden) {
           return const SizedBox.shrink();
         }
         return SubtitleBox(
@@ -936,6 +1103,158 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
     );
   }
 
+  /// Buttons at hand while watching: lines before, again and after, the
+  /// line hidden, the blur box, the transcript and the rest.
+  Widget _quickBar() {
+    Color accent = theme.colorScheme.primary;
+    Widget button(IconData icon, String tooltip, VoidCallback onPressed,
+            {bool active = false}) =>
+        IconButton(
+          tooltip: tooltip,
+          visualDensity: VisualDensity.compact,
+          icon: Icon(icon, size: 20, color: active ? accent : Colors.white),
+          onPressed: onPressed,
+        );
+    Widget gap() => Container(
+          width: 1,
+          height: 20,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          color: Colors.white24,
+        );
+    return Material(
+      key: const ValueKey('quick'),
+      color: Colors.black.withOpacity(0.65),
+      shape: const StadiumBorder(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            button(Ui.angleLeft, t.page_subtitles_previous,
+                () => _seek((lines, at) => lines.previousFrom(at))),
+            button(Ui.replay, t.page_subtitles_replay,
+                () => _seek((lines, at) => lines.replayFrom(at))),
+            button(Ui.angleRight, t.page_subtitles_next,
+                () => _seek((lines, at) => lines.nextFrom(at))),
+            gap(),
+            button(
+              _lineHidden ? Ui.eyeCrossed : Ui.eye,
+              _lineHidden ? t.page_subtitles_show : t.page_subtitles_hide,
+              _toggleLine,
+            ),
+            button(Ui.blur_on_outlined, t.page_subtitles_blur, _editBlur,
+                active: _blurBox != null),
+            button(Ui.playlist_play, t.page_subtitles_transcript, _transcript),
+            button(Ui.menuDots, t.page_subtitles_more, () {
+              _quickTimer?.cancel();
+              setState(() => _quick = false);
+              _subtitleMenu();
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The blur box being moved, by dragging it, and sized, by its corner.
+  Widget _blurEditor(BoxConstraints size) {
+    Rect box = _blurBox!;
+    double width = size.maxWidth;
+    double height = size.maxHeight;
+    Rect rect = Rect.fromLTWH(box.left * width, box.top * height,
+        box.width * width, box.height * height);
+    Color accent = theme.colorScheme.primary;
+
+    void move(Offset delta) {
+      double left = (box.left + delta.dx / width).clamp(0.0, 1 - box.width);
+      double top = (box.top + delta.dy / height).clamp(0.0, 1 - box.height);
+      setState(
+          () => _blurBox = Rect.fromLTWH(left, top, box.width, box.height));
+    }
+
+    void resize(Offset delta) {
+      double right = (box.right + delta.dx / width).clamp(box.left + 0.08, 1.0);
+      double bottom =
+          (box.bottom + delta.dy / height).clamp(box.top + 0.05, 1.0);
+      setState(
+          () => _blurBox = Rect.fromLTRB(box.left, box.top, right, bottom));
+    }
+
+    Widget action(String label, VoidCallback onPressed, {bool main = false}) =>
+        Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: Material(
+            color: main ? accent : Colors.black.withOpacity(0.7),
+            shape: const StadiumBorder(),
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: onPressed,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                child: Text(
+                  label,
+                  style: textTheme.labelLarge!.copyWith(
+                    color: main ? theme.colorScheme.onPrimary : Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    return Stack(
+      children: [
+        Positioned.fromRect(
+          rect: rect,
+          child: GestureDetector(
+            onPanUpdate: (details) => move(details.delta),
+            onPanEnd: (_) => _applyBlur(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: accent.withOpacity(0.12),
+                border: Border.all(color: accent, width: 2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                t.page_subtitles_blur_hint,
+                textAlign: TextAlign.center,
+                style: textTheme.labelMedium!.copyWith(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: rect.right - 20,
+          top: rect.bottom - 20,
+          child: GestureDetector(
+            onPanUpdate: (details) => resize(details.delta),
+            onPanEnd: (_) => _applyBlur(),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+              child:
+                  Icon(Ui.expand, size: 18, color: theme.colorScheme.onPrimary),
+            ),
+          ),
+        ),
+        Positioned(
+          left: rect.left,
+          top: rect.top > 52 ? rect.top - 44 : rect.bottom + 8,
+          child: Row(
+            children: [
+              action(t.page_subtitles_blur_done, _doneBlur, main: true),
+              action(t.page_subtitles_blur_remove, _removeBlur),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   /// Opens [_subtitleMenu]; [faint] over a full screen video.
   Widget _subtitleButton({bool faint = false}) {
     bool shown = _subtitles != null;
@@ -949,7 +1268,7 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
                 ? Colors.white
                 : null,
       ),
-      onPressed: _subtitleMenu,
+      onPressed: _tapSubtitleButton,
     );
     if (!faint) {
       return button;
@@ -1002,6 +1321,111 @@ class _VideoFinderPageState extends BasePageState<VideoFinderPage> {
             tooltip: t.video_finder_reload,
             icon: const Icon(Ui.replay),
             onPressed: () => _controller?.reload(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Every subtitle line with its time, the one showing marked and in view;
+/// closes with where the line tapped starts.
+class _TranscriptSheet extends StatelessWidget {
+  const _TranscriptSheet({required this.subtitles, required this.current});
+
+  final PageSubtitles subtitles;
+
+  /// The line showing, or -1.
+  final int current;
+
+  static const double _row = 60;
+
+  String _time(Duration time) {
+    int seconds = time.inSeconds;
+    String two(int value) => value.toString().padLeft(2, '0');
+    return seconds >= 3600
+        ? '${seconds ~/ 3600}:${two(seconds ~/ 60 % 60)}:${two(seconds % 60)}'
+        : '${seconds ~/ 60}:${two(seconds % 60)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    MediaQueryData media = MediaQuery.of(context);
+    ScrollController controller = ScrollController(
+      initialScrollOffset: max(0, current * _row - _row * 2),
+    );
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: media.size.height * 0.85),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const TtuSheetHandle(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Text(
+              t.page_subtitles_transcript,
+              style: theme.textTheme.titleLarge!
+                  .copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Flexible(
+            child: ListView.builder(
+              controller: controller,
+              itemExtent: _row,
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
+              itemCount: subtitles.cues.length,
+              itemBuilder: (context, index) {
+                bool showing = index == current;
+                return Material(
+                  color: showing
+                      ? theme.colorScheme.primary.withOpacity(0.12)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () =>
+                        Navigator.pop(context, subtitles.startOf(index)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 52,
+                            child: Text(
+                              _time(subtitles.startOf(index)),
+                              style: theme.textTheme.bodySmall!.copyWith(
+                                color: showing
+                                    ? theme.colorScheme.primary
+                                    : theme.unselectedWidgetColor,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              subtitles.cues[index].data
+                                  .replaceAll('\n', ' ')
+                                  .trim(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium!.copyWith(
+                                fontWeight: showing ? FontWeight.w600 : null,
+                                color:
+                                    showing ? theme.colorScheme.primary : null,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),

@@ -27,12 +27,33 @@ void main() {
   });
 
   test("the page's video time is read from what the page reports", () {
-    PageVideoTime? time =
-        PageVideoTime.parse('{"time":12.345,"paused":false}');
+    PageVideoTime? time = PageVideoTime.parse('{"time":12.345,"paused":false}');
     expect(time?.position, const Duration(milliseconds: 12345));
     expect(time?.paused, isFalse);
     expect(PageVideoTime.parse(null), isNull);
     expect(PageVideoTime.parse('null'), isNull);
     expect(PageVideoTime.parse('{"oops"'), isNull);
+  });
+
+  test('lines are stepped through: again, before and after', () {
+    PageSubtitles subtitles = PageSubtitles([
+      cue(1000, 3000, 'one'),
+      cue(5000, 7000, 'two'),
+      cue(9000, 11000, 'three'),
+    ]);
+    Duration at(int milliseconds) => Duration(milliseconds: milliseconds);
+    // Within the second line.
+    expect(subtitles.replayFrom(at(6000)), at(5000));
+    expect(subtitles.previousFrom(at(6000)), at(1000));
+    expect(subtitles.nextFrom(at(6000)), at(9000));
+    // After it has ended, back is the line just gone.
+    expect(subtitles.previousFrom(at(8000)), at(5000));
+    // Before the first and after the last.
+    expect(subtitles.previousFrom(at(500)), at(1000));
+    expect(subtitles.nextFrom(at(500)), at(1000));
+    expect(subtitles.nextFrom(at(10000)), isNull);
+    // With the timing nudged, times are the video's.
+    subtitles.offset = at(1000);
+    expect(subtitles.replayFrom(at(6500)), at(6000));
   });
 }

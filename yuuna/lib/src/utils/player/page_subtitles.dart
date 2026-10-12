@@ -160,6 +160,8 @@ const String pageSubtitleScript = '''
       }
     } else if (typeof data.jdjControl === 'string') {
       jdj.control(data.jdjControl);
+    } else if (typeof data.jdjSeek === 'number') {
+      jdj.seek(data.jdjSeek);
     }
   });
 
@@ -172,7 +174,7 @@ const String pageSubtitleScript = '''
     }
     for (const [frame, time] of jdj.frames) {
       if (Date.now() - time.at < 2000 && frame.isConnected) {
-        videos.push({ time: time.time, paused: time.paused,
+        videos.push({ frame, time: time.time, paused: time.paused,
           area: areaOf(frame), full: jdj.fullscreen === frame });
       }
     }
@@ -194,6 +196,48 @@ const String pageSubtitleScript = '''
     const video = followed();
     return video ? JSON.stringify({ time: video.time, paused: video.paused })
       : null;
+  };
+
+  /// Moves the followed video to [time] seconds, in a frame below too.
+  jdj.seek = (time) => {
+    const video = followed();
+    if (!video) {
+      return;
+    }
+    if (video.video) {
+      try {
+        video.video.currentTime = time;
+      } catch (e) {}
+    } else if (video.frame) {
+      video.frame.contentWindow.postMessage({ jdjSeek: time }, '*');
+    }
+  };
+
+  /// Blurs a part of the screen, as subtitles burnt into the video, given
+  /// as shares of it: { x, y, width, height, blur }; null takes it away.
+  /// Drawn by the page, as only the page can blur what its video shows.
+  jdj.blur = (box) => {
+    if (!box) {
+      if (jdj.blurBox) {
+        jdj.blurBox.remove();
+      }
+      jdj.blurBox = null;
+      return;
+    }
+    const element = jdj.blurBox || document.createElement('div');
+    jdj.blurBox = element;
+    const px = (share, of) => Math.round(share * of) + 'px!important;';
+    element.setAttribute('style', 'position:fixed!important;' +
+      'left:' + px(box.x, window.innerWidth) +
+      'top:' + px(box.y, window.innerHeight) +
+      'width:' + px(box.width, window.innerWidth) +
+      'height:' + px(box.height, window.innerHeight) +
+      'z-index:2147483647!important;pointer-events:none!important;' +
+      'border-radius:8px!important;background:rgba(0,0,0,0.2)!important;' +
+      'backdrop-filter:blur(' + box.blur + 'px)!important;' +
+      '-webkit-backdrop-filter:blur(' + box.blur + 'px)!important;');
+    /// Last in the page, so it is above even what fills the screen.
+    document.documentElement.appendChild(element);
   };
 })();
 ''';
@@ -248,5 +292,52 @@ class PageSubtitles {
         .map((cue) => cue.data.trim())
         .where((text) => text.isNotEmpty)
         .join('\n');
+  }
+
+  /// The last line started by [position] of the video, or -1 before the
+  /// first.
+  int indexAt(Duration position) {
+    Duration time = position - offset;
+    int found = -1;
+    for (int i = 0; i < cues.length; i++) {
+      if (cues[i].start <= time) {
+        found = i;
+      } else {
+        break;
+      }
+    }
+    return found;
+  }
+
+  /// Where in the video line [index] starts.
+  Duration startOf(int index) => cues[index].start + offset;
+
+  /// Where in the video the line at [position] starts again.
+  Duration? replayFrom(Duration position) {
+    if (cues.isEmpty) {
+      return null;
+    }
+    int index = indexAt(position);
+    return startOf(index < 0 ? 0 : index);
+  }
+
+  /// Where the line before the one showing at [position] starts; after a
+  /// line has ended, that line's own start.
+  Duration? previousFrom(Duration position) {
+    if (cues.isEmpty) {
+      return null;
+    }
+    int index = indexAt(position);
+    if (index < 0) {
+      return startOf(0);
+    }
+    bool showing = position - offset < cues[index].end;
+    return startOf(showing ? (index - 1).clamp(0, cues.length - 1) : index);
+  }
+
+  /// Where the line after [position] starts, if there is one.
+  Duration? nextFrom(Duration position) {
+    int index = indexAt(position) + 1;
+    return index < cues.length ? startOf(index) : null;
   }
 }

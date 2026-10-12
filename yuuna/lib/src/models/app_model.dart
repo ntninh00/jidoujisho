@@ -4737,6 +4737,24 @@ class AppModel with ChangeNotifier {
     await _preferences.put('page_subtitle_height', height);
   }
 
+  /// Where the blur box over burnt-in subtitles goes, as shares of the
+  /// screen: low across the screen, where such subtitles are, at first.
+  Rect get pageBlurBox {
+    List<dynamic>? box = _preferences.get('page_blur_box') as List<dynamic>?;
+    if (box == null || box.length != 4) {
+      return const Rect.fromLTWH(0.05, 0.76, 0.9, 0.18);
+    }
+    List<double> values =
+        box.map((value) => (value as num).toDouble()).toList();
+    return Rect.fromLTWH(values[0], values[1], values[2], values[3]);
+  }
+
+  /// Sets [pageBlurBox].
+  Future<void> setPageBlurBox(Rect box) async {
+    await _preferences
+        .put('page_blur_box', [box.left, box.top, box.width, box.height]);
+  }
+
   /// Set the subtitle options used in the player.
   void setSubtitleOptions(SubtitleOptions options) {
     _preferences.put('audio_allowance', options.audioAllowance);

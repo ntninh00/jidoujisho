@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1856 (928 per locale)
+/// Strings: 1878 (939 per locale)
 ///
-/// Built on 2026-10-12 at 02:19 UTC
+/// Built on 2026-10-12 at 02:38 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -446,6 +446,17 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get page_subtitles_later => TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Later';
 	String get page_subtitles_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Remove subtitles';
 	String get page_subtitles_empty => TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'That file has no subtitles the app can read.';
+	String get page_subtitles_previous => TranslationOverrides.string(_root.$meta, 'page_subtitles_previous', {}) ?? 'Previous line';
+	String get page_subtitles_replay => TranslationOverrides.string(_root.$meta, 'page_subtitles_replay', {}) ?? 'Replay line';
+	String get page_subtitles_next => TranslationOverrides.string(_root.$meta, 'page_subtitles_next', {}) ?? 'Next line';
+	String get page_subtitles_hide => TranslationOverrides.string(_root.$meta, 'page_subtitles_hide', {}) ?? 'Hide subtitles';
+	String get page_subtitles_show => TranslationOverrides.string(_root.$meta, 'page_subtitles_show', {}) ?? 'Show subtitles';
+	String get page_subtitles_blur => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur', {}) ?? 'Blur burnt-in subtitles';
+	String get page_subtitles_blur_hint => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_hint', {}) ?? 'Drag to move · corner to resize';
+	String get page_subtitles_blur_done => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_done', {}) ?? 'Done';
+	String get page_subtitles_blur_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_remove', {}) ?? 'Remove';
+	String get page_subtitles_transcript => TranslationOverrides.string(_root.$meta, 'page_subtitles_transcript', {}) ?? 'Transcript';
+	String get page_subtitles_more => TranslationOverrides.string(_root.$meta, 'page_subtitles_more', {}) ?? 'More';
 	String get subtitle_appearance => TranslationOverrides.string(_root.$meta, 'subtitle_appearance', {}) ?? 'Subtitle appearance';
 	String get subtitle_appearance_info => TranslationOverrides.string(_root.$meta, 'subtitle_appearance_info', {}) ?? 'The player and video pages share these, so subtitles look the same in both.';
 	String get subtitle_size => TranslationOverrides.string(_root.$meta, 'subtitle_size', {}) ?? 'Text size';
@@ -2047,6 +2058,17 @@ class _StringsVi extends _StringsEn {
 	@override String get page_subtitles_later => TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Muộn hơn';
 	@override String get page_subtitles_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Gỡ phụ đề';
 	@override String get page_subtitles_empty => TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'Tệp đó không có phụ đề mà ứng dụng đọc được.';
+	@override String get page_subtitles_previous => TranslationOverrides.string(_root.$meta, 'page_subtitles_previous', {}) ?? 'Câu trước';
+	@override String get page_subtitles_replay => TranslationOverrides.string(_root.$meta, 'page_subtitles_replay', {}) ?? 'Phát lại câu';
+	@override String get page_subtitles_next => TranslationOverrides.string(_root.$meta, 'page_subtitles_next', {}) ?? 'Câu sau';
+	@override String get page_subtitles_hide => TranslationOverrides.string(_root.$meta, 'page_subtitles_hide', {}) ?? 'Ẩn phụ đề';
+	@override String get page_subtitles_show => TranslationOverrides.string(_root.$meta, 'page_subtitles_show', {}) ?? 'Hiện phụ đề';
+	@override String get page_subtitles_blur => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur', {}) ?? 'Che phụ đề có sẵn';
+	@override String get page_subtitles_blur_hint => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_hint', {}) ?? 'Kéo để di chuyển · kéo góc để đổi cỡ';
+	@override String get page_subtitles_blur_done => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_done', {}) ?? 'Xong';
+	@override String get page_subtitles_blur_remove => TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_remove', {}) ?? 'Gỡ';
+	@override String get page_subtitles_transcript => TranslationOverrides.string(_root.$meta, 'page_subtitles_transcript', {}) ?? 'Toàn bộ lời thoại';
+	@override String get page_subtitles_more => TranslationOverrides.string(_root.$meta, 'page_subtitles_more', {}) ?? 'Thêm';
 	@override String get subtitle_appearance => TranslationOverrides.string(_root.$meta, 'subtitle_appearance', {}) ?? 'Giao diện phụ đề';
 	@override String get subtitle_appearance_info => TranslationOverrides.string(_root.$meta, 'subtitle_appearance_info', {}) ?? 'Trình phát và trang video dùng chung các cài đặt này, nên phụ đề trông giống nhau ở cả hai.';
 	@override String get subtitle_size => TranslationOverrides.string(_root.$meta, 'subtitle_size', {}) ?? 'Cỡ chữ';
@@ -3627,6 +3649,17 @@ extension on _StringsEn {
 			case 'page_subtitles_later': return TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Later';
 			case 'page_subtitles_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Remove subtitles';
 			case 'page_subtitles_empty': return TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'That file has no subtitles the app can read.';
+			case 'page_subtitles_previous': return TranslationOverrides.string(_root.$meta, 'page_subtitles_previous', {}) ?? 'Previous line';
+			case 'page_subtitles_replay': return TranslationOverrides.string(_root.$meta, 'page_subtitles_replay', {}) ?? 'Replay line';
+			case 'page_subtitles_next': return TranslationOverrides.string(_root.$meta, 'page_subtitles_next', {}) ?? 'Next line';
+			case 'page_subtitles_hide': return TranslationOverrides.string(_root.$meta, 'page_subtitles_hide', {}) ?? 'Hide subtitles';
+			case 'page_subtitles_show': return TranslationOverrides.string(_root.$meta, 'page_subtitles_show', {}) ?? 'Show subtitles';
+			case 'page_subtitles_blur': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur', {}) ?? 'Blur burnt-in subtitles';
+			case 'page_subtitles_blur_hint': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_hint', {}) ?? 'Drag to move · corner to resize';
+			case 'page_subtitles_blur_done': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_done', {}) ?? 'Done';
+			case 'page_subtitles_blur_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_remove', {}) ?? 'Remove';
+			case 'page_subtitles_transcript': return TranslationOverrides.string(_root.$meta, 'page_subtitles_transcript', {}) ?? 'Transcript';
+			case 'page_subtitles_more': return TranslationOverrides.string(_root.$meta, 'page_subtitles_more', {}) ?? 'More';
 			case 'subtitle_appearance': return TranslationOverrides.string(_root.$meta, 'subtitle_appearance', {}) ?? 'Subtitle appearance';
 			case 'subtitle_appearance_info': return TranslationOverrides.string(_root.$meta, 'subtitle_appearance_info', {}) ?? 'The player and video pages share these, so subtitles look the same in both.';
 			case 'subtitle_size': return TranslationOverrides.string(_root.$meta, 'subtitle_size', {}) ?? 'Text size';
@@ -4567,6 +4600,17 @@ extension on _StringsVi {
 			case 'page_subtitles_later': return TranslationOverrides.string(_root.$meta, 'page_subtitles_later', {}) ?? 'Muộn hơn';
 			case 'page_subtitles_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_remove', {}) ?? 'Gỡ phụ đề';
 			case 'page_subtitles_empty': return TranslationOverrides.string(_root.$meta, 'page_subtitles_empty', {}) ?? 'Tệp đó không có phụ đề mà ứng dụng đọc được.';
+			case 'page_subtitles_previous': return TranslationOverrides.string(_root.$meta, 'page_subtitles_previous', {}) ?? 'Câu trước';
+			case 'page_subtitles_replay': return TranslationOverrides.string(_root.$meta, 'page_subtitles_replay', {}) ?? 'Phát lại câu';
+			case 'page_subtitles_next': return TranslationOverrides.string(_root.$meta, 'page_subtitles_next', {}) ?? 'Câu sau';
+			case 'page_subtitles_hide': return TranslationOverrides.string(_root.$meta, 'page_subtitles_hide', {}) ?? 'Ẩn phụ đề';
+			case 'page_subtitles_show': return TranslationOverrides.string(_root.$meta, 'page_subtitles_show', {}) ?? 'Hiện phụ đề';
+			case 'page_subtitles_blur': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur', {}) ?? 'Che phụ đề có sẵn';
+			case 'page_subtitles_blur_hint': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_hint', {}) ?? 'Kéo để di chuyển · kéo góc để đổi cỡ';
+			case 'page_subtitles_blur_done': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_done', {}) ?? 'Xong';
+			case 'page_subtitles_blur_remove': return TranslationOverrides.string(_root.$meta, 'page_subtitles_blur_remove', {}) ?? 'Gỡ';
+			case 'page_subtitles_transcript': return TranslationOverrides.string(_root.$meta, 'page_subtitles_transcript', {}) ?? 'Toàn bộ lời thoại';
+			case 'page_subtitles_more': return TranslationOverrides.string(_root.$meta, 'page_subtitles_more', {}) ?? 'Thêm';
 			case 'subtitle_appearance': return TranslationOverrides.string(_root.$meta, 'subtitle_appearance', {}) ?? 'Giao diện phụ đề';
 			case 'subtitle_appearance_info': return TranslationOverrides.string(_root.$meta, 'subtitle_appearance_info', {}) ?? 'Trình phát và trang video dùng chung các cài đặt này, nên phụ đề trông giống nhau ở cả hai.';
 			case 'subtitle_size': return TranslationOverrides.string(_root.$meta, 'subtitle_size', {}) ?? 'Cỡ chữ';
