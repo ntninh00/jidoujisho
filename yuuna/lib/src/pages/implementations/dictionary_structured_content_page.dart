@@ -165,7 +165,7 @@ class DictionaryHtmlWidget extends ConsumerWidget {
         ),
       },
       extensions: [
-        const TableHtmlExtension(),
+        _TableExtension(baseFontSize: dictionaryFontSize),
         _PillExtension(baseFontSize: dictionaryFontSize),
         _BoxExtension(baseFontSize: dictionaryFontSize),
         _ImageExtension(entry: entry, baseFontSize: dictionaryFontSize),
@@ -187,6 +187,219 @@ double _lengthInPixels(String value, double fontSize) {
       return number / 100 * fontSize;
     default:
       return number;
+  }
+}
+
+/// Tables as wide as their cells read well at. One wider than the screen
+/// scrolls sideways, rather than wrapping its cells down to a letter or two
+/// a line, or running off the edge.
+class _TableExtension extends TableHtmlExtension {
+  const _TableExtension({required this.baseFontSize});
+
+  final double baseFontSize;
+
+  @override
+  InlineSpan build(ExtensionContext context) {
+    final span = super.build(context);
+    if (span is! WidgetSpan) {
+      return span;
+    }
+    if (context.elementName == 'td' || context.elementName == 'th') {
+      final fontSize = context.style?.fontSize?.value ?? baseFontSize;
+      return WidgetSpan(
+        alignment: span.alignment,
+        child: _ReadableCell(width: fontSize * 6, child: span.child),
+      );
+    }
+
+    /// The table as the package lays it out, in a box that knows how wide
+    /// the screen is.
+    final box = span.child;
+    final layout = box is CssBoxWidget ? box.child : null;
+    if (box is! CssBoxWidget || layout is! LayoutBuilder) {
+      return span;
+    }
+    return WidgetSpan(
+      alignment: span.alignment,
+      child: CssBoxWidget(
+        style: box.style,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final table = layout.builder(context, constraints);
+            if (!constraints.hasBoundedWidth) {
+              return table;
+            }
+            return _SidewaysTable(width: constraints.maxWidth, child: table);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// A table that scrolls sideways when it is wider than [width], faded at
+/// the sides there is more of.
+class _SidewaysTable extends StatefulWidget {
+  const _SidewaysTable({required this.width, required this.child});
+
+  final double width;
+  final Widget child;
+
+  @override
+  State<_SidewaysTable> createState() => _SidewaysTableState();
+}
+
+class _SidewaysTableState extends State<_SidewaysTable> {
+  /// Keeps the scroll position when the fade comes or goes.
+  final GlobalKey _scrollKey = GlobalKey();
+
+  bool _moreBefore = false;
+  bool _moreAfter = false;
+
+  bool _onScroll(ScrollMetrics metrics) {
+    final before = metrics.extentBefore > 0.5;
+    final after = metrics.extentAfter > 0.5;
+    if (before != _moreBefore || after != _moreAfter) {
+      setState(() {
+        _moreBefore = before;
+        _moreAfter = after;
+      });
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget table = NotificationListener<ScrollMetricsNotification>(
+      onNotification: (notification) => _onScroll(notification.metrics),
+      child: NotificationListener<ScrollUpdateNotification>(
+        onNotification: (notification) => _onScroll(notification.metrics),
+        child: SingleChildScrollView(
+          key: _scrollKey,
+          scrollDirection: Axis.horizontal,
+          child: _TableWidth(width: widget.width, child: widget.child),
+        ),
+      ),
+    );
+    if (!_moreBefore && !_moreAfter) {
+      return table;
+    }
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (bounds) {
+        final fade = min(28, bounds.width / 4) / bounds.width;
+        return LinearGradient(
+          colors: [
+            if (_moreBefore) Colors.transparent else Colors.white,
+            Colors.white,
+            Colors.white,
+            if (_moreAfter) Colors.transparent else Colors.white,
+          ],
+          stops: [0, fade, 1 - fade, 1],
+        ).createShader(bounds);
+      },
+      child: table,
+    );
+  }
+}
+
+/// A table cell that asks for at least [width], or for its whole text when
+/// that is narrower.
+class _ReadableCell extends SingleChildRenderObjectWidget {
+  const _ReadableCell({required this.width, required super.child});
+
+  final double width;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderReadableCell(width);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _RenderReadableCell renderObject) {
+    renderObject.width = width;
+  }
+}
+
+class _RenderReadableCell extends RenderProxyBox {
+  _RenderReadableCell(this._width);
+
+  double _width;
+  double get width => _width;
+  set width(double value) {
+    if (value != _width) {
+      _width = value;
+      markNeedsLayout();
+    }
+  }
+
+  @override
+  double computeMinIntrinsicWidth(double height) {
+    final narrowest = super.computeMinIntrinsicWidth(height);
+    final whole = super.computeMaxIntrinsicWidth(height);
+    return max(narrowest, min(whole, _width));
+  }
+}
+
+/// Lays a table out within [width], the screen, when its cells fit there.
+/// One that doesn't gets the width its cells want whole, up to twice the
+/// screen, as it scrolls anyway.
+class _TableWidth extends SingleChildRenderObjectWidget {
+  const _TableWidth({required this.width, required super.child});
+
+  final double width;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderTableWidth(width);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, _RenderTableWidth renderObject) {
+    renderObject.width = width;
+  }
+}
+
+class _RenderTableWidth extends RenderProxyBox {
+  _RenderTableWidth(this._width);
+
+  double _width;
+  double get width => _width;
+  set width(double value) {
+    if (value != _width) {
+      _width = value;
+      markNeedsLayout();
+    }
+  }
+
+  BoxConstraints _tableConstraints(RenderBox table, BoxConstraints given) {
+    final narrowest = table.getMinIntrinsicWidth(double.infinity);
+    if (narrowest <= _width) {
+      return given.copyWith(maxWidth: _width);
+    }
+    final whole = table.getMaxIntrinsicWidth(double.infinity);
+    return given.copyWith(maxWidth: max(narrowest, min(whole, _width * 2)));
+  }
+
+  @override
+  Size computeDryLayout(BoxConstraints constraints) {
+    final table = child;
+    if (table == null) {
+      return constraints.smallest;
+    }
+    return constraints
+        .constrain(table.getDryLayout(_tableConstraints(table, constraints)));
+  }
+
+  @override
+  void performLayout() {
+    final table = child;
+    if (table == null) {
+      size = constraints.smallest;
+      return;
+    }
+    table.layout(_tableConstraints(table, constraints), parentUsesSize: true);
+    size = constraints.constrain(table.size);
   }
 }
 
