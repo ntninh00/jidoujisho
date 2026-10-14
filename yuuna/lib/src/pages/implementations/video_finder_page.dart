@@ -592,6 +592,9 @@ class _VideoFinderPageState extends BaseSourcePageState<VideoFinderPage> {
   /// Back closes the popup, leaves the page's full screen, and goes back a
   /// page, before it leaves; ✕ leaves at once.
   Future<bool> _onWillPop() async {
+    if (popupBack()) {
+      return false;
+    }
     if (_popupOpen) {
       onDictionaryDismiss();
       return false;

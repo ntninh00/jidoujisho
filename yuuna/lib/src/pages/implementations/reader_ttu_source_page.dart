@@ -286,6 +286,9 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     if (viewerClosed == true) {
       return false;
     }
+    if (popupBack()) {
+      return false;
+    }
     if (isDictionaryShown) {
       clearDictionaryResult();
       mediaSource.clearCurrentSentence();

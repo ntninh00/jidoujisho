@@ -98,9 +98,54 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   final _popupPositionNotifier =
       ValueNotifier<JidoujishoPopupPosition?>(JidoujishoPopupPosition.topHalf);
 
+  /// Words looked up from inside the popup: the ones it showed before the
+  /// current one, oldest first, for back to return through.
+  final ValueNotifier<List<String>> _popupTrail =
+      ValueNotifier<List<String>>(const []);
+
+  /// Looks up [searchTerm], tapped or selected in the popup, in the popup
+  /// itself, so the media stays in view. Back returns to the word before.
+  void lookUpInPopup(String searchTerm) {
+    String? current = _lastSearchTerm;
+    JidoujishoPopupPosition? position = _popupPositionNotifier.value;
+    if (current == null || position == null) {
+      onSearch(searchTerm);
+      return;
+    }
+    if (searchTerm.trim().isEmpty || searchTerm == current) {
+      return;
+    }
+    _popupTrail.value = [..._popupTrail.value, current];
+    searchDictionaryResult(
+      searchTerm: searchTerm,
+      position: position,
+      keepTrail: true,
+    );
+  }
+
+  /// Shows the word the popup showed before this one, if this one was
+  /// looked up from inside it. False when there is none to go back to.
+  bool popupBack() {
+    List<String> trail = _popupTrail.value;
+    JidoujishoPopupPosition? position = _popupPositionNotifier.value;
+    if (trail.isEmpty || position == null) {
+      return false;
+    }
+    _popupTrail.value = trail.sublist(0, trail.length - 1);
+    searchDictionaryResult(
+      searchTerm: trail.last,
+      position: position,
+      keepTrail: true,
+    );
+    return true;
+  }
+
   /// Standard warning dialog for leaving a source page. All sources should
   /// use this and wrap their [build] function with a [WillPopScope].
   Future<bool> onWillPop() async {
+    if (popupBack()) {
+      return false;
+    }
     Widget alertDialog = AlertDialog(
       title: Text(t.exit_media_title),
       content: Text(t.exit_media_description),
@@ -147,12 +192,17 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
 
   /// Perform a search with a given query and update the dictionary search
   /// result. The [position] parameter determines where the pop-up will
-  /// be shown on the screen.
+  /// be shown on the screen. A new word starts over the words to go back
+  /// to, unless [keepTrail] is set, as for words looked up in the popup.
   Future<void> searchDictionaryResult({
     required String searchTerm,
     required JidoujishoPopupPosition position,
     int? overrideMaximumTerms,
+    bool keepTrail = false,
   }) async {
+    if (!keepTrail && searchTerm != _lastSearchTerm) {
+      _popupTrail.value = const [];
+    }
     if (_lastSearchTerm == searchTerm && overrideMaximumTerms == null) {
       return;
     } else {
@@ -205,6 +255,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     _dictionaryResultNotifier.value = null;
     _popupPositionNotifier.value = null;
     _lastSearchTerm = null;
+    _popupTrail.value = const [];
     _showMore = false;
     appModel.currentMediaSource?.clearCurrentSentence();
     appModel.currentMediaSource?.clearExtraData();
@@ -383,15 +434,77 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           ),
           child: Padding(
             padding: Spacing.of(context).insets.all.semiSmall,
-            child: Stack(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                buildSearchResult(),
-                Positioned.fill(child: buildDictionaryLoading()),
+                buildPopupBack(),
+                Flexible(
+                  child: Stack(
+                    children: [
+                      buildSearchResult(),
+                      Positioned.fill(child: buildDictionaryLoading()),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// The word to go back to, above a word looked up from inside the popup.
+  Widget buildPopupBack() {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: _popupTrail,
+      builder: (context, trail, _) {
+        if (trail.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        Color color = Theme.of(context).colorScheme.primary;
+        return Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Material(
+              color: color.withOpacity(0.12),
+              shape: const StadiumBorder(),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: popupBack,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 5, 12, 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Ui.arrow_back,
+                        size: 16,
+                        color: color,
+                        semanticLabel:
+                            MaterialLocalizations.of(context).backButtonTooltip,
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          trail.last,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelLarge
+                              ?.copyWith(color: color),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -450,7 +563,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
           scrollController: resultScrollController,
           cardColor: appModel.overrideDictionaryColor,
           opacity: dictionaryEntryOpacity,
-          onSearch: onSearch,
+          onSearch: lookUpInPopup,
           onStash: onStash,
           onShare: onShare,
           result: _dictionaryResultNotifier.value!,
