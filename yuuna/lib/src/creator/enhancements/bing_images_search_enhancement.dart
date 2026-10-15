@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -31,6 +32,30 @@ class BingImagesSearchEnhancement extends ImageEnhancement {
   /// Used to identify this enhancement and to allow a constant value for the
   /// default mappings value of [AnkiMapping].
   static const String key = 'bing_images_search';
+
+  /// The Bing Images page for [searchTerm].
+  static Uri searchUri(String searchTerm) {
+    return Uri.https('www.bing.com', '/images/search', {'q': searchTerm});
+  }
+
+  /// The image addresses in a Bing Images results page, in order. Results
+  /// without one are skipped.
+  static List<String> parseImageUrls(String? html) {
+    dom.Document document = parser.parse(html ?? '');
+    List<String> urls = [];
+    for (dom.Element element in document.getElementsByClassName('iusc')) {
+      try {
+        Object? data = jsonDecode(element.attributes['m'] ?? '');
+        Object? url = data is Map ? data['turl'] : null;
+        if (url is String && url.isNotEmpty) {
+          urls.add(url);
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+    return urls;
+  }
 
   /// Used to store results that have already been found at runtime.
   final Map<String, List<NetworkToFileImage>> _bingCache = {};
@@ -87,69 +112,81 @@ class BingImagesSearchEnhancement extends ImageEnhancement {
       return _bingCache[searchTerm]!;
     }
 
-    List<NetworkToFileImage> images = [];
-
-    bool webViewBusy = true;
+    Completer<List<NetworkToFileImage>> found = Completer();
+    bool reading = false;
 
     HeadlessInAppWebView webView = HeadlessInAppWebView(
-        initialUrlRequest: URLRequest(
-          url: WebUri(
-            "https://www.bing.com/images/search?q=$searchTerm')",
-          ),
-        ),
+        initialUrlRequest: URLRequest(url: WebUri.uri(searchUri(searchTerm))),
         initialSettings: InAppWebViewSettings(blockNetworkImage: true),
         onLoadStop: (controller, uri) async {
-          Directory appDirDoc = await getApplicationSupportDirectory();
-          String bingImagesPath = '${appDirDoc.path}/bingImages';
-          Directory bingImagesDir = Directory(bingImagesPath);
-          if (bingImagesDir.existsSync()) {
-            if (_bingCache.isEmpty) {
-              bingImagesDir.deleteSync(recursive: true);
+          /// The page can finish loading more than once, as after a redirect.
+          if (reading) {
+            return;
+          }
+          reading = true;
+
+          List<NetworkToFileImage> images = [];
+          try {
+            Directory appDirDoc = await getApplicationSupportDirectory();
+            String bingImagesPath = '${appDirDoc.path}/bingImages';
+            Directory bingImagesDir = Directory(bingImagesPath);
+            if (bingImagesDir.existsSync()) {
+              if (_bingCache.isEmpty) {
+                bingImagesDir.deleteSync(recursive: true);
+              }
+            }
+            bingImagesDir.createSync();
+
+            await Future.delayed(const Duration(milliseconds: 1000), () {});
+
+            List<String> imageURLs = parseImageUrls(await controller.getHtml());
+
+            String timestamp =
+                DateFormat('yyyyMMddTkkmmss').format(DateTime.now());
+            Directory imageDir = Directory('$bingImagesPath/$timestamp');
+            imageDir.createSync();
+            for (int i = 0; i < imageURLs.length; i++) {
+              String imagePath = '${imageDir.path}/$i';
+              File imageFile = File(imagePath);
+
+              /// Instant export requires a file to already be written to the
+              /// file system.
+              if (i == 0) {
+                File networkFile =
+                    await DefaultCacheManager().getSingleFile(imageURLs[i]);
+                networkFile.copySync(imagePath);
+              }
+              NetworkToFileImage image = NetworkToFileImage(
+                url: imageURLs[i],
+                file: imageFile,
+              );
+
+              images.add(image);
+            }
+          } catch (error) {
+            debugPrint('Bing image search failed: $error');
+            images = [];
+          } finally {
+            if (!found.isCompleted) {
+              found.complete(images);
             }
           }
-          bingImagesDir.createSync();
-
-          await Future.delayed(const Duration(milliseconds: 1000), () {});
-
-          dom.Document document = parser.parse(await controller.getHtml());
-
-          List<dom.Element> imgElements =
-              document.getElementsByClassName('iusc');
-
-          String timestamp =
-              DateFormat('yyyyMMddTkkmmss').format(DateTime.now());
-          Directory imageDir = Directory('$bingImagesPath/$timestamp');
-          imageDir.createSync();
-          for (int i = 0; i < imgElements.length; i++) {
-            Map<dynamic, dynamic> imgMap =
-                jsonDecode(imgElements[i].attributes['m']!);
-            String imageURL = imgMap['turl'];
-
-            String imagePath = '${imageDir.path}/$i';
-            File imageFile = File(imagePath);
-
-            /// Instant export requires a file to already be written to the
-            /// file system.
-            if (i == 0) {
-              File networkFile =
-                  await DefaultCacheManager().getSingleFile(imageURL);
-              networkFile.copySync(imagePath);
-            }
-            NetworkToFileImage image = NetworkToFileImage(
-              url: imageURL,
-              file: imageFile,
-            );
-
-            images.add(image);
-          }
-
-          webViewBusy = false;
         });
 
-    await webView.run();
+    List<NetworkToFileImage> images = [];
+    try {
+      await webView.run();
 
-    while (webViewBusy) {
-      await Future.delayed(const Duration(milliseconds: 100), () {});
+      /// If Bing doesn't answer, the search ends with no images instead of
+      /// loading forever.
+      images = await found.future.timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => [],
+      );
+    } catch (error) {
+      debugPrint('Bing image search failed: $error');
+    } finally {
+      await webView.dispose();
     }
 
     if (images.isNotEmpty) {
