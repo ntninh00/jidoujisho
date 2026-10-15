@@ -446,21 +446,22 @@
     return pieces;
   }
 
-  /* Joins boxes that sit side by side on one line. */
+  /* Joins boxes that sit side by side on one line, such as a word's kanji
+   * with furigana and the kana after them. */
   function mergeRects(rects, vertical) {
     var out = [];
     for (var i = 0; i < rects.length; i++) {
       var r = rects[i];
-      if (!r.width || !r.height) {
+      if (r.right <= r.left || r.bottom <= r.top) {
         continue;
       }
       var box = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
       var prev = out[out.length - 1];
       if (prev) {
         var sameLine = vertical
-          ? Math.abs(prev.left - box.left) < 2 && Math.abs(prev.right - box.right) < 2 &&
+          ? box.left < prev.right && box.right > prev.left &&
             box.top - prev.bottom < 2 && box.bottom > prev.top
-          : Math.abs(prev.top - box.top) < 2 && Math.abs(prev.bottom - box.bottom) < 2 &&
+          : box.top < prev.bottom && box.bottom > prev.top &&
             box.left - prev.right < 2 && box.right > prev.left;
         if (sameLine) {
           prev.left = Math.min(prev.left, box.left);
@@ -507,15 +508,69 @@
     return el;
   }
 
-  function drawBoxes(target, ranges, fill, vertical) {
+  /* The furigana over the base text that [node] is part of. */
+  function readingRects(node) {
     var rects = [];
-    for (var i = 0; i < ranges.length; i++) {
-      var list = ranges[i].getClientRects();
-      for (var j = 0; j < list.length; j++) {
-        rects.push(list[j]);
+    for (var el = node.parentElement; el && !isBookContent(el); el = el.parentElement) {
+      if (el.nodeName === 'RUBY') {
+        var readings = el.getElementsByTagName('rt');
+        for (var i = 0; i < readings.length; i++) {
+          var list = readings[i].getClientRects();
+          for (var j = 0; j < list.length; j++) {
+            rects.push(list[j]);
+          }
+        }
+        break;
       }
     }
-    var boxes = mergeRects(rects, vertical);
+    return rects;
+  }
+
+  /* One box per line around [ranges]. Text with furigana gets a box that
+   * takes in the furigana beside it too, so the box sits around both. */
+  function boxesFor(ranges, vertical) {
+    var rects = [];
+    for (var i = 0; i < ranges.length; i++) {
+      var readings = readingRects(ranges[i].startContainer);
+      var list = ranges[i].getClientRects();
+      for (var j = 0; j < list.length; j++) {
+        var r = list[j];
+        var box = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+        for (var k = 0; k < readings.length; k++) {
+          var t = readings[k];
+          if (vertical && t.top < box.bottom && t.bottom > box.top) {
+            box.left = Math.min(box.left, t.left);
+            box.right = Math.max(box.right, t.right);
+          } else if (!vertical && t.left < box.right && t.right > box.left) {
+            box.top = Math.min(box.top, t.top);
+            box.bottom = Math.max(box.bottom, t.bottom);
+          }
+        }
+        rects.push(box);
+      }
+    }
+    return mergeRects(rects, vertical);
+  }
+
+  /* Where [boxes] are on the page, with the page's size. */
+  function boundsOf(boxes) {
+    if (!boxes.length) {
+      return null;
+    }
+    var bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+    for (var i = 0; i < boxes.length; i++) {
+      bounds.left = Math.min(bounds.left, boxes[i].left);
+      bounds.top = Math.min(bounds.top, boxes[i].top);
+      bounds.right = Math.max(bounds.right, boxes[i].right);
+      bounds.bottom = Math.max(bounds.bottom, boxes[i].bottom);
+    }
+    bounds.width = window.innerWidth;
+    bounds.height = window.innerHeight;
+    return bounds;
+  }
+
+  function drawBoxes(target, ranges, fill, vertical) {
+    var boxes = boxesFor(ranges, vertical);
     var html = '';
     for (var k = 0; k < boxes.length; k++) {
       var b = boxes[k];
@@ -644,10 +699,11 @@
 
   document.addEventListener('selectionchange', queueSelection);
 
-  /* Highlights [start, start + length) of the last tapped paragraph. */
+  /* Highlights [start, start + length) of the last tapped paragraph, and
+   * says where the word is, so the popup can leave it in view. */
   jdj.highlight = function (start, length, wordMode) {
     if (!last || !last.nodes.length) {
-      return;
+      return null;
     }
     var nodes = last.nodes;
     var end = start + Math.max(length, 1);
@@ -670,7 +726,7 @@
       pos += len;
     }
     if (!startNode) {
-      return;
+      return null;
     }
     if (!endNode) {
       endNode = nodes[nodes.length - 1];
@@ -694,7 +750,7 @@
     jdj.clearSelection();
     var ranges = piecesBetween(nodes, startNode, startOffset, endNode, endOffset);
     if (!ranges.length) {
-      return;
+      return null;
     }
     word = { ranges: ranges, layer: null, vertical: bookIsVertical() };
     if (hasHighlightApi) {
@@ -714,6 +770,7 @@
       selection.removeAllRanges();
       selection.addRange(ranges[0]);
     }
+    return boundsOf(boxesFor(ranges, word.vertical));
   };
 
   var HIGHLIGHT_STYLE_ID = 'jdj-word-style';

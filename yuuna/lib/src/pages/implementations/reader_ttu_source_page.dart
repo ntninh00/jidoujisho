@@ -1846,15 +1846,43 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
 
   /// Highlights [length] characters from [start] of the tapped paragraph.
   /// The highlight is drawn by the page, not a text selection, so Android's
-  /// selection toolbar never appears for it.
+  /// selection toolbar never appears for it. The popup then moves off the
+  /// word if it would cover it, unless a newer lookup ([serial]) began.
   Future<void> _highlight({
     required int start,
     required int length,
     required bool wordMode,
+    required int serial,
   }) async {
-    await _controller?.evaluateJavascript(
+    Object? bounds = await _controller?.evaluateJavascript(
       source:
-          'window.__jdj && window.__jdj.highlight($start, $length, $wordMode);',
+          'window.__jdj ? window.__jdj.highlight($start, $length, $wordMode) : null;',
+    );
+    if (bounds is! Map || serial != _lookupSerial || !mounted) {
+      return;
+    }
+
+    double? edge(String key) => (bounds[key] as num?)?.toDouble();
+    double? left = edge('left');
+    double? top = edge('top');
+    double? right = edge('right');
+    double? bottom = edge('bottom');
+    double? width = edge('width');
+    double? height = edge('height');
+    if (left == null ||
+        top == null ||
+        right == null ||
+        bottom == null ||
+        width == null ||
+        height == null) {
+      return;
+    }
+
+    /// The book fills the space the popup is shown in, so where the page
+    /// puts the word is where it is under the popup.
+    keepWordVisible(
+      word: Rect.fromLTRB(left, top, right, bottom),
+      area: Size(width, height),
     );
   }
 
@@ -1932,6 +1960,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
           start: offsetIndex,
           length: length,
           wordMode: isSpaceDelimited,
+          serial: serial,
         ));
       }
       await search;
@@ -1952,6 +1981,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
             start: offsetIndex,
             length: length,
             wordMode: isSpaceDelimited,
+            serial: serial,
           );
         } else {
           unselectWebViewTextSelection();

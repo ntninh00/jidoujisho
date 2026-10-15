@@ -113,6 +113,61 @@ void main() {
     expect(page.isDictionaryShown, isTrue);
   });
 
+  /// The space the popup can grow to fill on the screen.
+  Rect popupRoom(WidgetTester tester) {
+    Flexible popup = tester
+        .widgetList<Flexible>(find.byType(Flexible))
+        .firstWhere((flexible) => flexible.child is! SizedBox);
+    RenderBox box = tester.renderObject(find.byWidget(popup.child));
+    Rect rect = box.localToGlobal(Offset.zero) & box.size;
+    double room = box.constraints.maxHeight;
+    return rect.top == 0
+        ? Rect.fromLTRB(rect.left, rect.top, rect.right, rect.top + room)
+        : Rect.fromLTRB(rect.left, rect.bottom - room, rect.right, rect.bottom);
+  }
+
+  testWidgets('the popup leaves the looked-up word in view', (tester) async {
+    _PageState page = await open(tester);
+    Size screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+
+    /// A word across the middle, with a little more room above it.
+    Rect word = Rect.fromLTWH(380, screen.height * 0.46, 40, 60);
+    await page.searchDictionaryResult(
+      searchTerm: '輪廻転生',
+      position: JidoujishoPopupPosition.bottomHalf,
+    );
+    page.keepWordVisible(word: word, area: screen);
+    await tester.pumpAndSettle();
+    Rect room = popupRoom(tester);
+    expect(room.top, 0);
+    expect(room.bottom, lessThanOrEqualTo(word.top));
+    expect(room.height, greaterThan(screen.height / 4));
+
+    /// A word in the top half gets the usual bottom half.
+    await page.searchDictionaryResult(
+      searchTerm: '野球',
+      position: JidoujishoPopupPosition.topHalf,
+    );
+    word = Rect.fromLTWH(380, screen.height * 0.2, 40, 60);
+    page.keepWordVisible(word: word, area: screen);
+    await tester.pumpAndSettle();
+    room = popupRoom(tester);
+    expect(room.bottom, screen.height);
+    expect(room.top, greaterThan(screen.height / 2));
+
+    /// A word just under the middle pushes the popup below it.
+    await page.searchDictionaryResult(
+      searchTerm: '桃香',
+      position: JidoujishoPopupPosition.bottomHalf,
+    );
+    word = Rect.fromLTWH(380, screen.height * 0.3, 40, screen.height * 0.25);
+    page.keepWordVisible(word: word, area: screen);
+    await tester.pumpAndSettle();
+    room = popupRoom(tester);
+    expect(room.top, greaterThanOrEqualTo(word.bottom));
+    expect(room.bottom, screen.height);
+  });
+
   testWidgets('a new word from the media starts over', (tester) async {
     _PageState page = await open(tester);
 

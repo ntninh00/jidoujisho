@@ -98,6 +98,48 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   final _popupPositionNotifier =
       ValueNotifier<JidoujishoPopupPosition?>(JidoujishoPopupPosition.topHalf);
 
+  /// Where a half-screen popup ends, as a share of the screen from the top
+  /// or the left. Usually the middle; see [keepWordVisible].
+  final ValueNotifier<double> _popupSplit = ValueNotifier<double>(0.5);
+
+  /// Puts the popup on the side of [word] with more room, and keeps it
+  /// short of the word, so the word stays in view. [word] is where the word
+  /// is in [area], the space the popup is shown in.
+  void keepWordVisible({required Rect word, required Size area}) {
+    JidoujishoPopupPosition? position = _popupPositionNotifier.value;
+    bool vertical = position == JidoujishoPopupPosition.topHalf ||
+        position == JidoujishoPopupPosition.bottomHalf;
+    bool sideways = position == JidoujishoPopupPosition.leftHalf ||
+        position == JidoujishoPopupPosition.rightHalf;
+    if (!vertical && !sideways || area.isEmpty) {
+      return;
+    }
+
+    const double gap = 8;
+    double extent = vertical ? area.height : area.width;
+    double start = vertical ? word.top : word.left;
+    double end = vertical ? word.bottom : word.right;
+
+    /// Never smaller than a quarter of the screen.
+    bool after = extent - end >= start;
+    double split = after
+        ? ((end + gap) / extent).clamp(0.5, 0.75)
+        : ((start - gap) / extent).clamp(0.25, 0.5);
+
+    _popupSplit.value = split;
+    _popupPositionNotifier.value = vertical
+        ? (after
+            ? JidoujishoPopupPosition.bottomHalf
+            : JidoujishoPopupPosition.topHalf)
+        : (after
+            ? JidoujishoPopupPosition.rightHalf
+            : JidoujishoPopupPosition.leftHalf);
+  }
+
+  /// The flex before and after [_popupSplit].
+  int get _flexBefore => (_popupSplit.value * 1000).round();
+  int get _flexAfter => 1000 - _flexBefore;
+
   /// Words looked up from inside the popup: the ones it showed before the
   /// current one, oldest first, for back to return through.
   final ValueNotifier<List<String>> _popupTrail =
@@ -202,6 +244,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   }) async {
     if (!keepTrail && searchTerm != _lastSearchTerm) {
       _popupTrail.value = const [];
+      _popupSplit.value = 0.5;
     }
     if (_lastSearchTerm == searchTerm && overrideMaximumTerms == null) {
       return;
@@ -254,6 +297,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     _isSearchingNotifier.value = false;
     _dictionaryResultNotifier.value = null;
     _popupPositionNotifier.value = null;
+    _popupSplit.value = 0.5;
     _lastSearchTerm = null;
     _popupTrail.value = const [];
     _showMore = false;
@@ -269,6 +313,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       child: MultiValueListenableBuilder(
         valueListenables: [
           _popupPositionNotifier,
+          _popupSplit,
         ],
         builder: (context, result, _) {
           if (!_isSearchingNotifier.value &&
@@ -305,11 +350,13 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
+          flex: _flexBefore,
           child: buildDictionaryResult(),
         ),
         const Space.semiBig(),
-        const Flexible(
-          child: SizedBox.shrink(),
+        Flexible(
+          flex: _flexAfter,
+          child: const SizedBox.shrink(),
         ),
       ],
     );
@@ -320,11 +367,13 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Flexible(
-          child: SizedBox.shrink(),
+        Flexible(
+          flex: _flexBefore,
+          child: const SizedBox.shrink(),
         ),
         const Space.semiBig(),
         Flexible(
+          flex: _flexAfter,
           child: buildDictionaryResult(),
         ),
       ],
@@ -337,11 +386,13 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Flexible(
+          flex: _flexBefore,
           child: buildDictionaryResult(),
         ),
         const Space.semiBig(),
-        const Flexible(
-          child: SizedBox.shrink(),
+        Flexible(
+          flex: _flexAfter,
+          child: const SizedBox.shrink(),
         ),
       ],
     );
@@ -352,11 +403,13 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Flexible(
-          child: SizedBox.shrink(),
+        Flexible(
+          flex: _flexBefore,
+          child: const SizedBox.shrink(),
         ),
         const Space.semiBig(),
         Flexible(
+          flex: _flexAfter,
           child: buildDictionaryResult(),
         ),
       ],
