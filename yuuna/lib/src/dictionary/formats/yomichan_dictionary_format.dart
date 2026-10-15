@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:async_zip/async_zip.dart';
-import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:isar/isar.dart';
 import 'package:list_counter/list_counter.dart';
@@ -54,34 +54,186 @@ class YomichanFormat extends DictionaryFormat {
     }
   }
 
+  /// Parts of an entry that a card's meaning leaves out, as Jitendex and
+  /// other Yomitan dictionaries mark them: notes and examples, other forms,
+  /// sources, and tags such as word types.
+  static const Set<String> _notMeanings = {
+    'extra-info',
+    'forms',
+    'attribution',
+    'part-of-speech-info',
+    'misc-info',
+    'field-info',
+    'dialect-info',
+  };
+
+  /// Tags a card's meaning leaves out: readings over kanji, and tables.
+  static const Set<String> _notMeaningTags = {'rt', 'rp', 'table'};
+
+  /// Tags whose content starts on a line of its own.
+  static const Set<String> _blockTags = {
+    'div',
+    'p',
+    'ul',
+    'ol',
+    'li',
+    'br',
+    'table',
+    'tr',
+    'details',
+    'summary',
+  };
+
+  /// The meaning as a card shows it: each sense on a line of its own after
+  /// its list marker, with its glosses joined by semicolons.
   @override
   String getCustomDefinitionText(String meaning) {
-    final node =
-        StructuredContent.processContent(jsonDecode(meaning))?.toNode();
-    if (node == null) {
+    try {
+      dom.Node? node =
+          StructuredContent.processContent(jsonDecode(meaning))?.toNode();
+      if (node == null) {
+        return '';
+      }
+
+      /// A definition that is all extras, such as only a table, keeps them.
+      String text = _cardText(node, leaveOut: true);
+      return text.isNotEmpty ? text : _cardText(node, leaveOut: false);
+    } catch (error) {
+      /// A card is still made from content this can't lay out.
+      debugPrint('Definition text failed: $error');
       return '';
     }
+  }
 
-    final document = dom.Document.html('');
-    document.body?.append(node);
-    for (final e in document.querySelectorAll('li')) {
-      final css = e.bs4.findParent('ul')?.attributes['style'] ?? '';
-      final text = e.text;
-      final name = css
-              .split(';')
-              .firstWhere((e) => e.contains('list-style-type'))
-              .split(':')
-              .lastOrNull ??
-          'square';
+  static bool _isLeftOut(dom.Element element) {
+    return _notMeaningTags.contains(element.localName) ||
+        _notMeanings.contains(element.attributes['content']);
+  }
 
-      final counterStyle = CounterStyleRegistry.lookup(name);
-      final counter = counterStyle.generateMarkerContent(0);
-      e.text = '$counter $text';
+  static String _cardText(dom.Node root, {required bool leaveOut}) {
+    StringBuffer buffer = StringBuffer();
+    String? marker;
+
+    void write(String text) {
+      if (marker != null && text.trim().isNotEmpty) {
+        buffer.write('$marker ');
+        marker = null;
+      }
+      buffer.write(text);
     }
-    document.querySelectorAll('table').map((e) => e.remove());
-    final html = document.body?.innerHtml ?? '';
 
-    return BeautifulSoup(html).getText(separator: '\n');
+    void visit(dom.Node node, {required bool inline}) {
+      if (node is dom.Text) {
+        write(node.text);
+        return;
+      }
+      if (node is! dom.Element) {
+        for (dom.Node child in node.nodes) {
+          visit(child, inline: inline);
+        }
+        return;
+      }
+      if (leaveOut && _isLeftOut(node)) {
+        return;
+      }
+
+      bool block = !inline && _blockTags.contains(node.localName);
+      if (block) {
+        buffer.write('\n');
+      }
+
+      if (node.attributes['content'] == 'glossary') {
+        List<String> glosses = node
+            .querySelectorAll('li')
+            .map((gloss) => _cardText(gloss, leaveOut: leaveOut))
+            .map((gloss) => gloss.replaceAll('\n', ' '))
+            .where((gloss) => gloss.isNotEmpty)
+            .toList();
+        if (glosses.isNotEmpty) {
+          write(glosses.join('; '));
+          buffer.write('\n');
+          return;
+        }
+      }
+
+      /// Only the innermost items, such as senses, get a marker.
+      if (node.localName == 'li' && node != root && !_holdsItems(node)) {
+        marker = _marker(node);
+      }
+
+      for (dom.Node child in node.nodes) {
+        visit(child, inline: inline || node.localName == 'ruby');
+      }
+      if (block) {
+        buffer.write('\n');
+      } else if (node.localName == 'td' || node.localName == 'th') {
+        buffer.write(' ');
+      }
+    }
+
+    visit(root, inline: false);
+
+    return buffer
+        .toString()
+        .split('\n')
+        .map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
+        .where((line) => line.isNotEmpty)
+        .join('\n');
+  }
+
+  /// The list that [item] belongs to.
+  static dom.Element? _listOf(dom.Element item) {
+    for (dom.Element? e = item.parent; e != null; e = e.parent) {
+      if (e.localName == 'ul' || e.localName == 'ol') {
+        return e;
+      }
+    }
+    return null;
+  }
+
+  /// Whether [item] has list items of its own, other than glosses.
+  static bool _holdsItems(dom.Element item) {
+    return item.querySelectorAll('li').any((inner) {
+      for (dom.Element? e = inner.parent; e != item; e = e.parent) {
+        if (e == null ||
+            e.attributes['content'] == 'glossary' ||
+            _isLeftOut(e)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  /// The marker before [item], from its list's style.
+  static String _marker(dom.Element item) {
+    dom.Element? list = _listOf(item);
+    String style = [
+      item.attributes['style'],
+      list?.attributes['style'],
+    ].whereType<String>().join(';');
+    String? name = style
+        .split(';')
+        .where((rule) => rule.contains('list-style-type'))
+        .firstOrNull
+        ?.split(':')
+        .lastOrNull
+        ?.trim();
+    if (name == null || name.isEmpty || name == 'none') {
+      name = list?.localName == 'ol' ? 'decimal' : 'square';
+    }
+
+    /// A marker written out, as in list-style-type: "＊".
+    if (name.length > 1 && (name.startsWith('"') || name.startsWith("'"))) {
+      return name.substring(1, name.length - 1).trim();
+    }
+
+    List<dom.Element> items = list == null
+        ? [item]
+        : list.querySelectorAll('li').where((e) => _listOf(e) == list).toList();
+    return CounterStyleRegistry.lookup(name)
+        .generateMarkerContent(items.indexOf(item) + 1)
+        .trim();
   }
 
   /// Recursively get HTML for a structured content definition.
