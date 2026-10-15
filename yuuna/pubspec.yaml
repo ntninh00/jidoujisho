@@ -173,16 +173,17 @@ dev_dependencies:
     sdk: flutter
   isar_generator: ^3.1.0+1
   
-# The 辞 seal is drawn by tool/seal_icon.py, which writes these sources and
-# every icon and splash size.
+# The icon (a brush 辞 signed with a 自動辞書 seal, on ink) is drawn by
+# tool/seal_icon.py, which writes these sources and every icon and splash size.
 # flutter_launcher_icons 0.12 has no monochrome layer: launcher_icon.xml
-# names ic_launcher_monochrome (from assets/meta/icon-monochrome.png) by hand.
+# names ic_launcher_monochrome (from assets/meta/icon-monochrome.png) by hand,
+# and the script's ic_launcher_background gradient instead of a flat colour.
 flutter_icons:
   android: "launcher_icon"
   ios: true
   remove_alpha_ios: true
   image_path: "assets/meta/icon.png"
-  adaptive_icon_background: "#FFFFFF" 
+  adaptive_icon_background: "#24202D"
   adaptive_icon_foreground: "assets/meta/icon-android12.png"
 
 flutter:

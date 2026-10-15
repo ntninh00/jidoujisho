@@ -379,10 +379,13 @@ class _HomePageState extends BasePageState<HomePage>
             applicationLegalese: t.legalese,
             applicationIcon: Padding(
               padding: Spacing.of(context).insets.all.normal,
-              child: Image.asset(
-                'assets/meta/icon.png',
-                height: 128,
-                width: 128,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.asset(
+                  'assets/meta/icon.png',
+                  height: 128,
+                  width: 128,
+                ),
               ),
             ),
           ),
