@@ -508,19 +508,27 @@
     return el;
   }
 
+  /* The ruby that [node] is base text of, if any. */
+  function rubyOf(node) {
+    for (var el = node.parentElement; el && !isBookContent(el); el = el.parentElement) {
+      if (el.nodeName === 'RUBY') {
+        return el;
+      }
+    }
+    return null;
+  }
+
   /* The furigana over the base text that [node] is part of. */
   function readingRects(node) {
     var rects = [];
-    for (var el = node.parentElement; el && !isBookContent(el); el = el.parentElement) {
-      if (el.nodeName === 'RUBY') {
-        var readings = el.getElementsByTagName('rt');
-        for (var i = 0; i < readings.length; i++) {
-          var list = readings[i].getClientRects();
-          for (var j = 0; j < list.length; j++) {
-            rects.push(list[j]);
-          }
+    var ruby = rubyOf(node);
+    if (ruby) {
+      var readings = ruby.getElementsByTagName('rt');
+      for (var i = 0; i < readings.length; i++) {
+        var list = readings[i].getClientRects();
+        for (var j = 0; j < list.length; j++) {
+          rects.push(list[j]);
         }
-        break;
       }
     }
     return rects;
@@ -755,12 +763,20 @@
     word = { ranges: ranges, layer: null, vertical: bookIsVertical() };
     if (hasHighlightApi) {
       var behind = canDrawBehind();
-      highlightStyle(behind);
-      var highlight = new Highlight();
-      ranges.forEach(function (r) {
-        highlight.add(r);
+      /* Android's WebView paints highlighted text under furigana only
+       * partly, cutting off the edge of each character, so over a box such
+       * a word keeps the book's colour. */
+      var recolour = !behind || !ranges.some(function (r) {
+        return rubyOf(r.startContainer);
       });
-      CSS.highlights.set('jdj-word', highlight);
+      if (recolour) {
+        highlightStyle(behind);
+        var highlight = new Highlight();
+        ranges.forEach(function (r) {
+          highlight.add(r);
+        });
+        CSS.highlights.set('jdj-word', highlight);
+      }
       if (behind) {
         word.layer = layer('jdj-word-layer', -1);
         drawBoxes(word.layer, ranges, HIGHLIGHT_FILL, word.vertical);
