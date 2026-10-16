@@ -15,7 +15,8 @@ Fonts, downloaded into build/ on first run:
 - Shippori Mincho B1 ExtraBold (SIL Open Font License), for the seal.
 
 The brush and seal edges are roughened with seeded noise, so every run draws
-the same icon. Needs Pillow and NumPy. Run from anywhere:
+the same icon. Needs the packages in tool/requirements.txt, best in their
+own environment (on this PC: D:/jidoujisho-work/.venv). Run from anywhere:
 
     python tool/seal_icon.py
 """
