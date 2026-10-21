@@ -44,10 +44,10 @@ class _DictionaryHistoryPageState extends BasePageState<DictionaryHistoryPage> {
     /// Read once for the whole list rather than once per item.
     List<Dictionary> dictionaries = appModel.dictionaries;
     _DictionaryNames names = _DictionaryNames(
-      hidden: Map<String, bool>.fromEntries(dictionaries
-          .map((e) => MapEntry(e.name, e.isHidden(appModel.targetLanguage)))),
-      collapsed: Map<String, bool>.fromEntries(dictionaries.map(
-          (e) => MapEntry(e.name, e.isCollapsed(appModel.targetLanguage)))),
+      hidden: Map<String, bool>.fromEntries(
+          dictionaries.map((e) => MapEntry(e.name, e.isHidden))),
+      collapsed: Map<String, bool>.fromEntries(
+          dictionaries.map((e) => MapEntry(e.name, e.isCollapsed))),
       order: Map<String, int>.fromEntries(
           dictionaries.map((e) => MapEntry(e.name, e.order))),
     );

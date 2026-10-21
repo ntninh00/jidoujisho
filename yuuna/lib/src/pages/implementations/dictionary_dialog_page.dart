@@ -46,32 +46,44 @@ class _DictionaryDialogPageState extends BasePageState {
     }
   }
 
-  /// Picks or unpicks [language], whose dictionaries alone are on with
-  /// the others picked; null goes back to all.
-  Future<void> _setMode(String? language) async {
-    Set<String> picked = appModel.dictionaryModeLanguages;
-    if (language == null) {
-      picked.clear();
-    } else if (!picked.remove(language)) {
-      picked.add(language);
+  /// The language whose dictionaries alone are listed, as `ja`, or
+  /// [_anyLanguage]; null lists all. Only the list: lookups are as before.
+  /// Kept while the app runs.
+  static String? _filter;
+
+  /// Stands for the dictionaries for any language in [_filter].
+  static const String _anyLanguage = '';
+
+  /// The dictionaries in [dictionaries], in their order, under the language
+  /// they look up: the most used language first and dictionaries for any
+  /// language last, keyed by [_anyLanguage].
+  Map<String, List<Dictionary>> _groups(List<Dictionary> dictionaries) {
+    Map<String, List<Dictionary>> groups = {
+      for (String language in appModel.dictionaryLanguages) language: [],
+    };
+    for (Dictionary dictionary in dictionaries) {
+      String language = appModel.profileOf(dictionary).source ?? _anyLanguage;
+      groups.putIfAbsent(language, () => []).add(dictionary);
     }
-    await appModel.setDictionaryModeLanguages(picked);
-    if (mounted) {
-      setState(() {});
+    List<Dictionary>? any = groups.remove(_anyLanguage);
+    if (any != null) {
+      groups[_anyLanguage] = any;
     }
+    return groups;
   }
 
-  /// All, and a chip for each language the dictionaries look up: picking
-  /// some leaves only their dictionaries on.
-  Widget _modes() {
-    List<String> languages = appModel.dictionaryLanguages;
-    if (languages.length < 2) {
+  String _groupName(String language) => language == _anyLanguage
+      ? t.dictionary_any_language
+      : catalogLanguageName(language);
+
+  /// All, and a chip for each language group: picking one lists only its
+  /// dictionaries.
+  Widget _filters(Map<String, List<Dictionary>> groups) {
+    if (groups.length < 2) {
       return const SizedBox.shrink();
     }
-    Set<String> picked = appModel.dictionaryModeLanguages;
     Widget chip(String label, String? language) {
-      bool selected =
-          language == null ? picked.isEmpty : picked.contains(language);
+      bool selected = _filter == language;
       return Padding(
         padding: const EdgeInsets.only(right: 6),
         child: ChoiceChip(
@@ -94,30 +106,46 @@ class _DictionaryDialogPageState extends BasePageState {
           ),
           backgroundColor: Colors.transparent,
           selectedColor: theme.colorScheme.primary.withOpacity(0.12),
-          onSelected: (_) => _setMode(language),
+          onSelected: (_) => setState(() => _filter = language),
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 4, 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  chip(t.dictionary_mode_all, null),
-                  for (String language in languages)
-                    chip(catalogLanguageName(language), language),
-                ],
-              ),
+      padding: const EdgeInsets.only(bottom: 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: [
+            chip(t.dictionary_all, null),
+            for (String language in groups.keys)
+              chip(_groupName(language), language),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// The heading above a language's dictionaries.
+  Widget _heading(String language, int count) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(28, 14, 16, 4),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: _groupName(language).toUpperCase()),
+            TextSpan(
+              text: '  $count',
+              style: TextStyle(color: theme.unselectedWidgetColor),
             ),
-          ),
-          JidoujishoInfoButton(message: t.dictionary_mode_info),
-          const SizedBox(width: 8),
-        ],
+          ],
+        ),
+        style: textTheme.labelMedium!.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
@@ -350,16 +378,32 @@ class _DictionaryDialogPageState extends BasePageState {
     }
   }
 
-  void _reorder(List<Dictionary> dictionaries, int from, int to) {
+  /// Moves a dictionary within [group], one language's dictionaries, which
+  /// keep the places in the whole order that the group had.
+  void _reorder(
+    List<Dictionary> all,
+    List<Dictionary> group,
+    int from,
+    int to,
+  ) {
     if (to > from) {
       to -= 1;
     }
-    Dictionary moved = dictionaries.removeAt(from);
-    dictionaries.insert(to, moved);
-    for (int i = 0; i < dictionaries.length; i++) {
-      dictionaries[i].order = i;
+    if (from == to) {
+      return;
     }
-    appModel.updateDictionaryOrder(dictionaries);
+    List<int> places = [
+      for (Dictionary dictionary in group) all.indexOf(dictionary),
+    ];
+    List<Dictionary> moved = [...group];
+    moved.insert(to, moved.removeAt(from));
+    for (int i = 0; i < places.length; i++) {
+      all[places[i]] = moved[i];
+    }
+    for (int i = 0; i < all.length; i++) {
+      all[i].order = i;
+    }
+    appModel.updateDictionaryOrder(all);
     setState(() {});
   }
 
@@ -457,10 +501,8 @@ class _DictionaryDialogPageState extends BasePageState {
 
   Widget _row(Dictionary dictionary, int index) {
     Color muted = theme.unselectedWidgetColor;
-    bool hidden = dictionary.isHiddenByUser(appModel.targetLanguage);
-    bool leftOut = !hidden && dictionary.isHidden(appModel.targetLanguage);
-    bool off = hidden || leftOut;
-    bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
+    bool off = dictionary.isHiddenByUser;
+    bool collapsed = dictionary.isCollapsed;
     String? note = appModel.dictionaryNoteOf(dictionary);
     return Padding(
       key: ValueKey(dictionary.id),
@@ -519,24 +561,16 @@ class _DictionaryDialogPageState extends BasePageState {
                   ),
                 ),
                 IconButton(
-                  tooltip: leftOut
-                      ? t.dictionary_off_in_mode
-                      : hidden
-                          ? t.options_show
-                          : t.options_hide,
+                  tooltip: off ? t.options_show : t.options_hide,
                   icon: Icon(
                     off ? Ui.eyeCrossed : Ui.eye,
                     size: 20,
-                    color: off ? muted.withOpacity(leftOut ? 0.5 : 1) : null,
+                    color: off ? muted : null,
                   ),
-                  // Out of the language mode, the dictionary comes back
-                  // with All.
-                  onPressed: leftOut
-                      ? null
-                      : () {
-                          appModel.toggleDictionaryHidden(dictionary);
-                          setState(() {});
-                        },
+                  onPressed: () {
+                    appModel.toggleDictionaryHidden(dictionary);
+                    setState(() {});
+                  },
                 ),
               ],
             ),
@@ -549,42 +583,59 @@ class _DictionaryDialogPageState extends BasePageState {
   @override
   Widget build(BuildContext context) {
     List<Dictionary> dictionaries = appModel.dictionaries;
+    Map<String, List<Dictionary>> groups = _groups(dictionaries);
+    String? filter = groups.containsKey(_filter) ? _filter : null;
+    bool headings = filter == null && groups.length > 1;
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.75,
       minChildSize: 0.4,
       maxChildSize: 0.95,
-      builder: (context, controller) => ReorderableListView.builder(
-        scrollController: controller,
-        buildDefaultDragHandles: false,
-        padding: const EdgeInsets.only(bottom: 24),
-        header: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const TtuSheetHandle(),
-            _header(dictionaries.length),
-            _actions(),
-            _modes(),
-            if (dictionaries.isEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-                child: JidoujishoPlaceholderMessage(
-                  icon: DictionaryMediaType.instance.outlinedIcon,
-                  message: t.dictionaries_menu_empty,
+      builder: (context, controller) => CustomScrollView(
+        controller: controller,
+        slivers: [
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const TtuSheetHandle(),
+                _header(dictionaries.length),
+                _actions(),
+                _filters(groups),
+                if (dictionaries.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+                    child: JidoujishoPlaceholderMessage(
+                      icon: DictionaryMediaType.instance.outlinedIcon,
+                      message: t.dictionaries_menu_empty,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          for (MapEntry<String, List<Dictionary>> group in groups.entries)
+            if (filter == null || group.key == filter) ...[
+              if (headings)
+                SliverToBoxAdapter(
+                  child: _heading(group.key, group.value.length),
                 ),
+              SliverReorderableList(
+                proxyDecorator: (child, index, animation) => Material(
+                  color: Colors.transparent,
+                  elevation: 6,
+                  shadowColor: Colors.black38,
+                  borderRadius: BorderRadius.circular(16),
+                  child: child,
+                ),
+                itemCount: group.value.length,
+                itemBuilder: (context, index) =>
+                    _row(group.value[index], index),
+                onReorder: (from, to) =>
+                    _reorder(dictionaries, group.value, from, to),
               ),
-          ],
-        ),
-        proxyDecorator: (child, index, animation) => Material(
-          color: Colors.transparent,
-          elevation: 6,
-          shadowColor: Colors.black38,
-          borderRadius: BorderRadius.circular(16),
-          child: child,
-        ),
-        itemCount: dictionaries.length,
-        itemBuilder: (context, index) => _row(dictionaries[index], index),
-        onReorder: (from, to) => _reorder(dictionaries, from, to),
+            ],
+          const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+        ],
       ),
     );
   }
@@ -631,6 +682,89 @@ class _DictionaryDetailsSheetState
     );
   }
 
+  /// The language [dictionary] is used for, which can be changed when it
+  /// was told wrong, or to use it for another language.
+  Widget _language(Dictionary dictionary) {
+    String? language = appModel.profileOf(dictionary).source;
+    String name = language == null
+        ? t.dictionary_any_language
+        : catalogLanguageName(language);
+    return Builder(
+      builder: (anchor) => InkWell(
+        onTap: () => _chooseLanguage(anchor, dictionary, language),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 18, 12),
+          child: Row(
+            children: [
+              Text(t.dictionary_language, style: textTheme.bodyMedium),
+              JidoujishoInfoButton(
+                message: t.dictionary_language_info,
+                size: 14,
+              ),
+              Expanded(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: textTheme.bodyMedium!.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Ui.expand_more, size: 18, color: theme.colorScheme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseLanguage(
+    BuildContext anchor,
+    Dictionary dictionary,
+    String? current,
+  ) async {
+    /// The languages of the dictionaries installed, then the others the
+    /// app can name.
+    List<String> languages = [
+      ...appModel.dictionaryLanguages,
+      for (String code in catalogLanguageCodes)
+        if (!appModel.dictionaryLanguages.contains(code)) code,
+    ];
+    RenderBox box = anchor.findRenderObject()! as RenderBox;
+    Offset corner = box.localToGlobal(Offset(box.size.width, 0));
+    PopupMenuItem<String> item(String code, String label) => PopupMenuItem(
+          value: code,
+          child: Row(
+            children: [
+              Expanded(child: Text(label)),
+              if (code == (current ?? ''))
+                Icon(Ui.check, size: 16, color: theme.colorScheme.primary),
+            ],
+          ),
+        );
+    String? chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(corner.dx, corner.dy, 16, 0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: [
+        item('', t.dictionary_any_language),
+        for (String code in languages) item(code, catalogLanguageName(code)),
+      ],
+    );
+    if (chosen == null || chosen == (current ?? '') || !mounted) {
+      return;
+    }
+    await appModel.setDictionaryLanguage(
+        dictionary, chosen.isEmpty ? null : chosen);
+    if (mounted) {
+      setState(() {});
+      widget.onChanged();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Dictionary dictionary = widget.dictionary;
@@ -648,8 +782,8 @@ class _DictionaryDetailsSheetState
       else
         t.dictionary_from_file,
     ].join(' · ');
-    bool hidden = dictionary.isHidden(appModel.targetLanguage);
-    bool collapsed = dictionary.isCollapsed(appModel.targetLanguage);
+    bool hidden = dictionary.isHiddenByUser;
+    bool collapsed = dictionary.isCollapsed;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -707,6 +841,7 @@ class _DictionaryDetailsSheetState
                       widget.onChanged();
                     },
                   ),
+                  _language(dictionary),
                 ],
               ),
             ),

@@ -340,8 +340,7 @@ class _DictionaryTermPitchList extends ConsumerWidget {
     AppModel appModel = ref.watch(appProvider);
 
     List<DictionaryPitch> pitches = heading.pitches
-        .where((pitch) =>
-            !pitch.dictionary.value!.isHidden(appModel.targetLanguage))
+        .where((pitch) => !pitch.dictionary.value!.isHidden)
         .toList();
     if (pitches.isEmpty) {
       return const SliverPadding(padding: EdgeInsets.zero);

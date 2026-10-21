@@ -113,16 +113,6 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
     );
   }
 
-  /// The languages picked in the dictionaries sheet, as `Japanese,
-  /// Vietnamese`, in its order.
-  String _modeNames() {
-    Set<String> picked = appModel.dictionaryModeLanguages;
-    return appModel.dictionaryLanguages
-        .where(picked.contains)
-        .map(catalogLanguageName)
-        .join(', ');
-  }
-
   /// The search bar to show at the topmost of the tab body. When selected,
   /// [buildSearchBarBody] will take the place of the remainder tab body, or
   /// the elements below the search bar when unselected.
@@ -132,8 +122,10 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
       isScrollControlled: true,
       hint: appModel.searchByMeaning
           ? t.search_by_meaning_hint
-          : appModel.dictionaryModeLanguages.isNotEmpty
-              ? t.search_language_hint(language: _modeNames())
+          : appModel.dictionarySearchLanguage != null
+              ? t.search_language_hint(
+                  language:
+                      catalogLanguageName(appModel.dictionarySearchLanguage))
               : t.search_ellipsis,
       controller: mediaType.floatingSearchBarController,
       builder: buildFloatingSearchBody,
@@ -160,6 +152,7 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         buildBackButton(),
       ],
       actions: [
+        buildLanguagePill(),
         buildMeaningToggle(),
         buildSearchButton(),
       ],
@@ -320,6 +313,100 @@ class _HomeDictionaryPageState<T extends BaseTabPage> extends BaseTabPageState {
         onTap: appModel.showDictionaryMenu,
       ),
     );
+  }
+
+  /// The language searched, as `JA`: only its dictionaries are used. Shown
+  /// when there are dictionaries for more than one language.
+  Widget buildLanguagePill() {
+    String? language = appModel.dictionarySearchLanguage;
+    if (language == null && appModel.dictionaryLanguages.length < 2) {
+      return const SizedBox.shrink();
+    }
+    Color accent = theme.colorScheme.primary;
+    return FloatingSearchBarAction(
+      showIfOpened: true,
+      child: Builder(
+        builder: (anchor) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Material(
+            color: language == null
+                ? theme.unselectedWidgetColor.withOpacity(0.12)
+                : accent.withOpacity(0.14),
+            shape: const StadiumBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _chooseSearchLanguage(anchor),
+              child: Tooltip(
+                message: t.search_language,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 5, 6, 5),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        language?.toUpperCase() ?? t.dictionary_all,
+                        style: textTheme.labelMedium!.copyWith(
+                          color: language == null ? null : accent,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      Icon(
+                        Ui.expand_more,
+                        size: 14,
+                        color: language == null
+                            ? theme.unselectedWidgetColor
+                            : accent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Asks which language to search: all, or one that dictionaries are for.
+  Future<void> _chooseSearchLanguage(BuildContext anchor) async {
+    String current = appModel.dictionarySearchLanguage ?? '';
+    RenderBox box = anchor.findRenderObject()! as RenderBox;
+    Offset corner = box.localToGlobal(Offset(0, box.size.height + 4));
+    PopupMenuItem<String> item(String code, String label) => PopupMenuItem(
+          value: code,
+          child: Row(
+            children: [
+              Expanded(child: Text(label)),
+              if (code == current)
+                Icon(Ui.check, size: 16, color: theme.colorScheme.primary),
+            ],
+          ),
+        );
+    String? chosen = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        corner.dx,
+        corner.dy,
+        MediaQuery.of(context).size.width - corner.dx - box.size.width,
+        0,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      items: [
+        item('', t.dictionary_all),
+        for (String code in appModel.dictionaryLanguages)
+          item(code, catalogLanguageName(code)),
+      ],
+    );
+    if (chosen == null || chosen == current || !mounted) {
+      return;
+    }
+    await appModel.setDictionarySearchLanguage(chosen.isEmpty ? null : chosen);
+    if (mounted) {
+      setState(() {});
+      searchAgain();
+    }
   }
 
   /// Switches between finding words by how they are written and by what

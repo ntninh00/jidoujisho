@@ -37,10 +37,8 @@ class FrequencyField extends Field {
   }) {
     List<Dictionary> dictionaries = appModel.dictionaries;
 
-    List<String> unhiddenDictionaries = dictionaries
-        .where((d) => !d.isHidden(appModel.targetLanguage))
-        .map((d) => d.name)
-        .toList();
+    List<String> unhiddenDictionaries =
+        dictionaries.where((d) => !d.isHidden).map((d) => d.name).toList();
 
     List<(double, String)> unhiddenFrequencies = heading.frequencies
         .where((entry) =>

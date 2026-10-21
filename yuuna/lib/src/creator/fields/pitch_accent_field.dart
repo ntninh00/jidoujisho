@@ -35,8 +35,7 @@ class PitchAccentField extends Field {
     List<Dictionary> dictionaries = appModel.dictionaries;
 
     Map<String, bool> dictionaryNamesByHidden = Map<String, bool>.fromEntries(
-        dictionaries
-            .map((e) => MapEntry(e.name, e.isHidden(appModel.targetLanguage))));
+        dictionaries.map((e) => MapEntry(e.name, e.isHidden)));
     Map<String, int> dictionaryNamesByOrder = Map<String, int>.fromEntries(
         dictionaries.map((e) => MapEntry(e.name, e.order)));
 

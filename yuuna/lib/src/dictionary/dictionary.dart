@@ -2,7 +2,6 @@ import 'package:copy_with_extension/copy_with_extension.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:isar/isar.dart';
 import 'package:path/path.dart' as path;
-import 'package:yuuna/language.dart';
 
 part 'dictionary.g.dart';
 
@@ -62,35 +61,40 @@ class Dictionary {
     return path.join(appDirDocPath, name);
   }
 
-  /// Languages where this dictionary is hidden. If a language has set this
-  /// dictionary to hidden, then its language code will be here.
+  /// Holds [everyLanguage] when the user turned this dictionary off. Older
+  /// versions kept the code of each language it was hidden in instead;
+  /// those are turned into the new form once, as the app starts.
   @Index()
   List<String> hiddenLanguages;
 
-  /// Languages where this dictionary is collapsed. If a language has set this
-  /// dictionary to hidden, then its language code will be here.
+  /// Holds [everyLanguage] when this dictionary starts collapsed in results,
+  /// as [hiddenLanguages] does for being off.
   @Index()
   List<String> collapsedLanguages;
 
-  /// Whether this dictionary is hidden for a given language: by the user,
-  /// or because a language mode leaves it out (see [hiddenByMode]).
-  bool isHidden(Language language) {
-    return isHiddenByUser(language) || (hiddenByMode?.call(this) ?? false);
-  }
+  /// What [hiddenLanguages] and [collapsedLanguages] hold for a switch that
+  /// is on: one switch for every language.
+  static const String everyLanguage = '*';
 
-  /// Whether the user hid this dictionary for a given language.
-  bool isHiddenByUser(Language language) {
-    return hiddenLanguages.contains(language.languageCode);
-  }
+  /// Whether this dictionary is left out of lookups: turned off by the user,
+  /// or for another language than the words looked up (see [leftOut]).
+  bool get isHidden => isHiddenByUser || (leftOut?.call(this) ?? false);
 
-  /// Whether the dictionaries' language mode, set in the app, leaves a
-  /// dictionary out: in a Japanese mode, only Japanese dictionaries are on.
-  static bool Function(Dictionary dictionary)? hiddenByMode;
+  /// Whether the user turned this dictionary off.
+  bool get isHiddenByUser => hiddenLanguages.contains(everyLanguage);
 
-  /// Whether this dictionary is collapsed for a given language.
-  bool isCollapsed(Language language) {
-    return collapsedLanguages.contains(language.languageCode);
-  }
+  /// Whether lookups leave a dictionary out for being in another language
+  /// than the words looked up: reading a Japanese book uses only Japanese
+  /// dictionaries. Set by the app.
+  static bool Function(Dictionary dictionary)? leftOut;
+
+  /// Whether this dictionary starts collapsed in results.
+  bool get isCollapsed => collapsedLanguages.contains(everyLanguage);
+
+  /// Whether the old, one-language-at-a-time form of the switches is kept.
+  bool get hasLanguageSwitches =>
+      hiddenLanguages.any((code) => code != everyLanguage) ||
+      collapsedLanguages.any((code) => code != everyLanguage);
 
   /// Given an asset name, returns an appropriate path to place the asset
   /// within this dictionary's resource path.

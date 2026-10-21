@@ -19,7 +19,7 @@ import 'package:yuuna/utils.dart';
 
 /// The languages a dictionary can be labelled with, by code. Their names
 /// are in the strings, under `language_names`.
-const List<String> _languageCodes = [
+const List<String> catalogLanguageCodes = [
   'ja',
   'en',
   'vi',
@@ -1754,7 +1754,7 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
   }
 
   List<String?> get _options {
-    List<String?> options = [..._languageCodes];
+    List<String?> options = [...catalogLanguageCodes];
     for (String? code in [
       widget.dictionary.sourceLanguage,
       widget.dictionary.targetLanguage
@@ -1892,8 +1892,8 @@ class _CatalogManageSheetState extends State<_CatalogManageSheet> {
                 // A field of its own per language, so switching shows the
                 // other description at once.
                 key: ValueKey(_noteLanguage),
-                controller: _notes[_noteLanguage] ??
-                    _notes[_noteLanguages.first],
+                controller:
+                    _notes[_noteLanguage] ?? _notes[_noteLanguages.first],
                 minLines: 2,
                 maxLines: 5,
                 maxLength: 1000,

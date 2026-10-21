@@ -89,11 +89,10 @@ class _DictionaryResultPageState extends BasePageState<DictionaryResultPage> {
 
     List<Dictionary> dictionaries = appModel.dictionaries;
     Map<String, bool> dictionaryNamesByHidden = Map<String, bool>.fromEntries(
-        dictionaries
-            .map((e) => MapEntry(e.name, e.isHidden(appModel.targetLanguage))));
+        dictionaries.map((e) => MapEntry(e.name, e.isHidden)));
     Map<String, bool> dictionaryNamesByCollapsed =
-        Map<String, bool>.fromEntries(dictionaries.map(
-            (e) => MapEntry(e.name, e.isCollapsed(appModel.targetLanguage))));
+        Map<String, bool>.fromEntries(
+            dictionaries.map((e) => MapEntry(e.name, e.isCollapsed)));
     Map<String, int> dictionaryNamesByOrder = Map<String, int>.fromEntries(
         dictionaries.map((e) => MapEntry(e.name, e.order)));
 

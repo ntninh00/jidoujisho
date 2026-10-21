@@ -1393,11 +1393,8 @@ class AppModel with ChangeNotifier {
       installedVersion: _packageInfo.version,
       enabled: _packageInfo.packageName.endsWith('.dev'),
     )..loadKept();
-    _modeLanguages = {
-      ...List<String>.from(
-          _preferences.get('dictionary_mode_languages', defaultValue: []))
-    };
-    Dictionary.hiddenByMode = _hiddenByMode;
+    await _loadDictionarySearchLanguage();
+    Dictionary.leftOut = _leftOutByLanguage;
 
     /// Nothing is asked for at startup. File and AnkiDroid access are asked
     /// for when a feature first needs them, see [requestFileAccess] and
@@ -1479,6 +1476,7 @@ class AppModel with ChangeNotifier {
       maxSizeMiB: 8192,
     );
     MyWords.rename(_database);
+    _normaliseDictionarySwitches();
     await _removeUnfinishedImport();
 
     /// Dictionaries from before searching by meaning get their words, once,
@@ -1923,9 +1921,7 @@ class AppModel with ChangeNotifier {
     if (changed) {
       await _preferences.put('dictionary_sources', jsonEncode(sources));
       _profiles.clear();
-      if (_modeLanguages.isNotEmpty) {
-        dictionariesRevision++;
-      }
+      dictionariesRevision++;
     }
   }
 
@@ -1944,18 +1940,58 @@ class AppModel with ChangeNotifier {
     }
     Map<String, dynamic>? source = dictionarySources[dictionary.name];
     String? language = source?['language'] as String?;
-    DictionaryProfile profile = DictionaryProfile.fromSource(source) ??
-        (source?['kind'] == 'server'
-            // Learnt from the catalog as the dictionaries sheet opens,
-            // rather than told from its rows meanwhile.
-            ? DictionaryProfile(
-                source: language,
-                target: null,
-                kind: DictionaryProfile.words,
-              )
-            : _guessedProfileOf(dictionary).withSource(language));
+    DictionaryProfile profile = dictionary.id == MyWords.dictionaryId
+        // The user's own terms come from books in any language.
+        ? const DictionaryProfile(
+            source: null,
+            target: null,
+            kind: DictionaryProfile.words,
+          )
+        : DictionaryProfile.fromSource(source) ??
+            (source?['kind'] == 'server'
+                // Learnt from the catalog as the dictionaries sheet opens,
+                // rather than told from its rows meanwhile.
+                ? DictionaryProfile(
+                    source: language,
+                    target: null,
+                    kind: DictionaryProfile.words,
+                  )
+                : _guessedProfileOf(dictionary).withSource(language));
+    String? chosen = _chosenDictionaryLanguages[dictionary.name];
+    if (chosen != null) {
+      profile = DictionaryProfile(
+        source: chosen.isEmpty ? null : chosen,
+        target: profile.target,
+        kind: profile.kind,
+      );
+    }
     _profiles[dictionary.id] = profile;
     return profile;
+  }
+
+  /// Languages the user gave dictionaries in their sheets, by name, over
+  /// the ones known or told from their rows. Empty for any language.
+  Map<String, String> get _chosenDictionaryLanguages {
+    String? kept = _preferences.get('dictionary_languages') as String?;
+    if (kept == null) {
+      return {};
+    }
+    try {
+      return Map<String, String>.from(jsonDecode(kept) as Map);
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Uses [dictionary] for words in [language], as `ja`, or for words in
+  /// any language when it is null, whatever it was known to be for.
+  Future<void> setDictionaryLanguage(
+      Dictionary dictionary, String? language) async {
+    Map<String, String> chosen = _chosenDictionaryLanguages;
+    chosen[dictionary.name] = language ?? '';
+    await _preferences.put('dictionary_languages', jsonEncode(chosen));
+    _profiles.remove(dictionary.id);
+    dictionariesRevision++;
   }
 
   DictionaryProfile _guessedProfileOf(Dictionary dictionary) {
@@ -2017,24 +2053,87 @@ class AppModel with ChangeNotifier {
     );
   }
 
-  /// The languages whose dictionaries alone are on, as `ja`, or none when
-  /// every dictionary the user has not hidden is.
-  Set<String> get dictionaryModeLanguages => {..._modeLanguages};
-  Set<String> _modeLanguages = {};
+  /// The language picked on the Dictionary tab, as `ja`, whose
+  /// dictionaries alone its searches use; null for every dictionary.
+  String? get dictionarySearchLanguage => _dictionarySearchLanguage;
+  String? _dictionarySearchLanguage;
 
-  /// Turns on only the dictionaries of [languages], or with none, all of
-  /// them again as the user left them. The user's own choices are not
-  /// changed. Every language picked is the same as none.
-  Future<void> setDictionaryModeLanguages(Set<String> languages) async {
-    if (dictionaryLanguages.every(languages.contains)) {
-      languages = {};
+  /// Reads the language picked on the Dictionary tab. Before it, the
+  /// dictionaries sheet had language modes; a mode of one language carries
+  /// over.
+  Future<void> _loadDictionarySearchLanguage() async {
+    _dictionarySearchLanguage =
+        _preferences.get('dictionary_search_language') as String?;
+    List<String> modes = List<String>.from(
+        _preferences.get('dictionary_mode_languages', defaultValue: []));
+    if (modes.isEmpty) {
+      return;
     }
-    _modeLanguages = {...languages};
-    if (languages.isEmpty) {
-      await _preferences.delete('dictionary_mode_languages');
+    if (modes.length == 1 && _dictionarySearchLanguage == null) {
+      await setDictionarySearchLanguage(modes.single);
+    }
+    await _preferences.delete('dictionary_mode_languages');
+  }
+
+  /// Searches on the Dictionary tab use only the dictionaries of
+  /// [language], or every one when it is null.
+  Future<void> setDictionarySearchLanguage(String? language) async {
+    _dictionarySearchLanguage = language;
+    if (language == null) {
+      await _preferences.delete('dictionary_search_language');
     } else {
-      await _preferences.put('dictionary_mode_languages', languages.toList());
+      await _preferences.put('dictionary_search_language', language);
     }
+    dictionariesRevision++;
+  }
+
+  /// The language of the words being looked up, whose dictionaries alone
+  /// are used: the open media's, as a book's, or else the one picked on the
+  /// Dictionary tab. Null when every dictionary is used.
+  String? get lookupLanguage =>
+      isMediaOpen ? targetLanguage.languageCode : _dictionarySearchLanguage;
+
+  /// Whether lookups now leave [dictionary] out for being for another
+  /// language. One for any language, or whose language is unknown, is used
+  /// for all.
+  bool _leftOutByLanguage(Dictionary dictionary) {
+    String? looking = lookupLanguage;
+    if (looking == null) {
+      return false;
+    }
+    String? language = profileOf(dictionary).source;
+    return language != null && language != looking;
+  }
+
+  /// Turns the old switches, kept for each language, into one switch for
+  /// every language. A dictionary stays off, or collapsed, where the
+  /// dictionaries sheet showed it so: in the language set in the app, or
+  /// its own.
+  void _normaliseDictionarySwitches() {
+    List<Dictionary> old = dictionaries
+        .where((dictionary) => dictionary.hasLanguageSwitches)
+        .toList();
+    if (old.isEmpty) {
+      return;
+    }
+    String saved = savedTargetLanguage.languageCode;
+    List<String> normalised(Dictionary dictionary, List<String> codes) {
+      String? own = profileOf(dictionary).source;
+      bool on = codes.contains(Dictionary.everyLanguage) ||
+          codes.contains(saved) ||
+          (own != null && codes.contains(own));
+      return on ? const [Dictionary.everyLanguage] : const [];
+    }
+
+    _database.writeTxnSync(() {
+      for (Dictionary dictionary in old) {
+        dictionary.hiddenLanguages =
+            normalised(dictionary, dictionary.hiddenLanguages);
+        dictionary.collapsedLanguages =
+            normalised(dictionary, dictionary.collapsedLanguages);
+        _database.dictionarys.putSync(dictionary);
+      }
+    });
     dictionariesRevision++;
   }
 
@@ -2056,16 +2155,6 @@ class AppModel with ChangeNotifier {
         }
         return counts[b]!.compareTo(counts[a]!);
       });
-  }
-
-  /// Whether the language mode leaves [dictionary] out. One whose language
-  /// is unknown stays on.
-  bool _hiddenByMode(Dictionary dictionary) {
-    if (_modeLanguages.isEmpty) {
-      return false;
-    }
-    String? language = profileOf(dictionary).source;
-    return language != null && !_modeLanguages.contains(language);
   }
 
   /* ---------- backups ---------- */
@@ -2312,6 +2401,7 @@ class AppModel with ChangeNotifier {
         _database.dictionarys.putSync(dictionary);
       }
     });
+    _normaliseDictionarySwitches();
     dictionarySearchAgainNotifier.notifyListeners();
   }
 
@@ -2654,15 +2744,8 @@ class AppModel with ChangeNotifier {
   void toggleDictionaryCollapsed(Dictionary dictionary) {
     dictionariesRevision++;
     _database.writeTxnSync(() {
-      if (dictionary.isCollapsed(targetLanguage)) {
-        dictionary.collapsedLanguages = [...dictionary.collapsedLanguages]
-          ..remove(targetLanguage.languageCode);
-      } else {
-        dictionary.collapsedLanguages = [
-          ...dictionary.collapsedLanguages,
-          targetLanguage.languageCode
-        ];
-      }
+      dictionary.collapsedLanguages =
+          dictionary.isCollapsed ? const [] : const [Dictionary.everyLanguage];
       _database.dictionarys.putSync(dictionary);
     });
   }
@@ -2672,15 +2755,9 @@ class AppModel with ChangeNotifier {
   void toggleDictionaryHidden(Dictionary dictionary) {
     dictionariesRevision++;
     _database.writeTxnSync(() {
-      if (dictionary.isHiddenByUser(targetLanguage)) {
-        dictionary.hiddenLanguages = [...dictionary.hiddenLanguages]
-          ..remove(targetLanguage.languageCode);
-      } else {
-        dictionary.hiddenLanguages = [
-          ...dictionary.hiddenLanguages,
-          targetLanguage.languageCode
-        ];
-      }
+      dictionary.hiddenLanguages = dictionary.isHiddenByUser
+          ? const []
+          : const [Dictionary.everyLanguage];
       _database.dictionarys.putSync(dictionary);
     });
   }
@@ -2823,20 +2900,25 @@ class AppModel with ChangeNotifier {
 
   /// Whether [result] has anything to show: its words may all be in
   /// dictionaries that are hidden. Worked out once for each result and
-  /// [dictionariesRevision], as every rebuild while typing asks.
+  /// [_dictionaryScope], as every rebuild while typing asks.
   bool showsAnything(DictionarySearchResult result) {
-    (int, bool)? known = _showsAnything[result];
-    if (known != null && known.$1 == dictionariesRevision) {
+    String scope = _dictionaryScope;
+    (String, bool)? known = _showsAnything[result];
+    if (known != null && known.$1 == scope) {
       return known.$2;
     }
-    bool shows = headingsOf(result).any((heading) => heading.entries.any(
-        (entry) =>
-            !(entry.dictionary.value?.isHidden(targetLanguage) ?? true)));
-    _showsAnything[result] = (dictionariesRevision, shows);
+    bool shows = headingsOf(result).any((heading) => heading.entries
+        .any((entry) => !(entry.dictionary.value?.isHidden ?? true)));
+    _showsAnything[result] = (scope, shows);
     return shows;
   }
 
-  final Expando<(int, bool)> _showsAnything = Expando();
+  final Expando<(String, bool)> _showsAnything = Expando();
+
+  /// Which dictionaries lookups use now: changes with them and with the
+  /// language of the words looked up.
+  String get _dictionaryScope =>
+      '$dictionariesRevision/${lookupLanguage ?? Dictionary.everyLanguage}';
 
   /// Takes the stored result [id] out of the Dictionary tab's history.
   Future<void> removeFromDictionaryHistory(int id) async {
@@ -2999,7 +3081,7 @@ class AppModel with ChangeNotifier {
     String cacheTerm =
         searchTerm.length > 40 ? searchTerm.substring(0, 40) : searchTerm;
     Language language = targetLanguage;
-    String cacheKey = '$dictionariesRevision/'
+    String cacheKey = '$_dictionaryScope/'
         '${language.languageCode}/$searchWithWildcards/'
         '${byMeaning ? 'meaning/' : ''}'
         '${overrideMaximumTerms ?? maximumTerms}/$cacheTerm';
@@ -3101,7 +3183,7 @@ class AppModel with ChangeNotifier {
       sendPort: _searchLogPort.sendPort,
       hiddenDictionaryIds: [
         for (Dictionary dictionary in dictionaries)
-          if (dictionary.isHidden(language)) dictionary.id,
+          if (dictionary.isHidden) dictionary.id,
       ],
     );
 
@@ -5251,8 +5333,7 @@ class AppModel with ChangeNotifier {
     return _database.dictionaryHeadings
             .getSync(DictionaryHeading.hash(term: heading.term, reading: ''))
             ?.frequencies
-            .where((frequency) =>
-                !frequency.dictionary.value!.isHidden(targetLanguage))
+            .where((frequency) => !frequency.dictionary.value!.isHidden)
             .toList() ??
         [];
   }
