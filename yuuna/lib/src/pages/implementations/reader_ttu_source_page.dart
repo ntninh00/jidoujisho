@@ -172,6 +172,7 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
         launch?.target?.characters ?? launch?.book.exploredCharCount ?? -1;
     _memoWatch =
         appModelNoUpdate.watchReaderMemos().listen((_) => _sendMemos());
+    _menuVisible.addListener(_tellPageMenuOpen);
     if (launch != null) {
       _maskVisible.value = true;
       _maskBuilt = true;
@@ -547,7 +548,11 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
                   fit: StackFit.expand,
                   alignment: Alignment.center,
                   children: <Widget>[
-                    buildBody(),
+                    Listener(
+                      onPointerDown: _onBookPointerDown,
+                      onPointerUp: _onBookPointerUp,
+                      child: buildBody(),
+                    ),
                     buildMenu(),
                     buildDictionary(),
                     if (_maskBuilt) buildMask(),
@@ -913,6 +918,36 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
     _refreshMenuDetail();
   }
 
+  /// The page tells taps apart while the menu is open: a tap on the book
+  /// then only closes the menu, and swipes still turn pages.
+  void _tellPageMenuOpen() {
+    _controller?.evaluateJavascript(
+      source: 'window.__jdjMenuOpen = ${_menuVisible.value};',
+    );
+  }
+
+  /// Where a finger came down on the book while the menu was open.
+  Offset? _menuSwipeFrom;
+
+  void _onBookPointerDown(PointerDownEvent event) {
+    _menuSwipeFrom = _menuVisible.value ? event.position : null;
+  }
+
+  /// After a swipe under the open menu, it shows where the book is now,
+  /// once the page has turned.
+  void _onBookPointerUp(PointerUpEvent event) {
+    Offset? from = _menuSwipeFrom;
+    _menuSwipeFrom = null;
+    if (from == null || (event.position - from).distance < 16) {
+      return;
+    }
+    Future.delayed(const Duration(milliseconds: 450), () {
+      if (mounted && _menuVisible.value) {
+        _refreshMenuDetail();
+      }
+    });
+  }
+
   Future<void> _refreshMenuDetail() async {
     TtuPosition? position = await _capturePosition();
     await _loadChapters();
@@ -962,37 +997,27 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       valueListenable: _menuVisible,
       builder: (context, visible, _) => IgnorePointer(
         ignoring: !visible,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => _menuVisible.value = false,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: AnimatedSlide(
+            offset: visible ? Offset.zero : const Offset(0, -0.4),
+            duration: duration,
+            curve: Curves.easeOutCubic,
+            child: AnimatedOpacity(
+              opacity: visible ? 1 : 0,
+              duration: duration,
+              child: TtuReaderMenu(
+                title: _launch?.book.title ?? widget.item?.title ?? '',
+                detail: _menuDetail,
+                background: colors[0],
+                foreground: colors[1],
+                onBack: _leaveFromMenu,
+                onChapters: _showChapters,
+                onSearch: _showSearch,
+                onSettings: _showLiveSettings,
               ),
             ),
-            Align(
-              alignment: Alignment.topCenter,
-              child: AnimatedSlide(
-                offset: visible ? Offset.zero : const Offset(0, -0.4),
-                duration: duration,
-                curve: Curves.easeOutCubic,
-                child: AnimatedOpacity(
-                  opacity: visible ? 1 : 0,
-                  duration: duration,
-                  child: TtuReaderMenu(
-                    title: _launch?.book.title ?? widget.item?.title ?? '',
-                    detail: _menuDetail,
-                    background: colors[0],
-                    foreground: colors[1],
-                    onBack: _leaveFromMenu,
-                    onChapters: _showChapters,
-                    onSearch: _showSearch,
-                    onSettings: _showLiveSettings,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1878,10 +1903,23 @@ class _ReaderTtuSourcePageState extends BaseSourcePageState<ReaderTtuSourcePage>
       return;
     }
 
+    /// Each line the word takes up, as a word at the foot of one column
+    /// and the head of the next leaves room between.
+    List<Rect> parts = [
+      for (Object? box in (bounds['boxes'] as List?) ?? const [])
+        if (box is List && box.length == 4)
+          Rect.fromLTRB(
+            (box[0] as num).toDouble(),
+            (box[1] as num).toDouble(),
+            (box[2] as num).toDouble(),
+            (box[3] as num).toDouble(),
+          ),
+    ];
+
     /// The book fills the space the popup is shown in, so where the page
     /// puts the word is where it is under the popup.
     keepWordVisible(
-      word: Rect.fromLTRB(left, top, right, bottom),
+      parts: parts.isEmpty ? [Rect.fromLTRB(left, top, right, bottom)] : parts,
       area: Size(width, height),
     );
   }

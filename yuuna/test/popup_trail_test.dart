@@ -115,15 +115,11 @@ void main() {
 
   /// The space the popup can grow to fill on the screen.
   Rect popupRoom(WidgetTester tester) {
-    Flexible popup = tester
-        .widgetList<Flexible>(find.byType(Flexible))
-        .firstWhere((flexible) => flexible.child is! SizedBox);
+    Expanded popup = tester
+        .widgetList<Expanded>(find.byType(Expanded))
+        .firstWhere((expanded) => expanded.child is Align);
     RenderBox box = tester.renderObject(find.byWidget(popup.child));
-    Rect rect = box.localToGlobal(Offset.zero) & box.size;
-    double room = box.constraints.maxHeight;
-    return rect.top == 0
-        ? Rect.fromLTRB(rect.left, rect.top, rect.right, rect.top + room)
-        : Rect.fromLTRB(rect.left, rect.bottom - room, rect.right, rect.bottom);
+    return box.localToGlobal(Offset.zero) & box.size;
   }
 
   testWidgets('the popup leaves the looked-up word in view', (tester) async {
@@ -136,7 +132,7 @@ void main() {
       searchTerm: '輪廻転生',
       position: JidoujishoPopupPosition.bottomHalf,
     );
-    page.keepWordVisible(word: word, area: screen);
+    page.keepWordVisible(parts: [word], area: screen);
     await tester.pumpAndSettle();
     Rect room = popupRoom(tester);
     expect(room.top, 0);
@@ -149,11 +145,12 @@ void main() {
       position: JidoujishoPopupPosition.topHalf,
     );
     word = Rect.fromLTWH(380, screen.height * 0.2, 40, 60);
-    page.keepWordVisible(word: word, area: screen);
+    page.keepWordVisible(parts: [word], area: screen);
     await tester.pumpAndSettle();
     room = popupRoom(tester);
     expect(room.bottom, screen.height);
-    expect(room.top, greaterThan(screen.height / 2));
+    expect(room.top, greaterThanOrEqualTo(screen.height / 2));
+    expect(room.top, greaterThanOrEqualTo(word.bottom));
 
     /// A word just under the middle pushes the popup below it.
     await page.searchDictionaryResult(
@@ -161,10 +158,39 @@ void main() {
       position: JidoujishoPopupPosition.bottomHalf,
     );
     word = Rect.fromLTWH(380, screen.height * 0.3, 40, screen.height * 0.25);
-    page.keepWordVisible(word: word, area: screen);
+    page.keepWordVisible(parts: [word], area: screen);
     await tester.pumpAndSettle();
     room = popupRoom(tester);
     expect(room.top, greaterThanOrEqualTo(word.bottom));
+    expect(room.bottom, screen.height);
+
+    /// A word at the foot of one column and the head of the next gets the
+    /// room between its parts.
+    await page.searchDictionaryResult(
+      searchTerm: '一言一句',
+      position: JidoujishoPopupPosition.topHalf,
+    );
+    Rect foot = Rect.fromLTWH(420, screen.height * 0.9, 40, 40);
+    Rect head = Rect.fromLTWH(380, screen.height * 0.05, 40, 120);
+    page.keepWordVisible(parts: [foot, head], area: screen);
+    await tester.pumpAndSettle();
+    room = popupRoom(tester);
+    expect(room.top, greaterThanOrEqualTo(head.bottom));
+    expect(room.bottom, lessThanOrEqualTo(foot.top));
+    expect(room.height, greaterThanOrEqualTo(screen.height / 4));
+
+    /// Parts on lines next to each other leave no room between them, so the
+    /// popup goes to the side with more room.
+    await page.searchDictionaryResult(
+      searchTerm: '桜並木',
+      position: JidoujishoPopupPosition.topHalf,
+    );
+    Rect end = Rect.fromLTWH(300, screen.height * 0.3, 100, 24);
+    Rect next = Rect.fromLTWH(0, screen.height * 0.3 + 30, 60, 24);
+    page.keepWordVisible(parts: [end, next], area: screen);
+    await tester.pumpAndSettle();
+    room = popupRoom(tester);
+    expect(room.top, greaterThanOrEqualTo(next.bottom));
     expect(room.bottom, screen.height);
   });
 

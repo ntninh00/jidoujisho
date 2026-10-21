@@ -157,6 +157,13 @@
     if (!target || !target.closest) {
       return;
     }
+    /* With the app's menu open, a tap on the book only closes it. */
+    if (window.__jdjMenuOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      post({ type: 'menu' });
+      return;
+    }
     /* A memo's note opens the whole memo in the app. */
     var note = target.closest('.jdj-memo-note');
     if (note) {
@@ -560,17 +567,20 @@
     return mergeRects(rects, vertical);
   }
 
-  /* Where [boxes] are on the page, with the page's size. */
+  /* Where [boxes] are on the page, all together and each line of them, as
+   * [left, top, right, bottom], with the page's size. A word broken across
+   * lines leaves room between its parts. */
   function boundsOf(boxes) {
     if (!boxes.length) {
       return null;
     }
-    var bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+    var bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity, boxes: [] };
     for (var i = 0; i < boxes.length; i++) {
       bounds.left = Math.min(bounds.left, boxes[i].left);
       bounds.top = Math.min(bounds.top, boxes[i].top);
       bounds.right = Math.max(bounds.right, boxes[i].right);
       bounds.bottom = Math.max(bounds.bottom, boxes[i].bottom);
+      bounds.boxes.push([boxes[i].left, boxes[i].top, boxes[i].right, boxes[i].bottom]);
     }
     bounds.width = window.innerWidth;
     bounds.height = window.innerHeight;

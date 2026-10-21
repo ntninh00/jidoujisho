@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -98,47 +99,102 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   final _popupPositionNotifier =
       ValueNotifier<JidoujishoPopupPosition?>(JidoujishoPopupPosition.topHalf);
 
-  /// Where a half-screen popup ends, as a share of the screen from the top
-  /// or the left. Usually the middle; see [keepWordVisible].
-  final ValueNotifier<double> _popupSplit = ValueNotifier<double>(0.5);
+  /// The stretch of the screen a half-screen popup may fill, as shares of
+  /// it from the top or the left. Null for the half its position names; see
+  /// [keepWordVisible].
+  final ValueNotifier<(double, double)?> _popupBand =
+      ValueNotifier<(double, double)?>(null);
 
-  /// Puts the popup on the side of [word] with more room, and keeps it
-  /// short of the word, so the word stays in view. [word] is where the word
-  /// is in [area], the space the popup is shown in.
-  void keepWordVisible({required Rect word, required Size area}) {
+  /// [_popupBand], or the half the popup's position names.
+  (double, double) get _band {
+    (double, double)? band = _popupBand.value;
+    if (band != null) {
+      return band;
+    }
+    JidoujishoPopupPosition? position = _popupPositionNotifier.value;
+    return position == JidoujishoPopupPosition.bottomHalf ||
+            position == JidoujishoPopupPosition.rightHalf
+        ? (0.5, 1)
+        : (0, 0.5);
+  }
+
+  /// Puts the popup where [parts], the lines a word takes up, stay in view:
+  /// on the side of the word with more room, kept short of it, or between
+  /// the parts of a word broken across lines when there is room there, as
+  /// at the foot of one column and the head of the next. [parts] are where
+  /// the word is in [area], the space the popup is shown in.
+  void keepWordVisible({required List<Rect> parts, required Size area}) {
     JidoujishoPopupPosition? position = _popupPositionNotifier.value;
     bool vertical = position == JidoujishoPopupPosition.topHalf ||
         position == JidoujishoPopupPosition.bottomHalf;
     bool sideways = position == JidoujishoPopupPosition.leftHalf ||
         position == JidoujishoPopupPosition.rightHalf;
-    if (!vertical && !sideways || area.isEmpty) {
+    if (!vertical && !sideways || area.isEmpty || parts.isEmpty) {
       return;
     }
 
     const double gap = 8;
     double extent = vertical ? area.height : area.width;
-    double start = vertical ? word.top : word.left;
-    double end = vertical ? word.bottom : word.right;
 
-    /// Never smaller than a quarter of the screen.
-    bool after = extent - end >= start;
-    double split = after
-        ? ((end + gap) / extent).clamp(0.5, 0.75)
-        : ((start - gap) / extent).clamp(0.25, 0.5);
+    /// The stretches the word takes up along the screen, joined where they
+    /// meet.
+    List<(double, double)> taken = [
+      for (Rect part in parts)
+        vertical ? (part.top, part.bottom) : (part.left, part.right),
+    ]..sort((a, b) => a.$1.compareTo(b.$1));
+    List<(double, double)> joined = [];
+    for ((double, double) stretch in taken) {
+      if (joined.isNotEmpty && stretch.$1 - joined.last.$2 < 2 * gap) {
+        joined.last = (joined.last.$1, max(joined.last.$2, stretch.$2));
+      } else {
+        joined.add(stretch);
+      }
+    }
+    double start = joined.first.$1;
+    double end = joined.last.$2;
 
-    _popupSplit.value = split;
+    /// The widest room between parts of the word.
+    (double, double)? between;
+    for (int i = 1; i < joined.length; i++) {
+      (double, double) room = (joined[i - 1].$2 + gap, joined[i].$1 - gap);
+      if (between == null || room.$2 - room.$1 > between.$2 - between.$1) {
+        between = room;
+      }
+    }
+    double before = start - gap;
+    double after = extent - end - gap;
+
+    /// Never smaller than a quarter of the screen, nor bigger than half.
+    if (between != null) {
+      double room = between.$2 - between.$1;
+      if (room >= extent / 4 && room > before && room > after) {
+        double size = min(room, extent / 2);
+        double middle = (between.$1 + between.$2) / 2;
+        _popupBand.value =
+            ((middle - size / 2) / extent, (middle + size / 2) / extent);
+        _popupPositionNotifier.value = vertical
+            ? (middle < extent / 2
+                ? JidoujishoPopupPosition.topHalf
+                : JidoujishoPopupPosition.bottomHalf)
+            : (middle < extent / 2
+                ? JidoujishoPopupPosition.leftHalf
+                : JidoujishoPopupPosition.rightHalf);
+        return;
+      }
+    }
+
+    bool below = after >= before;
+    _popupBand.value = below
+        ? (((end + gap) / extent).clamp(0.5, 0.75), 1)
+        : (0, ((start - gap) / extent).clamp(0.25, 0.5));
     _popupPositionNotifier.value = vertical
-        ? (after
+        ? (below
             ? JidoujishoPopupPosition.bottomHalf
             : JidoujishoPopupPosition.topHalf)
-        : (after
+        : (below
             ? JidoujishoPopupPosition.rightHalf
             : JidoujishoPopupPosition.leftHalf);
   }
-
-  /// The flex before and after [_popupSplit].
-  int get _flexBefore => (_popupSplit.value * 1000).round();
-  int get _flexAfter => 1000 - _flexBefore;
 
   /// Words looked up from inside the popup: the ones it showed before the
   /// current one, oldest first, for back to return through.
@@ -244,7 +300,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
   }) async {
     if (!keepTrail && searchTerm != _lastSearchTerm) {
       _popupTrail.value = const [];
-      _popupSplit.value = 0.5;
+      _popupBand.value = null;
     }
     if (_lastSearchTerm == searchTerm && overrideMaximumTerms == null) {
       return;
@@ -297,7 +353,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     _isSearchingNotifier.value = false;
     _dictionaryResultNotifier.value = null;
     _popupPositionNotifier.value = null;
-    _popupSplit.value = 0.5;
+    _popupBand.value = null;
     _lastSearchTerm = null;
     _popupTrail.value = const [];
     _showMore = false;
@@ -313,7 +369,7 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
       child: MultiValueListenableBuilder(
         valueListenables: [
           _popupPositionNotifier,
-          _popupSplit,
+          _popupBand,
         ],
         builder: (context, result, _) {
           if (!_isSearchingNotifier.value &&
@@ -325,16 +381,12 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
             case null:
               return const SizedBox.shrink();
             case JidoujishoPopupPosition.topHalf:
-              return buildTopHalfDictionary();
-
             case JidoujishoPopupPosition.bottomHalf:
-              return buildBottomHalfDictionary();
+              return buildBandDictionary(Axis.vertical);
 
             case JidoujishoPopupPosition.leftHalf:
-              return buildLeftHalfDictionary();
-
             case JidoujishoPopupPosition.rightHalf:
-              return buildRightHalfDictionary();
+              return buildBandDictionary(Axis.horizontal);
 
             case JidoujishoPopupPosition.topThreeFourths:
               return buildTopThreeFourths();
@@ -344,74 +396,32 @@ class BaseSourcePageState<T extends BaseSourcePage> extends BasePageState<T> {
     );
   }
 
-  /// The dictionary in the case of [JidoujishoPopupPosition.topHalf].
-  Widget buildTopHalfDictionary() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  /// The dictionary in [_band] along [axis], for the half-screen
+  /// positions: against the edge of the screen when the band reaches it,
+  /// and otherwise in the middle of the band.
+  Widget buildBandDictionary(Axis axis) {
+    var (start, end) = _band;
+    int before = (start * 1000).round();
+    int inside = max(1, (end * 1000).round() - before);
+    int after = 1000 - before - inside;
+    bool vertical = axis == Axis.vertical;
+    Alignment alignment = before == 0
+        ? (vertical ? Alignment.topCenter : Alignment.centerLeft)
+        : after <= 0
+            ? (vertical ? Alignment.bottomCenter : Alignment.centerRight)
+            : Alignment.center;
+    return Flex(
+      direction: axis,
       children: [
-        Flexible(
-          flex: _flexBefore,
-          child: buildDictionaryResult(),
+        if (before > 0) Spacer(flex: before),
+        Expanded(
+          flex: inside,
+          child: Align(
+            alignment: alignment,
+            child: buildDictionaryResult(),
+          ),
         ),
-        const Space.semiBig(),
-        Flexible(
-          flex: _flexAfter,
-          child: const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
-  /// The dictionary in the case of [JidoujishoPopupPosition.bottomHalf].
-  Widget buildBottomHalfDictionary() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          flex: _flexBefore,
-          child: const SizedBox.shrink(),
-        ),
-        const Space.semiBig(),
-        Flexible(
-          flex: _flexAfter,
-          child: buildDictionaryResult(),
-        ),
-      ],
-    );
-  }
-
-  /// The dictionary in the case of [JidoujishoPopupPosition.leftHalf].
-  Widget buildLeftHalfDictionary() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          flex: _flexBefore,
-          child: buildDictionaryResult(),
-        ),
-        const Space.semiBig(),
-        Flexible(
-          flex: _flexAfter,
-          child: const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-
-  /// The dictionary in the case of [JidoujishoPopupPosition.rightHalf].
-  Widget buildRightHalfDictionary() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          flex: _flexBefore,
-          child: const SizedBox.shrink(),
-        ),
-        const Space.semiBig(),
-        Flexible(
-          flex: _flexAfter,
-          child: buildDictionaryResult(),
-        ),
+        if (after > 0) Spacer(flex: after),
       ],
     );
   }
