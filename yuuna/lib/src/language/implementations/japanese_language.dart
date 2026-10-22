@@ -14,6 +14,7 @@ import 'package:ve_dart/ve_dart.dart';
 import 'package:yuuna/dictionary.dart';
 import 'package:yuuna/language.dart';
 import 'package:yuuna/models.dart';
+import 'package:yuuna/pages.dart';
 
 /// Language implementation of the Japanese language.
 class JapaneseLanguage extends Language {
@@ -125,11 +126,15 @@ class JapaneseLanguage extends Language {
       }
     }
 
-    /// Responsible for the action performed on tapping a certain character
-    /// on the heading term.
+    /// Tapping a kanji of the heading term opens its kanji sheet, which can
+    /// still search the kanji itself.
     void indexAction(int index, String character) {
       if (kanaKit.isKanji(character)) {
-        onSearch(character);
+        showKanjiSheet(
+          context: context,
+          character: character,
+          onSearch: onSearch,
+        );
       }
     }
 

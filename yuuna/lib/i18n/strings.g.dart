@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1888 (944 per locale)
+/// Strings: 1928 (964 per locale)
 ///
-/// Built on 2026-10-21 at 23:26 UTC
+/// Built on 2026-10-22 at 23:44 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -374,6 +374,26 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get dictionary_language_info => TranslationOverrides.string(_root.$meta, 'dictionary_language_info', {}) ?? 'Lookups use only the dictionaries for the language of the words looked up: in a Japanese book, the Japanese ones. A dictionary for any language is used in every lookup.';
 	String get search_language => TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Search language';
 	String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
+	String kanji_download_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Stroke order, readings, parts and common words for every kanji, in one ${size} download.';
+	String get kanji_download => TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Download';
+	String get kanji_download_failed => TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'The download stopped. Try again.';
+	String get kanji_search => TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Search this kanji';
+	String get kanji_on => TranslationOverrides.string(_root.$meta, 'kanji_on', {}) ?? 'On';
+	String get kanji_kun => TranslationOverrides.string(_root.$meta, 'kanji_kun', {}) ?? 'Kun';
+	String kanji_grade({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_grade', {'n': n}) ?? 'Grade ${n}';
+	String get kanji_joyo => TranslationOverrides.string(_root.$meta, 'kanji_joyo', {}) ?? 'Jōyō';
+	String get kanji_jinmeiyo => TranslationOverrides.string(_root.$meta, 'kanji_jinmeiyo', {}) ?? 'Jinmeiyō';
+	String kanji_strokes({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_strokes', {'n': n}) ?? '${n} strokes';
+	String kanji_book_rank({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_book_rank', {'n': n}) ?? '#${n} in books';
+	String get kanji_parts => TranslationOverrides.string(_root.$meta, 'kanji_parts', {}) ?? 'Parts';
+	String get kanji_radical => TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Radical';
+	String get kanji_variants => TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Variants';
+	String get kanji_used_in => TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Used in';
+	String get kanji_words => TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Words';
+	String kanji_show_all({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Show all ${n}';
+	String get kanji_no_details => TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'The kanji data has nothing on this character.';
+	String kanji_sources({required Object sources}) => TranslationOverrides.string(_root.$meta, 'kanji_sources', {'sources': sources}) ?? 'Kanji data from ${sources}.';
+	String get kanji_remove => TranslationOverrides.string(_root.$meta, 'kanji_remove', {}) ?? 'Remove kanji data';
 	String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 	String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
 	String get info_incognito_off => TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Incognito mode off. Dictionary, media and search history will be tracked.';
@@ -1991,6 +2011,26 @@ class _StringsVi extends _StringsEn {
 	@override String get dictionary_language_info => TranslationOverrides.string(_root.$meta, 'dictionary_language_info', {}) ?? 'Khi tra từ, chỉ dùng từ điển của ngôn ngữ đang tra: trong sách tiếng Nhật thì dùng từ điển tiếng Nhật. Từ điển cho mọi ngôn ngữ được dùng trong mọi lần tra.';
 	@override String get search_language => TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Ngôn ngữ tra cứu';
 	@override String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
+	@override String kanji_download_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Thứ tự nét, âm đọc, bộ phận và từ thông dụng của mọi chữ Hán, tải một lần ${size}.';
+	@override String get kanji_download => TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Tải về';
+	@override String get kanji_download_failed => TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'Tải bị gián đoạn. Hãy thử lại.';
+	@override String get kanji_search => TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Tra chữ này';
+	@override String get kanji_on => TranslationOverrides.string(_root.$meta, 'kanji_on', {}) ?? 'Âm On';
+	@override String get kanji_kun => TranslationOverrides.string(_root.$meta, 'kanji_kun', {}) ?? 'Âm Kun';
+	@override String kanji_grade({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_grade', {'n': n}) ?? 'Lớp ${n}';
+	@override String get kanji_joyo => TranslationOverrides.string(_root.$meta, 'kanji_joyo', {}) ?? 'Thường dụng';
+	@override String get kanji_jinmeiyo => TranslationOverrides.string(_root.$meta, 'kanji_jinmeiyo', {}) ?? 'Nhân danh';
+	@override String kanji_strokes({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_strokes', {'n': n}) ?? '${n} nét';
+	@override String kanji_book_rank({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_book_rank', {'n': n}) ?? 'Hạng ${n} trong sách';
+	@override String get kanji_parts => TranslationOverrides.string(_root.$meta, 'kanji_parts', {}) ?? 'Bộ phận';
+	@override String get kanji_radical => TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Bộ thủ';
+	@override String get kanji_variants => TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Dị thể';
+	@override String get kanji_used_in => TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Có trong chữ';
+	@override String get kanji_words => TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Từ vựng';
+	@override String kanji_show_all({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Xem cả ${n}';
+	@override String get kanji_no_details => TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'Dữ liệu chữ Hán không có ký tự này.';
+	@override String kanji_sources({required Object sources}) => TranslationOverrides.string(_root.$meta, 'kanji_sources', {'sources': sources}) ?? 'Dữ liệu chữ Hán từ ${sources}.';
+	@override String get kanji_remove => TranslationOverrides.string(_root.$meta, 'kanji_remove', {}) ?? 'Xoá dữ liệu chữ Hán';
 	@override String card_exported({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 	@override String get info_incognito_on => TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
 	@override String get info_incognito_off => TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';
@@ -3587,6 +3627,26 @@ extension on _StringsEn {
 			case 'dictionary_language_info': return TranslationOverrides.string(_root.$meta, 'dictionary_language_info', {}) ?? 'Lookups use only the dictionaries for the language of the words looked up: in a Japanese book, the Japanese ones. A dictionary for any language is used in every lookup.';
 			case 'search_language': return TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Search language';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
+			case 'kanji_download_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Stroke order, readings, parts and common words for every kanji, in one ${size} download.';
+			case 'kanji_download': return TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Download';
+			case 'kanji_download_failed': return TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'The download stopped. Try again.';
+			case 'kanji_search': return TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Search this kanji';
+			case 'kanji_on': return TranslationOverrides.string(_root.$meta, 'kanji_on', {}) ?? 'On';
+			case 'kanji_kun': return TranslationOverrides.string(_root.$meta, 'kanji_kun', {}) ?? 'Kun';
+			case 'kanji_grade': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_grade', {'n': n}) ?? 'Grade ${n}';
+			case 'kanji_joyo': return TranslationOverrides.string(_root.$meta, 'kanji_joyo', {}) ?? 'Jōyō';
+			case 'kanji_jinmeiyo': return TranslationOverrides.string(_root.$meta, 'kanji_jinmeiyo', {}) ?? 'Jinmeiyō';
+			case 'kanji_strokes': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_strokes', {'n': n}) ?? '${n} strokes';
+			case 'kanji_book_rank': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_book_rank', {'n': n}) ?? '#${n} in books';
+			case 'kanji_parts': return TranslationOverrides.string(_root.$meta, 'kanji_parts', {}) ?? 'Parts';
+			case 'kanji_radical': return TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Radical';
+			case 'kanji_variants': return TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Variants';
+			case 'kanji_used_in': return TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Used in';
+			case 'kanji_words': return TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Words';
+			case 'kanji_show_all': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Show all ${n}';
+			case 'kanji_no_details': return TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'The kanji data has nothing on this character.';
+			case 'kanji_sources': return ({required Object sources}) => TranslationOverrides.string(_root.$meta, 'kanji_sources', {'sources': sources}) ?? 'Kanji data from ${sources}.';
+			case 'kanji_remove': return TranslationOverrides.string(_root.$meta, 'kanji_remove', {}) ?? 'Remove kanji data';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Card exported to 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Incognito mode on. Dictionary, media and search history will not be tracked.';
 			case 'info_incognito_off': return TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Incognito mode off. Dictionary, media and search history will be tracked.';
@@ -4543,6 +4603,26 @@ extension on _StringsVi {
 			case 'dictionary_language_info': return TranslationOverrides.string(_root.$meta, 'dictionary_language_info', {}) ?? 'Khi tra từ, chỉ dùng từ điển của ngôn ngữ đang tra: trong sách tiếng Nhật thì dùng từ điển tiếng Nhật. Từ điển cho mọi ngôn ngữ được dùng trong mọi lần tra.';
 			case 'search_language': return TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Ngôn ngữ tra cứu';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
+			case 'kanji_download_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Thứ tự nét, âm đọc, bộ phận và từ thông dụng của mọi chữ Hán, tải một lần ${size}.';
+			case 'kanji_download': return TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Tải về';
+			case 'kanji_download_failed': return TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'Tải bị gián đoạn. Hãy thử lại.';
+			case 'kanji_search': return TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Tra chữ này';
+			case 'kanji_on': return TranslationOverrides.string(_root.$meta, 'kanji_on', {}) ?? 'Âm On';
+			case 'kanji_kun': return TranslationOverrides.string(_root.$meta, 'kanji_kun', {}) ?? 'Âm Kun';
+			case 'kanji_grade': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_grade', {'n': n}) ?? 'Lớp ${n}';
+			case 'kanji_joyo': return TranslationOverrides.string(_root.$meta, 'kanji_joyo', {}) ?? 'Thường dụng';
+			case 'kanji_jinmeiyo': return TranslationOverrides.string(_root.$meta, 'kanji_jinmeiyo', {}) ?? 'Nhân danh';
+			case 'kanji_strokes': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_strokes', {'n': n}) ?? '${n} nét';
+			case 'kanji_book_rank': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_book_rank', {'n': n}) ?? 'Hạng ${n} trong sách';
+			case 'kanji_parts': return TranslationOverrides.string(_root.$meta, 'kanji_parts', {}) ?? 'Bộ phận';
+			case 'kanji_radical': return TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Bộ thủ';
+			case 'kanji_variants': return TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Dị thể';
+			case 'kanji_used_in': return TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Có trong chữ';
+			case 'kanji_words': return TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Từ vựng';
+			case 'kanji_show_all': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Xem cả ${n}';
+			case 'kanji_no_details': return TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'Dữ liệu chữ Hán không có ký tự này.';
+			case 'kanji_sources': return ({required Object sources}) => TranslationOverrides.string(_root.$meta, 'kanji_sources', {'sources': sources}) ?? 'Dữ liệu chữ Hán từ ${sources}.';
+			case 'kanji_remove': return TranslationOverrides.string(_root.$meta, 'kanji_remove', {}) ?? 'Xoá dữ liệu chữ Hán';
 			case 'card_exported': return ({required Object deck}) => TranslationOverrides.string(_root.$meta, 'card_exported', {'deck': deck}) ?? 'Đã xuất thẻ vào 『${deck}』.';
 			case 'info_incognito_on': return TranslationOverrides.string(_root.$meta, 'info_incognito_on', {}) ?? 'Đã bật chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ không được ghi lại.';
 			case 'info_incognito_off': return TranslationOverrides.string(_root.$meta, 'info_incognito_off', {}) ?? 'Đã tắt chế độ ẩn danh. Lịch sử từ điển, nội dung và tìm kiếm sẽ được ghi lại.';

@@ -53,6 +53,7 @@ export 'src/pages/implementations/meaning_search_toggle.dart';
 export 'src/pages/implementations/subtitle_appearance_sheet.dart';
 export 'src/pages/implementations/subtitle_search_sheet.dart';
 export 'src/pages/implementations/ttu_sheets.dart';
+export 'src/pages/implementations/kanji_sheet.dart';
 export 'src/pages/implementations/video_finder_page.dart';
 export 'src/pages/implementations/ttu_reader_menu.dart';
 export 'src/pages/implementations/ttu_memo_colors.dart';

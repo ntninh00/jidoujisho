@@ -137,7 +137,7 @@ int compareAppVersions(String a, String b) {
 }
 
 /// The SHA-256 of the file at [filePath], read a megabyte at a time.
-String _sha256Of(String filePath) {
+String sha256OfFile(String filePath) {
   late Digest digest;
   ByteConversionSink sink = sha256.startChunkedConversion(
       ChunkedConversionSink<Digest>.withCallback(
@@ -356,7 +356,8 @@ class AppUpdates {
           .cast<Map<String, dynamic>>()
           .where((json) => json['draft'] != true)
           .map(AppRelease.fromJson)
-          .where((release) => release.tag.isNotEmpty)
+          // Data such as the kanji pack has releases of its own.
+          .where((release) => release.tag.startsWith('v'))
           .toList();
       _show(found);
       await _preferences.put('app_releases',
@@ -448,7 +449,7 @@ class AppUpdates {
     if (expected == null) {
       return true;
     }
-    return await compute(_sha256Of, file.path) == expected;
+    return await compute(sha256OfFile, file.path) == expected;
   }
 
   /// Opens Android's installer on [apk]. Returns false when Android first

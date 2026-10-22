@@ -17,6 +17,7 @@ export 'src/dictionary/dictionary_css.dart';
 export 'src/dictionary/dictionary_server.dart';
 export 'src/dictionary/dictionary_profile.dart';
 export 'src/dictionary/dictionary_rebuild.dart';
+export 'src/dictionary/kanji_pack.dart';
 
 export 'src/dictionary/formats/yomichan_dictionary_format.dart';
 export 'src/dictionary/formats/abbyy_lingvo_format.dart';

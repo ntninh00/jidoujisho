@@ -103,6 +103,7 @@ dependencies:
       ref: 290ee1097d67cafc50f3aba1ba5bba01e758d877
   package_info_plus: ^4.0.2
   path: ^1.8.2
+  path_parsing: ^1.0.1
   path_provider: ^2.0.13
   permission_handler: ^10.2.0
   progress_indicators: ^1.0.0
