@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1928 (964 per locale)
+/// Strings: 1930 (965 per locale)
 ///
-/// Built on 2026-10-22 at 23:44 UTC
+/// Built on 2026-10-27 at 23:32 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -389,6 +389,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get kanji_radical => TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Radical';
 	String get kanji_variants => TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Variants';
 	String get kanji_used_in => TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Used in';
+	String kanji_count({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_count', {'n': n}) ?? '${n} kanji';
 	String get kanji_words => TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Words';
 	String kanji_show_all({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Show all ${n}';
 	String get kanji_no_details => TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'The kanji data has nothing on this character.';
@@ -2026,6 +2027,7 @@ class _StringsVi extends _StringsEn {
 	@override String get kanji_radical => TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Bộ thủ';
 	@override String get kanji_variants => TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Dị thể';
 	@override String get kanji_used_in => TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Có trong chữ';
+	@override String kanji_count({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_count', {'n': n}) ?? '${n} chữ';
 	@override String get kanji_words => TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Từ vựng';
 	@override String kanji_show_all({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Xem cả ${n}';
 	@override String get kanji_no_details => TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'Dữ liệu chữ Hán không có ký tự này.';
@@ -3642,6 +3644,7 @@ extension on _StringsEn {
 			case 'kanji_radical': return TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Radical';
 			case 'kanji_variants': return TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Variants';
 			case 'kanji_used_in': return TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Used in';
+			case 'kanji_count': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_count', {'n': n}) ?? '${n} kanji';
 			case 'kanji_words': return TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Words';
 			case 'kanji_show_all': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Show all ${n}';
 			case 'kanji_no_details': return TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'The kanji data has nothing on this character.';
@@ -4618,6 +4621,7 @@ extension on _StringsVi {
 			case 'kanji_radical': return TranslationOverrides.string(_root.$meta, 'kanji_radical', {}) ?? 'Bộ thủ';
 			case 'kanji_variants': return TranslationOverrides.string(_root.$meta, 'kanji_variants', {}) ?? 'Dị thể';
 			case 'kanji_used_in': return TranslationOverrides.string(_root.$meta, 'kanji_used_in', {}) ?? 'Có trong chữ';
+			case 'kanji_count': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_count', {'n': n}) ?? '${n} chữ';
 			case 'kanji_words': return TranslationOverrides.string(_root.$meta, 'kanji_words', {}) ?? 'Từ vựng';
 			case 'kanji_show_all': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'kanji_show_all', {'n': n}) ?? 'Xem cả ${n}';
 			case 'kanji_no_details': return TranslationOverrides.string(_root.$meta, 'kanji_no_details', {}) ?? 'Dữ liệu chữ Hán không có ký tự này.';

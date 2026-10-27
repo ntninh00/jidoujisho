@@ -42,6 +42,10 @@ class KanjiWord {
   final String gloss;
 }
 
+/// Which reading of a kanji a word uses, and where it sits in the word's
+/// reading, from `start` up to `end`.
+typedef KanjiWordReading = ({String reading, int start, int end});
+
 /// What the kanji pack knows about one character.
 class KanjiInfo {
   /// Describe a character.
@@ -136,6 +140,118 @@ class KanjiInfo {
 
   /// Kanji with it as a part, most used first.
   final String usedIn;
+
+  /// Which of its readings [word] reads it with, or null when none fits, as
+  /// in 今日 (きょう). Sound changes count, as in 曜日 (ようび) and 日記
+  /// (にっき), and a kun reading may carry okurigana the word leaves
+  /// unwritten, as 物語 (ものがたり) does.
+  KanjiWordReading? readingIn(KanjiWord word) {
+    int at = word.word.indexOf(character);
+    if (at < 0) {
+      return null;
+    }
+    String text = _hiragana(word.reading);
+    String before = _hiragana(word.word.substring(0, at));
+    String after = _hiragana(word.word.substring(at + character.length));
+    bool kanaBefore = _isKana(before);
+    bool kanaAfter = _isKana(after);
+
+    // Where form and unwritten more kana sit in the word's reading.
+    int? place(String form, int unwritten) {
+      int length = form.length + unwritten;
+      if (kanaBefore && kanaAfter) {
+        return text.length == before.length + length + after.length &&
+                text.startsWith(before + form) &&
+                text.endsWith(after)
+            ? before.length
+            : null;
+      }
+      if (unwritten > 0 && !kanaAfter) {
+        return null;
+      }
+      if (kanaBefore) {
+        return text.length > before.length + length &&
+                text.startsWith(before + form)
+            ? before.length
+            : null;
+      }
+      if (kanaAfter) {
+        int start = text.length - after.length - length;
+        return start > 0 && text.startsWith(form, start) && text.endsWith(after)
+            ? start
+            : null;
+      }
+      int start = text.indexOf(form, 1);
+      return start > 0 && start + length < text.length ? start : null;
+    }
+
+    KanjiWordReading? best;
+    int bestScore = 0;
+    for (String reading in [...onReadings, ...kunReadings]) {
+      bool kun = kunReadings.contains(reading);
+      List<String> halves = _hiragana(reading.replaceAll('-', '')).split('.');
+      String stem = halves.first;
+      String okurigana = halves.length > 1 ? halves[1] : '';
+      if (stem.isEmpty) {
+        continue;
+      }
+      for (String form in _soundChanges(stem)) {
+        for (int unwritten = 0; unwritten <= (kun ? 2 : 0); unwritten++) {
+          int? start = place(form, unwritten);
+          if (start == null) {
+            continue;
+          }
+          // Longer readings first, then ones read as written, then ones
+          // whose okurigana the word writes out.
+          int score = 1 +
+              stem.length * 4 +
+              (form == stem ? 2 : 0) -
+              unwritten * 2 +
+              (okurigana.isNotEmpty && after.startsWith(okurigana) ? 3 : 0);
+          if (score > bestScore) {
+            bestScore = score;
+            best = (
+              reading: reading,
+              start: start,
+              end: start + form.length + unwritten,
+            );
+          }
+        }
+      }
+    }
+    return best;
+  }
+
+  static String _hiragana(String text) => String.fromCharCodes(text.codeUnits
+      .map((unit) => unit >= 0x30A1 && unit <= 0x30F6 ? unit - 0x60 : unit));
+
+  static bool _isKana(String text) => text.codeUnits
+      .every((unit) => (unit >= 0x3041 && unit <= 0x309F) || unit == 0x30FC);
+
+  static const String _plain = 'かきくけこさしすせそたちつてとはひふへほちつ';
+  static const String _voiced = 'がぎぐげござじずぜぞだぢづでどばびぶべぼじず';
+
+  /// [stem] as it may sound in a word: voiced at the start (春 in 青春 is
+  /// not, 日 in 曜日 is), or cut short before another sound (日 in 日記).
+  static Iterable<String> _soundChanges(String stem) {
+    String first = stem[0];
+    String rest = stem.substring(1);
+    Set<String> starts = {stem};
+    for (int i = 0; i < _plain.length; i++) {
+      if (_plain[i] == first) {
+        starts.add(_voiced[i] + rest);
+      }
+    }
+    int half = 'はひふへほ'.indexOf(first);
+    if (half >= 0) {
+      starts.add('ぱぴぷぺぽ'[half] + rest);
+    }
+    return {
+      ...starts,
+      if (stem.length > 1 && 'つくきち'.contains(stem[stem.length - 1]))
+        for (String start in starts) '${start.substring(0, start.length - 1)}っ',
+    };
+  }
 }
 
 /// The downloadable kanji data behind the kanji sheet: one file, found by
@@ -183,39 +299,56 @@ class KanjiPack {
   bool get isInstalled => _file.existsSync();
 
   /// What the pack knows about [character], or null when it has nothing.
-  Future<KanjiInfo?> lookup(String character) async {
-    if (character.runes.length != 1 || !isInstalled) {
-      return null;
+  Future<KanjiInfo?> lookup(String character) async =>
+      (await lookupAll([character]))[character];
+
+  /// What the pack knows about each of [characters] that it has, read with
+  /// the file opened once.
+  Future<Map<String, KanjiInfo>> lookupAll(Iterable<String> characters) async {
+    Map<String, KanjiInfo> found = {};
+    if (!isInstalled) {
+      return found;
     }
     RandomAccessFile file = await _file.open();
     try {
       if (_index == null) {
         await _readIndex(file);
       }
-      ByteData index = ByteData.sublistView(_index!);
-      int code = character.runes.first;
-      int low = 0;
-      int high = index.lengthInBytes ~/ 12 - 1;
-      while (low <= high) {
-        int middle = (low + high) >> 1;
-        int found = index.getUint32(middle * 12, Endian.little);
-        if (found < code) {
-          low = middle + 1;
-        } else if (found > code) {
-          high = middle - 1;
-        } else {
-          int offset = index.getUint32(middle * 12 + 4, Endian.little);
-          int length = index.getUint32(middle * 12 + 8, Endian.little);
-          await file.setPosition(_records + offset);
-          Uint8List record = await file.read(length);
-          return KanjiInfo.fromJson(
-              jsonDecode(utf8.decode(record)) as Map<String, dynamic>);
+      for (String character in characters) {
+        if (character.runes.length == 1 && !found.containsKey(character)) {
+          KanjiInfo? info = await _read(file, character.runes.first);
+          if (info != null) {
+            found[character] = info;
+          }
         }
       }
-      return null;
+      return found;
     } finally {
       await file.close();
     }
+  }
+
+  Future<KanjiInfo?> _read(RandomAccessFile file, int code) async {
+    ByteData index = ByteData.sublistView(_index!);
+    int low = 0;
+    int high = index.lengthInBytes ~/ 12 - 1;
+    while (low <= high) {
+      int middle = (low + high) >> 1;
+      int found = index.getUint32(middle * 12, Endian.little);
+      if (found < code) {
+        low = middle + 1;
+      } else if (found > code) {
+        high = middle - 1;
+      } else {
+        int offset = index.getUint32(middle * 12 + 4, Endian.little);
+        int length = index.getUint32(middle * 12 + 8, Endian.little);
+        await file.setPosition(_records + offset);
+        Uint8List record = await file.read(length);
+        return KanjiInfo.fromJson(
+            jsonDecode(utf8.decode(record)) as Map<String, dynamic>);
+      }
+    }
+    return null;
   }
 
   Future<void> _readIndex(RandomAccessFile file) async {

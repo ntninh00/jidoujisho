@@ -231,6 +231,7 @@
     "kanji_radical": "Radical",
     "kanji_variants": "Variants",
     "kanji_used_in": "Used in",
+    "kanji_count": "$n kanji",
     "kanji_words": "Words",
     "kanji_show_all": "Show all $n",
     "kanji_no_details": "The kanji data has nothing on this character.",

@@ -108,6 +108,56 @@ void main() {
     expect(await pack.lookup('語学'), isNull);
   });
 
+  test('looks several kanji up at once, skipping what it lacks', () async {
+    writePack(directory, [
+      {'k': '語', 's': 14},
+      {'k': '口', 's': 3},
+    ]);
+    Map<String, KanjiInfo> found =
+        await KanjiPack(directory).lookupAll(['口', '猫', '語', '口']);
+    expect(found.keys, ['口', '語']);
+    expect(found['語']!.strokes, 14);
+  });
+
+  test('finds which reading a word reads its kanji with', () {
+    String? read(KanjiInfo info, String word, String reading) {
+      KanjiWordReading? found = info.readingIn(KanjiWord(word, reading, ''));
+      return found == null
+          ? null
+          : '${found.reading} '
+              '${reading.substring(found.start, found.end)}';
+    }
+
+    KanjiInfo go = const KanjiInfo(
+        character: '語', onReadings: ['ゴ'], kunReadings: ['かた.る', 'かた.らう']);
+    expect(read(go, '英語', 'えいご'), 'ゴ ご');
+    expect(read(go, '語学', 'ごがく'), 'ゴ ご');
+    expect(read(go, '語る', 'かたる'), 'かた.る かた');
+    expect(read(go, '語らう', 'かたらう'), 'かた.らう かた');
+    expect(read(go, '物語', 'ものがたり'), 'かた.る がたり');
+    expect(read(go, '物語る', 'ものがたる'), 'かた.る がた');
+
+    KanjiInfo day = const KanjiInfo(
+        character: '日',
+        onReadings: ['ニチ', 'ジツ'],
+        kunReadings: ['ひ', '-び', '-か']);
+    expect(read(day, '毎日', 'まいにち'), 'ニチ にち');
+    expect(read(day, '日記', 'にっき'), 'ニチ にっ');
+    expect(read(day, '曜日', 'ようび'), '-び び');
+    expect(read(day, '日々', 'ひび'), 'ひ ひ');
+    expect(read(day, '前日', 'ぜんじつ'), 'ジツ じつ');
+    expect(read(day, '今日', 'きょう'), isNull);
+    expect(read(day, '明日', 'あした'), isNull);
+
+    KanjiInfo husband = const KanjiInfo(
+        character: '夫', onReadings: ['フ', 'フウ', 'ブ'], kunReadings: ['おっと']);
+    expect(read(husband, '夫婦', 'ふうふ'), 'フウ ふう');
+    expect(read(husband, '夫人', 'ふじん'), 'フ ふ');
+    expect(read(husband, '大丈夫', 'だいじょうぶ'), 'ブ ぶ');
+    expect(read(husband, '老夫婦', 'ろうふうふ'), 'フウ ふう');
+    expect(read(husband, '夫', 'おっと'), 'おっと おっと');
+  });
+
   test('a pack of another format is refused', () async {
     writePack(
         directory,

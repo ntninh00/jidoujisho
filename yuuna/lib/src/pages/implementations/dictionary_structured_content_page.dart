@@ -699,7 +699,8 @@ class JidoujishoDictionaryImage extends ConsumerWidget {
     final monochrome = attributes['data-jdj-appearance'] == 'monochrome';
     final tint = monochrome
         ? ColorFilter.mode(
-            textColor ?? Theme.of(context).colorScheme.onSurface,
+            // Not onSurface: the dark theme keeps the light scheme's black.
+            textColor ?? Theme.of(context).textTheme.bodyMedium!.color!,
             BlendMode.srcIn,
           )
         : null;
