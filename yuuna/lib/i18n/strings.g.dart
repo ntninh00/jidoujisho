@@ -1,9 +1,9 @@
 /// Generated file. Do not edit.
 ///
 /// Locales: 2
-/// Strings: 1930 (965 per locale)
+/// Strings: 1948 (974 per locale)
 ///
-/// Built on 2026-10-27 at 23:32 UTC
+/// Built on 2026-10-28 at 02:43 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint
@@ -375,6 +375,7 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get search_language => TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Search language';
 	String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
 	String kanji_download_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Stroke order, readings, parts and common words for every kanji, in one ${size} download.';
+	String kanji_update_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_update_prompt', {'size': size}) ?? 'New kanji data draws each part inside the kanji it is used in. One ${size} download replaces the old data.';
 	String get kanji_download => TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Download';
 	String get kanji_download_failed => TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'The download stopped. Try again.';
 	String get kanji_search => TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Search this kanji';
@@ -684,6 +685,14 @@ class _StringsEn implements BaseTranslations<AppLocale, _StringsEn> {
 	String get ttu_continue => TranslationOverrides.string(_root.$meta, 'ttu_continue', {}) ?? 'Continue';
 	String get ttu_memo => TranslationOverrides.string(_root.$meta, 'ttu_memo', {}) ?? 'Memo';
 	String get ttu_memos => TranslationOverrides.string(_root.$meta, 'ttu_memos', {}) ?? 'Memos';
+	String get ttu_memos_by_book => TranslationOverrides.string(_root.$meta, 'ttu_memos_by_book', {}) ?? 'By book';
+	String get ttu_memos_by_date => TranslationOverrides.string(_root.$meta, 'ttu_memos_by_date', {}) ?? 'By date';
+	String get ttu_memos_wall => TranslationOverrides.string(_root.$meta, 'ttu_memos_wall', {}) ?? 'Wall';
+	String get ttu_memos_search => TranslationOverrides.string(_root.$meta, 'ttu_memos_search', {}) ?? 'Search memos';
+	String get ttu_memos_colors_info => TranslationOverrides.string(_root.$meta, 'ttu_memos_colors_info', {}) ?? 'Tap a colour to show only its memos, or several to see them together. Hold a colour to give it a name, such as Words or Questions.';
+	String get ttu_memos_color_name => TranslationOverrides.string(_root.$meta, 'ttu_memos_color_name', {}) ?? 'Name this colour';
+	String get ttu_memos_none_found => TranslationOverrides.string(_root.$meta, 'ttu_memos_none_found', {}) ?? 'No memos match.';
+	String ttu_memos_count({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_memos_count', {'n': n}) ?? '${n} memos';
 	String get ttu_new_memo => TranslationOverrides.string(_root.$meta, 'ttu_new_memo', {}) ?? 'New memo';
 	String get ttu_edit_memo => TranslationOverrides.string(_root.$meta, 'ttu_edit_memo', {}) ?? 'Edit memo';
 	String get ttu_memo_placeholder => TranslationOverrides.string(_root.$meta, 'ttu_memo_placeholder', {}) ?? 'A word to look up, a question, why this line matters';
@@ -2013,6 +2022,7 @@ class _StringsVi extends _StringsEn {
 	@override String get search_language => TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Ngôn ngữ tra cứu';
 	@override String search_language_hint({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
 	@override String kanji_download_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Thứ tự nét, âm đọc, bộ phận và từ thông dụng của mọi chữ Hán, tải một lần ${size}.';
+	@override String kanji_update_prompt({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_update_prompt', {'size': size}) ?? 'Dữ liệu chữ Hán mới tô màu từng bộ phận trong các chữ có nó. Tải một lần ${size} để thay dữ liệu cũ.';
 	@override String get kanji_download => TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Tải về';
 	@override String get kanji_download_failed => TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'Tải bị gián đoạn. Hãy thử lại.';
 	@override String get kanji_search => TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Tra chữ này';
@@ -2322,6 +2332,14 @@ class _StringsVi extends _StringsEn {
 	@override String get ttu_continue => TranslationOverrides.string(_root.$meta, 'ttu_continue', {}) ?? 'Tiếp tục';
 	@override String get ttu_memo => TranslationOverrides.string(_root.$meta, 'ttu_memo', {}) ?? 'Ghi chú';
 	@override String get ttu_memos => TranslationOverrides.string(_root.$meta, 'ttu_memos', {}) ?? 'Ghi chú';
+	@override String get ttu_memos_by_book => TranslationOverrides.string(_root.$meta, 'ttu_memos_by_book', {}) ?? 'Theo sách';
+	@override String get ttu_memos_by_date => TranslationOverrides.string(_root.$meta, 'ttu_memos_by_date', {}) ?? 'Theo ngày';
+	@override String get ttu_memos_wall => TranslationOverrides.string(_root.$meta, 'ttu_memos_wall', {}) ?? 'Bảng ghi chú';
+	@override String get ttu_memos_search => TranslationOverrides.string(_root.$meta, 'ttu_memos_search', {}) ?? 'Tìm ghi chú';
+	@override String get ttu_memos_colors_info => TranslationOverrides.string(_root.$meta, 'ttu_memos_colors_info', {}) ?? 'Chạm một màu để chỉ xem ghi chú màu đó, hoặc chạm nhiều màu để xem cùng lúc. Giữ một màu để đặt tên, ví dụ Từ vựng hay Câu hỏi.';
+	@override String get ttu_memos_color_name => TranslationOverrides.string(_root.$meta, 'ttu_memos_color_name', {}) ?? 'Đặt tên cho màu này';
+	@override String get ttu_memos_none_found => TranslationOverrides.string(_root.$meta, 'ttu_memos_none_found', {}) ?? 'Không có ghi chú nào khớp.';
+	@override String ttu_memos_count({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_memos_count', {'n': n}) ?? '${n} ghi chú';
 	@override String get ttu_new_memo => TranslationOverrides.string(_root.$meta, 'ttu_new_memo', {}) ?? 'Ghi chú mới';
 	@override String get ttu_edit_memo => TranslationOverrides.string(_root.$meta, 'ttu_edit_memo', {}) ?? 'Sửa ghi chú';
 	@override String get ttu_memo_placeholder => TranslationOverrides.string(_root.$meta, 'ttu_memo_placeholder', {}) ?? 'Một từ cần tra, một câu hỏi, lý do dòng này quan trọng';
@@ -3630,6 +3648,7 @@ extension on _StringsEn {
 			case 'search_language': return TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Search language';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? 'Search ${language}…';
 			case 'kanji_download_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Stroke order, readings, parts and common words for every kanji, in one ${size} download.';
+			case 'kanji_update_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_update_prompt', {'size': size}) ?? 'New kanji data draws each part inside the kanji it is used in. One ${size} download replaces the old data.';
 			case 'kanji_download': return TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Download';
 			case 'kanji_download_failed': return TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'The download stopped. Try again.';
 			case 'kanji_search': return TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Search this kanji';
@@ -3945,6 +3964,14 @@ extension on _StringsEn {
 			case 'ttu_continue': return TranslationOverrides.string(_root.$meta, 'ttu_continue', {}) ?? 'Continue';
 			case 'ttu_memo': return TranslationOverrides.string(_root.$meta, 'ttu_memo', {}) ?? 'Memo';
 			case 'ttu_memos': return TranslationOverrides.string(_root.$meta, 'ttu_memos', {}) ?? 'Memos';
+			case 'ttu_memos_by_book': return TranslationOverrides.string(_root.$meta, 'ttu_memos_by_book', {}) ?? 'By book';
+			case 'ttu_memos_by_date': return TranslationOverrides.string(_root.$meta, 'ttu_memos_by_date', {}) ?? 'By date';
+			case 'ttu_memos_wall': return TranslationOverrides.string(_root.$meta, 'ttu_memos_wall', {}) ?? 'Wall';
+			case 'ttu_memos_search': return TranslationOverrides.string(_root.$meta, 'ttu_memos_search', {}) ?? 'Search memos';
+			case 'ttu_memos_colors_info': return TranslationOverrides.string(_root.$meta, 'ttu_memos_colors_info', {}) ?? 'Tap a colour to show only its memos, or several to see them together. Hold a colour to give it a name, such as Words or Questions.';
+			case 'ttu_memos_color_name': return TranslationOverrides.string(_root.$meta, 'ttu_memos_color_name', {}) ?? 'Name this colour';
+			case 'ttu_memos_none_found': return TranslationOverrides.string(_root.$meta, 'ttu_memos_none_found', {}) ?? 'No memos match.';
+			case 'ttu_memos_count': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_memos_count', {'n': n}) ?? '${n} memos';
 			case 'ttu_new_memo': return TranslationOverrides.string(_root.$meta, 'ttu_new_memo', {}) ?? 'New memo';
 			case 'ttu_edit_memo': return TranslationOverrides.string(_root.$meta, 'ttu_edit_memo', {}) ?? 'Edit memo';
 			case 'ttu_memo_placeholder': return TranslationOverrides.string(_root.$meta, 'ttu_memo_placeholder', {}) ?? 'A word to look up, a question, why this line matters';
@@ -4607,6 +4634,7 @@ extension on _StringsVi {
 			case 'search_language': return TranslationOverrides.string(_root.$meta, 'search_language', {}) ?? 'Ngôn ngữ tra cứu';
 			case 'search_language_hint': return ({required Object language}) => TranslationOverrides.string(_root.$meta, 'search_language_hint', {'language': language}) ?? '${language}: tìm từ…';
 			case 'kanji_download_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_download_prompt', {'size': size}) ?? 'Thứ tự nét, âm đọc, bộ phận và từ thông dụng của mọi chữ Hán, tải một lần ${size}.';
+			case 'kanji_update_prompt': return ({required Object size}) => TranslationOverrides.string(_root.$meta, 'kanji_update_prompt', {'size': size}) ?? 'Dữ liệu chữ Hán mới tô màu từng bộ phận trong các chữ có nó. Tải một lần ${size} để thay dữ liệu cũ.';
 			case 'kanji_download': return TranslationOverrides.string(_root.$meta, 'kanji_download', {}) ?? 'Tải về';
 			case 'kanji_download_failed': return TranslationOverrides.string(_root.$meta, 'kanji_download_failed', {}) ?? 'Tải bị gián đoạn. Hãy thử lại.';
 			case 'kanji_search': return TranslationOverrides.string(_root.$meta, 'kanji_search', {}) ?? 'Tra chữ này';
@@ -4922,6 +4950,14 @@ extension on _StringsVi {
 			case 'ttu_continue': return TranslationOverrides.string(_root.$meta, 'ttu_continue', {}) ?? 'Tiếp tục';
 			case 'ttu_memo': return TranslationOverrides.string(_root.$meta, 'ttu_memo', {}) ?? 'Ghi chú';
 			case 'ttu_memos': return TranslationOverrides.string(_root.$meta, 'ttu_memos', {}) ?? 'Ghi chú';
+			case 'ttu_memos_by_book': return TranslationOverrides.string(_root.$meta, 'ttu_memos_by_book', {}) ?? 'Theo sách';
+			case 'ttu_memos_by_date': return TranslationOverrides.string(_root.$meta, 'ttu_memos_by_date', {}) ?? 'Theo ngày';
+			case 'ttu_memos_wall': return TranslationOverrides.string(_root.$meta, 'ttu_memos_wall', {}) ?? 'Bảng ghi chú';
+			case 'ttu_memos_search': return TranslationOverrides.string(_root.$meta, 'ttu_memos_search', {}) ?? 'Tìm ghi chú';
+			case 'ttu_memos_colors_info': return TranslationOverrides.string(_root.$meta, 'ttu_memos_colors_info', {}) ?? 'Chạm một màu để chỉ xem ghi chú màu đó, hoặc chạm nhiều màu để xem cùng lúc. Giữ một màu để đặt tên, ví dụ Từ vựng hay Câu hỏi.';
+			case 'ttu_memos_color_name': return TranslationOverrides.string(_root.$meta, 'ttu_memos_color_name', {}) ?? 'Đặt tên cho màu này';
+			case 'ttu_memos_none_found': return TranslationOverrides.string(_root.$meta, 'ttu_memos_none_found', {}) ?? 'Không có ghi chú nào khớp.';
+			case 'ttu_memos_count': return ({required Object n}) => TranslationOverrides.string(_root.$meta, 'ttu_memos_count', {'n': n}) ?? '${n} ghi chú';
 			case 'ttu_new_memo': return TranslationOverrides.string(_root.$meta, 'ttu_new_memo', {}) ?? 'Ghi chú mới';
 			case 'ttu_edit_memo': return TranslationOverrides.string(_root.$meta, 'ttu_edit_memo', {}) ?? 'Sửa ghi chú';
 			case 'ttu_memo_placeholder': return TranslationOverrides.string(_root.$meta, 'ttu_memo_placeholder', {}) ?? 'Một từ cần tra, một câu hỏi, lý do dòng này quan trọng';

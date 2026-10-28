@@ -809,7 +809,7 @@ class _TtuMemoSheetState extends BasePageState<TtuMemoSheet>
                         ),
                       ),
                       onDismissed: (_) => _delete(memo),
-                      child: _MemoRow(
+                      child: TtuMemoRow(
                         memo: memo,
                         book: book,
                         flash: _flashId == memo.id,
@@ -920,19 +920,36 @@ class _ActionRow extends StatelessWidget {
   }
 }
 
-class _MemoRow extends StatelessWidget {
-  const _MemoRow({
+/// A memo in a list: its colour, place, note and passage, and when it was
+/// written.
+class TtuMemoRow extends StatelessWidget {
+  /// Show [memo], written in [book].
+  const TtuMemoRow({
     required this.memo,
     required this.book,
-    required this.flash,
     required this.onTap,
     required this.onEdit,
+    this.flash = false,
+    this.showBook = false,
+    super.key,
   });
 
+  /// The memo.
   final ReaderMemo memo;
+
+  /// The book it was written in.
   final TtuBook book;
+
+  /// Whether it lights up, as the one just jumped to.
   final bool flash;
+
+  /// Whether the book's title shows too, in a list of many books.
+  final bool showBook;
+
+  /// Opens the book at the memo.
   final VoidCallback onTap;
+
+  /// Edits the memo.
   final VoidCallback onEdit;
 
   @override
@@ -1004,7 +1021,11 @@ class _MemoRow extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      ttuAgo(memo.createdAt),
+                      showBook
+                          ? '${book.title} · ${ttuAgo(memo.createdAt)}'
+                          : ttuAgo(memo.createdAt),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: textTheme.labelSmall!.copyWith(color: muted),
                     ),
                   ],

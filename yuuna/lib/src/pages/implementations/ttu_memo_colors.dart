@@ -48,6 +48,9 @@ enum TtuMemoColor {
         sky => t.ttu_color_sky,
         violet => t.ttu_color_violet,
       };
+
+  /// The name the user gave the colour, such as Words, or null.
+  String? get customName => ReaderTtuSource.instance.memoColorName(this);
 }
 
 /// A row of colour swatches to pick a memo's colour from.
@@ -71,14 +74,16 @@ class TtuMemoColorPicker extends StatelessWidget {
     Color ring = Theme.of(context).brightness == Brightness.dark
         ? Colors.white
         : Colors.black87;
+    String? name = selected.customName;
     return Wrap(
       spacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         for (TtuMemoColor value in TtuMemoColor.values)
           Semantics(
             button: true,
             selected: value == selected,
-            label: value.label,
+            label: value.customName ?? value.label,
             child: InkResponse(
               onTap: () => onChanged(value),
               radius: 22,
@@ -104,6 +109,18 @@ class TtuMemoColorPicker extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        // What the colour stands for, when the user has named it.
+        if (name != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              name,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelLarge!
+                  .copyWith(color: Theme.of(context).unselectedWidgetColor),
             ),
           ),
       ],

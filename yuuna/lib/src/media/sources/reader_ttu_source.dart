@@ -197,6 +197,26 @@ class ReaderTtuSource extends ReaderMediaSource {
     await setPreference<String?>(key: 'memo_color', value: color.name);
   }
 
+  /// The name given to [color], such as Words, or null for none.
+  String? memoColorName(TtuMemoColor color) => getPreference<String?>(
+      key: 'memo_color_name_${color.name}', defaultValue: null);
+
+  /// Names [color]; an empty [name] takes the name away.
+  Future<void> setMemoColorName(TtuMemoColor color, String name) async {
+    await setPreference<String?>(
+      key: 'memo_color_name_${color.name}',
+      value: name.trim().isEmpty ? null : name.trim(),
+    );
+  }
+
+  /// How the Memos page lists memos: 0 by book, 1 by date, 2 as a wall.
+  int get memosView => getPreference<int>(key: 'memos_view', defaultValue: 0);
+
+  /// Remembers how the Memos page lists memos.
+  Future<void> setMemosView(int view) async {
+    await setPreference<int>(key: 'memos_view', value: view);
+  }
+
   /* ---------- shelf grouping and favourites ---------- */
 
   /// Bumped whenever groups, favourites or folded sections change, so the

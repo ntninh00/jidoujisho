@@ -16,8 +16,7 @@ class Ui {
       IconData(0xf4f9, fontFamily: _regular); // user
   static const IconData account_tree =
       IconData(0xec36, fontFamily: _regular); // list-tree
-  static const IconData add =
-      IconData(0xef85, fontFamily: _regular); // plus
+  static const IconData add = IconData(0xef85, fontFamily: _regular); // plus
   static const IconData add_circle =
       IconData(0xe038, fontFamily: _regular); // add
   static const IconData add_link =
@@ -63,8 +62,7 @@ class Ui {
       IconData(0xe385, fontFamily: _regular); // camera
   static const IconData chat_outlined =
       IconData(0xe553, fontFamily: _regular); // comment
-  static const IconData check =
-      IconData(0xe430, fontFamily: _regular); // check
+  static const IconData check = IconData(0xe430, fontFamily: _regular); // check
   static const IconData checklist_sharp =
       IconData(0xec32, fontFamily: _regular); // list-check
   static const IconData chevron_right =
@@ -117,8 +115,7 @@ class Ui {
       IconData(0xe6de, fontFamily: _regular); // document
   static const IconData display_settings =
       IconData(0xf165, fontFamily: _regular); // settings-window
-  static const IconData edit =
-      IconData(0xeea9, fontFamily: _regular); // pencil
+  static const IconData edit = IconData(0xeea9, fontFamily: _regular); // pencil
   static const IconData edit_note =
       IconData(0xedea, fontFamily: _regular); // note-sticky
   static const IconData edit_outlined =
@@ -145,8 +142,7 @@ class Ui {
       IconData(0xe078, fontFamily: _regular); // align-center
   static const IconData four_k = Icons.four_k;
   static const IconData hd = Icons.hd;
-  static const IconData hearing =
-      IconData(0xe748, fontFamily: _regular); // ear
+  static const IconData hearing = IconData(0xe748, fontFamily: _regular); // ear
   static const IconData hearing_disabled =
       IconData(0xe749, fontFamily: _regular); // ear-deaf
   static const IconData help =
@@ -155,14 +151,12 @@ class Ui {
       IconData(0xef35, fontFamily: _regular); // picture
   static const IconData image_search =
       IconData(0xf13b, fontFamily: _regular); // search-alt
-  static const IconData info =
-      IconData(0xeb10, fontFamily: _regular); // info
+  static const IconData info = IconData(0xeb10, fontFamily: _regular); // info
   static const IconData insert_chart =
       IconData(0xf2f3, fontFamily: _regular); // stats
   static const IconData inventory_2 =
       IconData(0xe29b, fontFamily: _regular); // box-open
-  static const IconData key =
-      IconData(0xeb79, fontFamily: _regular); // key
+  static const IconData key = IconData(0xeb79, fontFamily: _regular); // key
   static const IconData keyboard_arrow_down =
       IconData(0xe0a1, fontFamily: _regular); // angle-small-down
   static const IconData keyboard_arrow_up =
@@ -189,10 +183,8 @@ class Ui {
       IconData(0xe262, fontFamily: _regular); // books
   static const IconData light_mode =
       IconData(0xf331, fontFamily: _regular); // sun
-  static const IconData link =
-      IconData(0xec21, fontFamily: _regular); // link
-  static const IconData lock =
-      IconData(0xec4f, fontFamily: _regular); // lock
+  static const IconData link = IconData(0xec21, fontFamily: _regular); // link
+  static const IconData lock = IconData(0xec4f, fontFamily: _regular); // lock
   static const IconData login =
       IconData(0xf1b1, fontFamily: _regular); // sign-in-alt
   static const IconData lyrics =
@@ -209,8 +201,7 @@ class Ui {
       IconData(0xed31, fontFamily: _regular); // mobile
   static const IconData more_vert =
       IconData(0xeced, fontFamily: _regular); // menu-dots-vertical
-  static const IconData movie =
-      IconData(0xe86f, fontFamily: _regular); // film
+  static const IconData movie = IconData(0xe86f, fontFamily: _regular); // film
   static const IconData music_note_outlined =
       IconData(0xeda3, fontFamily: _regular); // music-note
   static const IconData music_off =
@@ -223,10 +214,8 @@ class Ui {
       IconData(0xece4, fontFamily: _regular); // memo
   static const IconData open_in_full =
       IconData(0xe7b1, fontFamily: _regular); // expand
-  static const IconData paste =
-      IconData(0xee7f, fontFamily: _regular); // paste
-  static const IconData pause =
-      IconData(0xee85, fontFamily: _regular); // pause
+  static const IconData paste = IconData(0xee7f, fontFamily: _regular); // paste
+  static const IconData pause = IconData(0xee85, fontFamily: _regular); // pause
   static const IconData perm_media =
       IconData(0xef23, fontFamily: _regular); // photo-video
   static const IconData photo_library =
@@ -266,23 +255,20 @@ class Ui {
       IconData(0xf0c0, fontFamily: _regular); // rotate-left
   static const IconData reply =
       IconData(0xf4da, fontFamily: _regular); // undo-alt
-  static const IconData save =
-      IconData(0xe6c4, fontFamily: _regular); // disk
+  static const IconData save = IconData(0xe6c4, fontFamily: _regular); // disk
   static const IconData sd = Icons.sd;
   static const IconData search =
       IconData(0xf13a, fontFamily: _regular); // search
   static const IconData search_off =
       IconData(0xf13a, fontFamily: _regular); // search
-  static const IconData sell =
-      IconData(0xf37b, fontFamily: _regular); // tags
+  static const IconData sell = IconData(0xf37b, fontFamily: _regular); // tags
   static const IconData send =
       IconData(0xee64, fontFamily: _regular); // paper-plane
   static const IconData settings =
       IconData(0xf163, fontFamily: _regular); // settings
   static const IconData settings_outlined =
       IconData(0xf163, fontFamily: _regular); // settings
-  static const IconData share =
-      IconData(0xf16a, fontFamily: _regular); // share
+  static const IconData share = IconData(0xf16a, fontFamily: _regular); // share
   static const IconData skip_next =
       IconData(0xe90a, fontFamily: _regular); // forward
   static const IconData smart_display =
@@ -331,8 +317,7 @@ class Ui {
       IconData(0xebb1, fontFamily: _regular); // language
   static const IconData tune =
       IconData(0xf164, fontFamily: _regular); // settings-sliders
-  static const IconData undo =
-      IconData(0xf4d9, fontFamily: _regular); // undo
+  static const IconData undo = IconData(0xf4d9, fontFamily: _regular); // undo
   static const IconData undo_rounded =
       IconData(0xf4d9, fontFamily: _regular); // undo
   static const IconData update =
@@ -372,8 +357,7 @@ class Ui {
       IconData(0xe8eb, fontFamily: _regular); // folder-open
   static const IconData folderClosed =
       IconData(0xe8d6, fontFamily: _regular); // folder
-  static const IconData plus =
-      IconData(0xef85, fontFamily: _regular); // plus
+  static const IconData plus = IconData(0xef85, fontFamily: _regular); // plus
   static const IconData plusSmall =
       IconData(0xef88, fontFamily: _regular); // plus-small
   static const IconData cross =
@@ -384,8 +368,7 @@ class Ui {
       IconData(0xe0a3, fontFamily: _regular); // angle-small-right
   static const IconData menuDots =
       IconData(0xeced, fontFamily: _regular); // menu-dots-vertical
-  static const IconData books =
-      IconData(0xe262, fontFamily: _regular); // books
+  static const IconData books = IconData(0xe262, fontFamily: _regular); // books
   static const IconData myWords =
       IconData(0xe248, fontFamily: _regular); // book-bookmark
   static const IconData myWordsSolid =
@@ -396,10 +379,8 @@ class Ui {
       IconData(0xe7b1, fontFamily: _regular); // expand
   static const IconData textSize =
       IconData(0xf3be, fontFamily: _regular); // text-size
-  static const IconData sun =
-      IconData(0xf331, fontFamily: _regular); // sun
-  static const IconData moon =
-      IconData(0xed67, fontFamily: _regular); // moon
+  static const IconData sun = IconData(0xf331, fontFamily: _regular); // sun
+  static const IconData moon = IconData(0xed67, fontFamily: _regular); // moon
   static const IconData cloudUpload =
       IconData(0xe510, fontFamily: _regular); // cloud-upload
   static const IconData chapters =
@@ -412,20 +393,17 @@ class Ui {
       IconData(0xe431, fontFamily: _regular); // check-circle
   static const IconData checkCircleSolid =
       IconData(0xe431, fontFamily: _solid); // check-circle
-  static const IconData globe =
-      IconData(0xe974, fontFamily: _regular); // globe
+  static const IconData globe = IconData(0xe974, fontFamily: _regular); // globe
   static const IconData server =
       IconData(0xe647, fontFamily: _regular); // database
-  static const IconData trash =
-      IconData(0xf463, fontFamily: _regular); // trash
+  static const IconData trash = IconData(0xf463, fontFamily: _regular); // trash
   static const IconData palette =
       IconData(0xee59, fontFamily: _regular); // palette
   static const IconData themeAuto =
       IconData(0xe485, fontFamily: _regular); // circle-half-stroke
   static const IconData angleLeft =
       IconData(0xe0a2, fontFamily: _regular); // angle-small-left
-  static const IconData star =
-      IconData(0xf2e0, fontFamily: _regular); // star
+  static const IconData star = IconData(0xf2e0, fontFamily: _regular); // star
   static const IconData starSolid =
       IconData(0xf2e0, fontFamily: _solid); // star
   static const IconData layers =
@@ -434,12 +412,13 @@ class Ui {
       IconData(0xf05e, fontFamily: _regular); // refresh
   static const IconData grip =
       IconData(0xe9c2, fontFamily: _regular); // grip-lines
-  static const IconData eye =
-      IconData(0xe7bb, fontFamily: _regular); // eye
+  static const IconData eye = IconData(0xe7bb, fontFamily: _regular); // eye
   static const IconData eyeCrossed =
       IconData(0xe7be, fontFamily: _regular); // eye-crossed
   static const IconData fileImport =
       IconData(0xe84f, fontFamily: _regular); // file-import
-  static const IconData tags =
-      IconData(0xf37b, fontFamily: _regular); // tags
+  static const IconData tags = IconData(0xf37b, fontFamily: _regular); // tags
+  static const IconData calendar =
+      IconData(0xe36b, fontFamily: _regular); // calendar-lines
+  static const IconData grid = IconData(0xe0c4, fontFamily: _regular); // apps
 }

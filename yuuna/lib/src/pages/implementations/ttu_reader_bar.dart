@@ -4,8 +4,8 @@ import 'package:yuuna/pages.dart';
 import 'package:yuuna/utils.dart';
 
 /// The bar at the top of the Reader tab when ッツ Ebook Reader is the source:
-/// a labelled source switcher and Add, one height. Its settings are under
-/// the gear at the top of the home page.
+/// a labelled source switcher, every book's memos and Add, one height. Its
+/// settings are under the gear at the top of the home page.
 class TtuReaderBar extends BasePage {
   /// Create the bar.
   const TtuReaderBar({super.key});
@@ -72,6 +72,25 @@ class _TtuReaderBarState extends BasePageState<TtuReaderBar> {
               ),
             ),
             const Spacer(),
+            Tooltip(
+              message: t.ttu_memos,
+              child: Material(
+                color: surface,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TtuMemosPage()),
+                  ),
+                  child: const SizedBox(
+                    width: _height,
+                    child: Icon(Ui.memo, size: 18),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             Material(
               color: accent,
               shape: const StadiumBorder(),
