@@ -335,7 +335,9 @@ class _KanjiSheetState extends State<KanjiSheet> {
           Text(_trail.last, style: const TextStyle(fontSize: 88, height: 1.2)),
           const SizedBox(height: 12),
           Text(
-            t.kanji_download_prompt(size: size),
+            _pack!.hasOlder
+                ? t.kanji_update_prompt(size: size)
+                : t.kanji_download_prompt(size: size),
             textAlign: TextAlign.center,
             style: textTheme.bodyMedium!.copyWith(color: muted, height: 1.4),
           ),
@@ -1025,12 +1027,20 @@ class _KanjiListState extends State<_KanjiList> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 48,
-              child: Text(character,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 34, height: 1.2)),
-            ),
+            // Drawn from its strokes where it can be, the part in the accent.
+            if (info != null && info.strokePaths.isNotEmpty)
+              _KanjiGlyph(
+                paths: info.strokePaths,
+                marked: info.strokesOf(widget.part.character),
+                size: 48,
+              )
+            else
+              SizedBox(
+                width: 48,
+                child: Text(character,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 34, height: 1.2)),
+              ),
             const SizedBox(width: 12),
             if (info != null)
               Expanded(
@@ -1076,6 +1086,83 @@ class _KanjiListState extends State<_KanjiList> {
   }
 }
 
+Path _parseStroke(String data) {
+  _PathWriter writer = _PathWriter();
+  writeSvgPathDataToPath(data, writer);
+  return writer.path;
+}
+
+/// A kanji drawn from its strokes, those [marked] in the accent.
+class _KanjiGlyph extends StatefulWidget {
+  const _KanjiGlyph({
+    required this.paths,
+    required this.marked,
+    required this.size,
+  });
+
+  final List<String> paths;
+  final Set<int> marked;
+  final double size;
+
+  @override
+  State<_KanjiGlyph> createState() => _KanjiGlyphState();
+}
+
+class _KanjiGlyphState extends State<_KanjiGlyph> {
+  late final List<Path> _paths = widget.paths.map(_parseStroke).toList();
+
+  @override
+  Widget build(BuildContext context) {
+    ThemeData theme = Theme.of(context);
+    return SizedBox.square(
+      dimension: widget.size,
+      child: CustomPaint(
+        painter: _GlyphPainter(
+          paths: _paths,
+          marked: widget.marked,
+          ink: _ink(theme),
+          accent: theme.colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlyphPainter extends CustomPainter {
+  _GlyphPainter({
+    required this.paths,
+    required this.marked,
+    required this.ink,
+    required this.accent,
+  });
+
+  final List<Path> paths;
+  final Set<int> marked;
+  final Color ink;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / 109);
+    Paint stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    for (int i = 0; i < paths.length; i++) {
+      canvas.drawPath(
+          paths[i], stroke..color = marked.contains(i) ? accent : ink);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GlyphPainter old) =>
+      old.paths != paths ||
+      old.marked != marked ||
+      old.ink != ink ||
+      old.accent != accent;
+}
+
 /// A kanji written out stroke by stroke, again on a tap.
 class KanjiStrokes extends StatefulWidget {
   /// Draw [paths], KanjiVG strokes in a 109 by 109 box, at [size].
@@ -1093,17 +1180,11 @@ class KanjiStrokes extends StatefulWidget {
 
 class _KanjiStrokesState extends State<KanjiStrokes>
     with SingleTickerProviderStateMixin {
-  late final List<Path> _paths = widget.paths.map(_parse).toList();
+  late final List<Path> _paths = widget.paths.map(_parseStroke).toList();
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: Duration(milliseconds: (_paths.length * 420).clamp(1200, 9000)),
   )..forward();
-
-  static Path _parse(String data) {
-    _PathWriter writer = _PathWriter();
-    writeSvgPathDataToPath(data, writer);
-    return writer.path;
-  }
 
   @override
   void dispose() {

@@ -10,14 +10,15 @@ import 'package:yuuna/models.dart';
 /// One part of a kanji, as KanjiVG draws it, with the parts it is made of.
 class KanjiPart {
   /// Describe a part.
-  const KanjiPart(this.character, this.parts);
+  const KanjiPart(this.character, this.parts, [this.strokes = const []]);
 
-  /// Read a part from the pack's `[character, [parts]]` form.
+  /// Read a part from the pack's `[character, [parts], [strokes]]` form.
   factory KanjiPart.fromJson(List<dynamic> json) => KanjiPart(
         json[0] as String,
         (json[1] as List)
             .map((part) => KanjiPart.fromJson(part as List))
             .toList(),
+        json.length > 2 ? (json[2] as List).cast<int>() : const [],
       );
 
   /// The part, as a character.
@@ -25,6 +26,9 @@ class KanjiPart {
 
   /// What the part is made of.
   final List<KanjiPart> parts;
+
+  /// The kanji's strokes that draw this part, counted from 0.
+  final List<int> strokes;
 }
 
 /// A common word written with a kanji.
@@ -140,6 +144,24 @@ class KanjiInfo {
 
   /// Kanji with it as a part, most used first.
   final String usedIn;
+
+  /// The strokes that draw [part] wherever it appears in this kanji, as
+  /// 口 twice in 品.
+  Set<int> strokesOf(String part) {
+    Set<int> found = {};
+    void look(List<KanjiPart> parts) {
+      for (KanjiPart candidate in parts) {
+        if (candidate.character == part) {
+          found.addAll(candidate.strokes);
+        } else {
+          look(candidate.parts);
+        }
+      }
+    }
+
+    look(parts);
+    return found;
+  }
 
   /// Which of its readings [word] reads it with, or null when none fits, as
   /// in 今日 (きょう). Sound changes count, as in 曜日 (ようび) and 日記
@@ -271,18 +293,18 @@ class KanjiPack {
   static void useForTests(KanjiPack? pack) => _instance = pack;
 
   /// The pack's layout; a new one comes with a new download.
-  static const int format = 1;
+  static const int format = 2;
 
   /// Where the pack downloads from: a release of the app's fork.
   static const String url = 'https://github.com/ntninh00/jidoujisho/releases'
       '/download/kanji-pack-$format/kanji-pack-$format.bin.gz';
 
   /// The download's size in bytes.
-  static const int downloadSize = 4197130;
+  static const int downloadSize = 4270564;
 
   /// The download's SHA-256, to check it by.
   static const String downloadSha256 =
-      'd375efbb0f5eebf49c0f3b6011e5672ba432704def3b8764c85e7aa618585524';
+      'a5f8dead9326952eba04f9cc898a5880f40589dfe95d223c4369ad478ee89a2b';
 
   /// Where the pack is kept.
   final Directory directory;
@@ -297,6 +319,19 @@ class KanjiPack {
 
   /// Whether the pack is on the phone.
   bool get isInstalled => _file.existsSync();
+
+  /// Whether an earlier pack is on the phone, which the app can no longer
+  /// read; the download replaces it.
+  bool get hasOlder =>
+      !isInstalled &&
+      directory.existsSync() &&
+      directory.listSync().any((entry) => _isOlder(entry.path));
+
+  bool _isOlder(String file) {
+    String name = path.basename(file);
+    return name.startsWith('kanji-pack-') &&
+        !name.startsWith('kanji-pack-$format.');
+  }
 
   /// What the pack knows about [character], or null when it has nothing.
   Future<KanjiInfo?> lookup(String character) async =>
@@ -393,6 +428,11 @@ class KanjiPack {
         .pipe(unpacked.openWrite());
     unpacked.renameSync(_file.path);
     download.deleteSync();
+    for (FileSystemEntity entry in directory.listSync()) {
+      if (_isOlder(entry.path)) {
+        entry.deleteSync();
+      }
+    }
   }
 
   /// Removes the pack from the phone.

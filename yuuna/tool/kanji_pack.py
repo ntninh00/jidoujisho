@@ -20,7 +20,7 @@ import glob, gzip, hashlib, json, os, re, struct, sys, unicodedata, zipfile
 import xml.etree.ElementTree as ET
 from datetime import date
 
-FORMAT = 1
+FORMAT = 2
 KVG = '{http://kanjivg.tagaini.net}'
 COMMON = {'news1', 'ichi1', 'spec1', 'spec2', 'gai1'}
 WORDS, USED_IN = 40, 60
@@ -58,7 +58,9 @@ def kanjidic(path):
 
 
 def kanjivg(path):
-    """Stroke paths in order, the parts tree and the radical, per character."""
+    """Stroke paths in order, the parts tree and the radical, per character.
+    Each part is [element, parts, strokes]: strokes counts from 0 and takes in
+    the other halves of a part KanjiVG splits, as 囗 in 国."""
     root = ET.fromstring(gzip.open(path).read())
     out = {}
     for kanji in root.iter('kanji'):
@@ -75,6 +77,16 @@ def kanjivg(path):
         strokes.sort()
         radical = [None]
 
+        def drawn(g):
+            return [int(m.group(1)) - 1 for p in g.iter('path')
+                    if (m := re.search(r'-s(\d+)$', p.get('id', '')))]
+
+        halves = {}
+        for g in top.iter('g'):
+            if g.get(KVG + 'part'):
+                key = (g.get(KVG + 'element'), g.get(KVG + 'number'))
+                halves.setdefault(key, []).extend(drawn(g))
+
         def parts(g):
             nodes = []
             for child in g.findall('g'):
@@ -84,7 +96,8 @@ def kanjivg(path):
                 if element and child.get(KVG + 'part') not in (None, '1'):
                     continue
                 if element and len(element) == 1:
-                    nodes.append([element, parts(child)])
+                    split = halves.get((element, child.get(KVG + 'number'))) if child.get(KVG + 'part') else None
+                    nodes.append([element, parts(child), sorted(set(split or drawn(child)))])
                 else:
                     nodes.extend(parts(child))
             return nodes
@@ -148,7 +161,7 @@ def main():
     words = jmdict(os.path.join(sources, 'JMdict_e.gz'))
 
     def elements(tree):
-        for char, children in tree:
+        for char, children, _ in tree:
             yield char
             yield from elements(children)
 

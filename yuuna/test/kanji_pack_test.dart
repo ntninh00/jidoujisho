@@ -158,6 +158,34 @@ void main() {
     expect(read(husband, '夫', 'おっと'), 'おっと おっと');
   });
 
+  test('knows which strokes draw a part, its split halves too', () {
+    KanjiInfo country = KanjiInfo.fromJson({
+      'k': '国',
+      'p': [
+        [
+          '囗',
+          [],
+          [0, 1, 7]
+        ],
+        [
+          '玉',
+          [
+            [
+              '王',
+              [],
+              [2, 3, 4, 5]
+            ],
+          ],
+          [2, 3, 4, 5, 6]
+        ],
+      ],
+    });
+    expect(country.parts.first.strokes, [0, 1, 7]);
+    expect(country.strokesOf('囗'), {0, 1, 7});
+    expect(country.strokesOf('王'), {2, 3, 4, 5});
+    expect(country.strokesOf('口'), isEmpty);
+  });
+
   test('a pack of another format is refused', () async {
     writePack(
         directory,
